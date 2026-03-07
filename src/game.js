@@ -10,6 +10,8 @@ const GRID_H = 27;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 5;
+const MAX_TURNS = 200;
+const MOVE_DURATION_MS = 100;
 
 const TileType = {
   PATH: 0,
@@ -25,33 +27,33 @@ const TileType = {
 const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf'];
 
 const CLASSES = {
-  knight:   { name: 'Knight',   gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 13, dex: 10,  luk: 4,  int: 7,  range: 1 },
-  mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 4,  agi: 4,  vit: 5,  dex: 4,  luk: 13,  int: 15, range: 4 },
-  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 9,  agi: 9,  vit: 10, dex: 8,  luk: 9, int: 10,  range: 1 },
-  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 8,  vit: 8,  dex: 6,  luk: 11, int: 5,  range: 1 },
-  lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 10,  vit: 10, dex: 11, luk: 5,  int: 8,  range: 2 },
-  hunter:  { name: 'Hunter',   gender: 'female', hp: 19, maxHp: 19, mp: 9, maxMp: 9, str: 6, agi: 5, vit: 7,  dex: 15, luk: 12,  int: 5,  range: 6 },
-  assassin:{ name: 'Assassin', gender: 'female', hp: 18, maxHp: 18, mp: 10, maxMp: 10, str: 8,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
-  berserker:{ name: 'Berserker', gender: 'male',   hp: 30, maxHp: 30, mp: 2, maxMp: 2, str: 15, agi: 7,  vit: 12, dex: 7,  luk: 6,  int: 2,  range: 1 },
-  witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 3,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
-  ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 7,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
-  samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 12, agi: 11, vit: 9,  dex: 13, luk: 7,  int: 6,  range: 1 },
-  werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 12, vit: 11, dex: 9,  luk: 6,  int: 3,  range: 1 },
+  knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 13, dex: 10, luk: 4,  int: 7,  range: 1 },
+  mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
+  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 10, dex: 9,  luk: 9,  int: 10, range: 1 },
+  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 11, int: 5,  range: 1 },
+  lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 6,  luk: 5,  int: 8,  range: 2 },
+  hunter:  { name: 'Hunter',   gender: 'female', hp: 19, maxHp: 19, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
+  assassin:{ name: 'Assassin', gender: 'female', hp: 18, maxHp: 18, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
+  berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 2,  maxMp: 2,  str: 15, agi: 7,  vit: 12, dex: 8,  luk: 6,  int: 2,  range: 1 },
+  witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
+  ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
+  samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 12, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
+  werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 7,  luk: 6,  int: 3,  range: 1 },
 };
 
 const CLASS_LOOK = {
-  knight:   { primary: 0x94a3b8, secondary: 0x3b82f6 },
-  mage:     { primary: 0x7c3aed, secondary: 0xfbbf24 },
-  monk:     { primary: 0xf59e0b, secondary: 0x78350f },
-  ghoul:    { primary: 0x4ade80, secondary: 0x4b5563 },
-  lancer:   { primary: 0x0d9488, secondary: 0xb45309 },
-  hunter:   { primary: 0x15803d, secondary: 0x92400e },
-  assassin: { primary: 0x1f2937, secondary: 0xdc2626 },
-  berserker:{ primary: 0xb91c1c, secondary: 0x111827 },
-  witch:    { primary: 0x5b21b6, secondary: 0x0f172a },
-  ninja:    { primary: 0x374151, secondary: 0x7f1d1d },
-  samurai:  { primary: 0xb91c1c, secondary: 0xfef3c7 },
-  werewolf: { primary: 0x78350f, secondary: 0x6b7280 },
+  knight:   { primary: 0x696969, secondary: 0x8B4513, hair: 0xC4A484, cape: 0x333333 },
+  mage:     { primary: 0xFFFDD0, secondary: 0x333333, hair: 0xCBC3E3, cape: 0x4A0E4E },
+  monk:     { primary: 0xFFFFE4, secondary: 0xF5F5F5, hair: 0x2c1810 },
+  ghoul:    { primary: 0x008080, secondary: 0x654321, hair: 0x008080, skin: 0x008080 },
+  lancer:   { primary: 0x305CDE, secondary: 0xFFFDD0, hair: 0xF1EAD2, cape: 0xDC143C },
+  hunter:   { primary: 0x808000, secondary: 0x92400e, hair: 0x78866B, cape: 0xF5F5F5 },
+  assassin: { primary: 0x0F0E47, secondary: 0xF5F5F5, hair: 0x280137 },
+  berserker:{ primary: 0x0A0A0A, secondary: 0x0F0E47, hair: 0x0A0A0A, cape: 0x111111 },
+  witch:    { primary: 0xF5F5F5, secondary: 0x800020, hair: 0xFFFFE4, cape: 0x228B22 },
+  ninja:    { primary: 0x04141c, secondary: 0x486581, hair: 0x486581 },
+  samurai:  { primary: 0xD3D3D3, secondary: 0x36454F, hair: 0x36454F },
+  werewolf: { primary: 0xA9A9A9, secondary: 0xDCDCDC, hair: 0xC0C0C0 },
 };
 
 const CLASS_IMAGES = {
@@ -69,14 +71,22 @@ const CLASS_IMAGES = {
   werewolf: 'https://i.pinimg.com/736x/1f/95/27/1f9527c6255465547d664f19dd11967c.jpg',
 };
 
-const HAIR_COLORS = [
-  0x1a1a1a, 0x2c1810, 0x3d2314, 0x5c4033, 0x722f37, 0x8b4513,
-  0xa0522d, 0xb8860b, 0xc4a35a, 0xd4a574, 0xe8d5a3, 0x4a3728, 0x6b6b6b,
-];
+const CLASS_SKILLS = {
+  ninja: [
+    {
+      name: 'Blind',
+      description: 'Steals 1 dex from an enemy unit.',
+      cost: 6,
+      target: 'enemy',
+      range: 1,
+      level: 2,
+      effect: (unit, target) => blind({ unit, target, mp: 6, level: 2 }),
+    }, 
+    {
 
-function randomHairColor() {
-  return HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)];
-}
+    }
+  ],
+};
 
 function createWorld() {
   const w = GRID_W;
@@ -315,6 +325,18 @@ function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
   return dist;
 }
 
+/** Tiles within Manhattan distance <= range (for attack range). Returns Map key -> dist (1..range). */
+function getTilesInManhattanRange(world, centerX, centerY, range) {
+  const dist = new Map();
+  for (let gy = 0; gy < world.h; gy++) {
+    for (let gx = 0; gx < world.w; gx++) {
+      const d = Math.abs(gx - centerX) + Math.abs(gy - centerY);
+      if (d >= 1 && d <= range) dist.set(gy * world.w + gx, d);
+    }
+  }
+  return dist;
+}
+
 function getPath(world, startX, startY, endX, endY, units, movingUnit) {
   if (startX === endX && startY === endY) return [{ x: startX, y: startY }];
   const key = (x, y) => y * world.w + x;
@@ -476,7 +498,7 @@ function main() {
   const ELEVATION_MAX = Math.PI * 0.4;
   const _orbitOffset = new THREE.Vector3();
   let pointerDownPixel = { x: 0, y: 0 };
-  const ZOOM_MIN = 3;
+  const ZOOM_MIN = 1;
   const ZOOM_MAX = 40;
   const ZOOM_SENSITIVITY = 0.08;
 
@@ -532,7 +554,7 @@ function main() {
       roughness: 0.5,
     });
     const skin = new THREE.MeshStandardMaterial({
-      color: 0xe8b4a0,
+      color: look.skin != null ? look.skin : 0xe8b4a0,
       metalness: 0.1,
       roughness: 0.7,
     });
@@ -584,6 +606,23 @@ function main() {
     rightArm.position.set(torsoW / 2 + armW / 2, legH + torsoH - 0.08, 0);
     rightArm.castShadow = true;
     group.add(rightArm);
+
+    if (look.cape != null) {
+      const capeW = torsoW * 1.35;
+      const capeH = legH + torsoH * 0.15;
+      const capeGeo = new THREE.PlaneGeometry(capeW, capeH);
+      const capeMat = new THREE.MeshStandardMaterial({
+        color: look.cape,
+        metalness: 0.15,
+        roughness: 0.8,
+        side: THREE.DoubleSide,
+      });
+      const cape = new THREE.Mesh(capeGeo, capeMat);
+      cape.position.set(0, legH + capeH / 2 - 0.02, -torsoD / 2 - 0.02);
+      cape.rotation.y = Math.PI;
+      cape.castShadow = true;
+      group.add(cape);
+    }
 
     const headRadius = 0.1;
     const head = new THREE.Mesh(
@@ -684,21 +723,24 @@ function main() {
   }
 
   function levelUpUnit(unit) {
-    if (unit.level >= 2) return;
-    unit.level = 2;
-    const boost = (v) => Math.max(1, Math.floor(v * 1.1));
-    const boostStat = (v) => Math.max(1, Math.round(v * 1.1));
-    unit.hp = boost(unit.hp);
+    if (unit.level >= 3) return;
+    const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
+    unit.level += 1;
+    const boost = (v) => Math.max(1, Math.ceil(v * 1.1));
+    const boostStat = (v) => Math.max(1, Math.ceil(v * 1.1));
     unit.maxHp = boost(unit.maxHp);
-    unit.mp = boost(unit.mp);
     unit.maxMp = boost(unit.maxMp);
+    unit.hp = Math.max(1, Math.min(unit.maxHp, Math.ceil(hpRatio * unit.maxHp)));
+    unit.mp = Math.max(1, Math.min(unit.maxMp, Math.ceil(hpRatio * unit.maxMp)));
     unit.str = boostStat(unit.str);
     unit.agi = boostStat(unit.agi);
     unit.vit = boostStat(unit.vit);
     unit.dex = boostStat(unit.dex);
     unit.luk = boostStat(unit.luk);
     unit.int = boostStat(unit.int);
-    unit.range = boostStat(unit.range);
+    if (unit.range > 2) {
+      unit.range = boostStat(unit.range);
+    }
   }
 
   const CAMERA_TWEEN_MS = 430;
@@ -747,8 +789,10 @@ function main() {
     requestAnimationFrame(tick);
   }
 
+  let turnCount = 0;
   let currentPlayer = 1;
   let phase = 'draft';
+  let gameMode = 'pvp';
   let availableClasses = new Set(CLASS_KEYS);
   let draftPickIndex = 0;
   let pendingClassKey = null;
@@ -760,7 +804,6 @@ function main() {
   let previewUnitId = null;
 
   function showUnitPreviewCard(unit) {
-    console.log('showUnitPreviewCard', unit);
     if (!unit || unit.hp <= 0) return;
     previewUnitId = unit.id;
     const card = document.getElementById('unit-preview-card');
@@ -770,7 +813,8 @@ function main() {
     const statsEl = document.getElementById('unit-preview-stats');
     card.classList.remove('player-1', 'player-2');
     card.classList.add(unit.player === 1 ? 'player-1' : 'player-2');
-    card.classList.toggle('level-2', unit.level >= 2);
+    card.classList.toggle('level-2', unit.level >= 2 && unit.level < 3);
+    card.classList.toggle('level-3', unit.level >= 3);
     imgEl.src = CLASS_IMAGES[unit.class] || '';
     imgEl.alt = unit.name;
     nameEl.textContent = unit.name;
@@ -784,7 +828,7 @@ function main() {
       ['DEX', unit.dex],
       ['LUK', unit.luk],
       ['INT', unit.int],
-    ].map(([label, val]) => `<span class="stat-label">${label}</span><span class="stat-val">${val}</span>`).join('');
+    ].map(([label, val]) => `<span class="stat-label">${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
     const lowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < 0.3;
     card.classList.toggle('low-hp', lowHp);
     card.style.display = 'block';
@@ -793,7 +837,7 @@ function main() {
   function hideUnitPreviewCard() {
     previewUnitId = null;
     const card = document.getElementById('unit-preview-card');
-    card.classList.remove('low-hp', 'level-2');
+    card.classList.remove('low-hp', 'level-2', 'level-3');
     card.style.display = 'none';
   }
   let isUnitMoving = false;
@@ -805,6 +849,61 @@ function main() {
   const highlightGroup = new THREE.Group();
   scene.add(highlightGroup);
   const highlightMaterials = [];
+
+  const unitBordersGroup = new THREE.Group();
+  scene.add(unitBordersGroup);
+  const unitBorderMaterials = [];
+
+  const TILE_BORDER_SIZE = TILE_SIZE;
+  const TILE_BORDER_THICKNESS = 0.02;
+  const PLAYER1_BORDER_COLOR = 0x3366ff;
+  const PLAYER2_BORDER_COLOR = 0xcc3333;
+
+  function createSquareBorderGeometry(size, thickness) {
+    const half = size / 2;
+    const inner = half - thickness;
+    const shape = new THREE.Shape();
+    shape.moveTo(-half, -half);
+    shape.lineTo(half, -half);
+    shape.lineTo(half, half);
+    shape.lineTo(-half, half);
+    shape.lineTo(-half, -half);
+    const hole = new THREE.Path();
+    hole.moveTo(-inner, -inner);
+    hole.lineTo(inner, -inner);
+    hole.lineTo(inner, inner);
+    hole.lineTo(-inner, inner);
+    hole.lineTo(-inner, -inner);
+    shape.holes.push(hole);
+    return new THREE.ShapeGeometry(shape);
+  }
+
+  const sharedBorderGeometry = createSquareBorderGeometry(TILE_BORDER_SIZE, TILE_BORDER_THICKNESS);
+
+  function updateUnitTileBorders(excludeUnitId = null) {
+    unitBorderMaterials.forEach((m) => m.dispose());
+    unitBorderMaterials.length = 0;
+    while (unitBordersGroup.children.length) {
+      const c = unitBordersGroup.children[0];
+      unitBordersGroup.remove(c);
+    }
+    units.filter((u) => u.hp > 0 && u.id !== excludeUnitId).forEach((unit) => {
+      const gx = unit.x;
+      const gy = unit.y;
+      const topY = BASE_HEIGHT + world.height[gy][gx] * 0.35;
+      const surfaceY = topY / 2 + BASE_HEIGHT / 2;
+      const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
+      const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
+      const y = surfaceY + 0.02;
+      const color = unit.player === 1 ? PLAYER1_BORDER_COLOR : PLAYER2_BORDER_COLOR;
+      const borderMat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+      const borderMesh = new THREE.Mesh(sharedBorderGeometry, borderMat);
+      borderMesh.rotation.x = -Math.PI / 2;
+      borderMesh.position.set(px, y, pz);
+      unitBordersGroup.add(borderMesh);
+      unitBorderMaterials.push(borderMat);
+    });
+  }
 
   const turnPointerHeight = 1.15;
   const turnPointerMesh = (() => {
@@ -970,6 +1069,7 @@ function main() {
 
   function endDraftPhase() {
     phase = 'playing';
+    turnCount = 0;
     initiativeOrder = units.slice().sort((a, b) => {
       if (b.agi !== a.agi) return b.agi - a.agi;
       return b.dex - a.dex;
@@ -992,6 +1092,7 @@ function main() {
       placementCardEl.innerHTML = '';
     }
     clearHighlights();
+    updateUnitTileBorders();
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer(true);
@@ -1061,6 +1162,8 @@ function main() {
           return renderCard(key, isCurrent);
         }).join('');
       }
+      if (gameMode === 'pvcpu' && getCurrentDraftPlayer() === 2) setTimeout(runDraftAI, 500);
+      if (gameMode === 'cvcpu') setTimeout(runDraftAI, 500);
       return;
     }
     placementCardEl.style.display = 'none';
@@ -1100,6 +1203,8 @@ function main() {
         if (isAvailable) card.addEventListener('click', () => pickClass(key));
         draftClasses.appendChild(card);
       });
+    if (gameMode === 'pvcpu' && getCurrentDraftPlayer() === 2) setTimeout(runDraftAI, 500);
+    if (gameMode === 'cvcpu') setTimeout(runDraftAI, 500);
   }
 
   function pickClass(classKey) {
@@ -1127,7 +1232,7 @@ function main() {
       level: 1,
       name: template.name,
       class: pendingClassKey,
-      hairColor: randomHairColor(),
+      hairColor: (CLASS_LOOK[pendingClassKey] || CLASS_LOOK.knight).hair,
       hp: template.hp,
       maxHp: template.maxHp,
       mp: template.mp,
@@ -1171,6 +1276,7 @@ function main() {
     turnMenu.classList.remove('player-1', 'player-2');
     turnMenu.classList.add(currentPlayer === 1 ? 'player-1' : 'player-2');
     turnMenu.classList.toggle('level-2', false);
+    turnMenu.classList.toggle('level-3', false);
 
     if (phase === 'playing' && initiativeOrder.length > 0) {
       const currentUid = initiativeOrder[currentTurnIndex];
@@ -1186,7 +1292,8 @@ function main() {
         unitInfo.classList.remove('no-unit');
         const lowHp = u.maxHp > 0 && (u.hp / u.maxHp) < 0.25;
         turnMenu.classList.toggle('low-hp', lowHp);
-        turnMenu.classList.toggle('level-2', u.level >= 2);
+        turnMenu.classList.toggle('level-2', u.level >= 2 && u.level < 3);
+        turnMenu.classList.toggle('level-3', u.level >= 3);
         unitNameEl.textContent = u.name;
         unitLevelClassEl.textContent = `Lv.${u.level} ${u.class}`;
         unitClassImageEl.src = CLASS_IMAGES[u.class] || '';
@@ -1200,9 +1307,9 @@ function main() {
           ['DEX', u.dex],
           ['LUK', u.luk],
           ['INT', u.int],
-        ].map(([label, val]) => `<span>${label}</span><span class="stat-val">${val}</span>`).join('');
+        ].map(([label, val]) => `<span>${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
       } else {
-        turnMenu.classList.remove('low-hp', 'level-2');
+        turnMenu.classList.remove('low-hp', 'level-2', 'level-3');
         unitInfo.classList.add('no-unit');
         unitNameEl.textContent = '— Select a unit —';
         unitLevelClassEl.textContent = '';
@@ -1211,7 +1318,7 @@ function main() {
         unitClassImageEl.alt = '';
       }
     } else {
-      turnMenu.classList.remove('low-hp', 'level-2');
+      turnMenu.classList.remove('low-hp', 'level-2', 'level-3');
       unitInfo.classList.add('no-unit');
       unitNameEl.textContent = '— Select a unit —';
       unitLevelClassEl.textContent = '';
@@ -1231,7 +1338,14 @@ function main() {
     const btnAttack = document.getElementById('btn-attack');
     const btnSkill = document.getElementById('btn-skill');
     const btnSpell = document.getElementById('btn-spell');
-    if (isChoosingFacing) {
+    const btnEnd = document.getElementById('btn-end');
+    if (gameMode === 'cvcpu' && phase === 'playing') {
+      btnAttack.disabled = true;
+      btnSkill.disabled = true;
+      btnSpell.disabled = true;
+      if (btnEnd) btnEnd.disabled = true;
+      turnEl.textContent = `Player ${currentPlayer} (CPU)`;
+    } else if (isChoosingFacing) {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
       btnSpell.disabled = true;
@@ -1240,7 +1354,24 @@ function main() {
       btnAttack.disabled = hasAttacked;
       btnSkill.disabled = false;
       btnSpell.disabled = false;
+      if (btnEnd) btnEnd.disabled = false;
     }
+    if (phase === 'playing') {
+      const turnNum = Math.min(turnCount + 1, MAX_TURNS);
+      turnEl.textContent = (turnEl.textContent || '') + ` — Turn ${turnNum}/${MAX_TURNS}`;
+      const turnsLeftEl = document.getElementById('turns-left');
+      const turnsLeftValueEl = document.getElementById('turns-left-value');
+      if (turnsLeftEl && turnsLeftValueEl) {
+        turnsLeftEl.style.display = '';
+        const turnsLeft = Math.max(0, MAX_TURNS - turnCount);
+        turnsLeftValueEl.textContent = String(turnsLeft);
+        turnsLeftEl.classList.toggle('turns-left-low', turnsLeft <= 10);
+      }
+    } else {
+      const turnsLeftEl = document.getElementById('turns-left');
+      if (turnsLeftEl) turnsLeftEl.style.display = 'none';
+    }
+    if (phase === 'playing' && isCPUPlayer(currentPlayer) && !isUnitMoving) setTimeout(runPlayingAI, 700);
   }
 
   function endTurn() {
@@ -1252,6 +1383,20 @@ function main() {
     clearHighlights();
     const n = initiativeOrder.length;
     if (n === 0) return;
+    const currentUid = initiativeOrder[currentTurnIndex];
+    const currentUnit = units.find((u) => u.id === currentUid);
+    if (currentUnit && currentUnit.hp > 0) {
+      const gx = currentUnit.x;
+      const gy = currentUnit.y;
+      if (world.type[gy][gx] === TileType.CENTER && currentUnit.level === 1) levelUpUnit(currentUnit);
+      const enemyBase = currentUnit.player === 1 ? TileType.BASE_TOP : TileType.BASE_BOTTOM;
+      if (world.type[gy][gx] === enemyBase && currentUnit.level === 2) levelUpUnit(currentUnit);
+    }
+    turnCount++;
+    if (turnCount >= MAX_TURNS) {
+      endGameByTurnLimit();
+      return;
+    }
     let next = (currentTurnIndex + 1) % n;
     let steps = 0;
     while (steps < n) {
@@ -1262,8 +1407,8 @@ function main() {
       steps++;
     }
     currentTurnIndex = next;
-    const currentUnit = units.find((u) => u.id === initiativeOrder[currentTurnIndex]);
-    currentPlayer = currentUnit ? currentUnit.player : 1;
+    const nextUnit = units.find((u) => u.id === initiativeOrder[currentTurnIndex]);
+    currentPlayer = nextUnit ? nextUnit.player : 1;
     hasMoved = false;
     hasAttacked = false;
     selectedUnitId = initiativeOrder[currentTurnIndex];
@@ -1284,7 +1429,7 @@ function main() {
     const range = unit.range != null ? unit.range : 1;
     selectedUnitId = uid;
     isAttackMode = true;
-    reachable = getReachable(world, unit.x, unit.y, range);
+    reachable = getTilesInManhattanRange(world, unit.x, unit.y, range);
     showAttackRange(reachable);
     updateTurnUI();
   });
@@ -1319,7 +1464,505 @@ function main() {
   camera.position.copy(cameraTarget).add(cameraOffset);
   camera.lookAt(cameraTarget);
 
-  startDraftPhase();
+  const modeOverlay = document.getElementById('mode-select-overlay');
+  const btnPvP = document.getElementById('mode-pvp');
+  const btnPvCPU = document.getElementById('mode-pvcpu');
+  const btnCvCPU = document.getElementById('mode-cvcpu');
+  if (modeOverlay && btnPvP && btnPvCPU) {
+    btnPvP.addEventListener('click', () => {
+      gameMode = 'pvp';
+      modeOverlay.classList.add('hidden');
+      startDraftPhase();
+    });
+    btnPvCPU.addEventListener('click', () => {
+      gameMode = 'pvcpu';
+      modeOverlay.classList.add('hidden');
+      startDraftPhase();
+    });
+    if (btnCvCPU) {
+      btnCvCPU.addEventListener('click', () => {
+        gameMode = 'cvcpu';
+        modeOverlay.classList.add('hidden');
+        startDraftPhase();
+      });
+    }
+  } else {
+    startDraftPhase();
+  }
+
+  function isCPUPlayer(player) {
+    return (gameMode === 'pvcpu' && player === 2) || gameMode === 'cvcpu';
+  }
+
+  function pickBalancedClass() {
+    const available = CLASS_KEYS.filter((k) => availableClasses.has(k));
+    if (available.length === 0) return null;
+    const statKeys = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
+    let bestKey = available[0];
+    let bestVariance = Infinity;
+    for (const key of available) {
+      const c = CLASSES[key];
+      if (!c) continue;
+      const values = statKeys.map((s) => c[s] ?? 0);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+      if (variance < bestVariance) {
+        bestVariance = variance;
+        bestKey = key;
+      }
+    }
+    return bestKey;
+  }
+
+  function runDraftAI() {
+    if (phase !== 'draft' || !isCPUPlayer(getCurrentDraftPlayer())) return;
+    if (!pendingClassKey) {
+      const key = pickBalancedClass();
+      if (key) pickClass(key);
+      setTimeout(runDraftAI, 500);
+      return;
+    }
+    const tiles = Array.from(placementTileKeys);
+    if (tiles.length > 0) {
+      const k = tiles[Math.floor(Math.random() * tiles.length)];
+      const gx = k % world.w;
+      const gy = Math.floor(k / world.w);
+      placeUnit(gx, gy);
+    }
+  }
+
+  function getCenterTiles() {
+    const out = [];
+    for (let gy = 0; gy < world.h; gy++)
+      for (let gx = 0; gx < world.w; gx++)
+        if (world.type[gy][gx] === TileType.CENTER) out.push({ gx, gy });
+    return out;
+  }
+
+  function getEnemyBaseTiles(player) {
+    const out = [];
+    const baseType = player === 1 ? TileType.BASE_TOP : TileType.BASE_BOTTOM;
+    for (let gy = 0; gy < world.h; gy++)
+      for (let gx = 0; gx < world.w; gx++)
+        if (world.type[gy][gx] === baseType) out.push({ gx, gy });
+    return out;
+  }
+
+  function manhattanDist(ax, ay, bx, by) {
+    return Math.abs(ax - bx) + Math.abs(ay - by);
+  }
+
+  function getEnemiesInRange(unit) {
+    const range = unit.range != null ? unit.range : 1;
+    const enemies = [];
+    for (const o of units) {
+      if (o.hp <= 0 || o.player === unit.player) continue;
+      const d = manhattanDist(unit.x, unit.y, o.x, o.y);
+      if (d <= range && d > 0) enemies.push({ target: o, dist: d });
+    }
+    return enemies;
+  }
+
+  function isAllyInDanger(unit) {
+    const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
+    for (const ally of allies) {
+      const enemiesNear = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+      for (const en of enemiesNear) {
+        const r = en.range != null ? en.range : 1;
+        const d = manhattanDist(en.x, en.y, ally.x, ally.y);
+        if (d <= r) return true;
+      }
+    }
+    return false;
+  }
+
+  function performMove(unit, toGx, toGy, onDone) {
+    const path = getPath(world, unit.x, unit.y, toGx, toGy, units, unit);
+    if (!path || path.length <= 1) {
+      if (onDone) onDone();
+      return;
+    }
+    selectedUnitId = null;
+    clearHighlights();
+    isUnitMoving = true;
+    updateUnitTileBorders(unit.id);
+    const mesh = unitMeshes.get(unit.id);
+    let stepIndex = 1;
+
+    function animateStep() {
+      if (stepIndex >= path.length) {
+        unit.x = path[path.length - 1].x;
+        unit.y = path[path.length - 1].y;
+        isUnitMoving = false;
+        resetWalkPose(mesh);
+        updateUnitTileBorders();
+        reachable = new Map();
+        hasMoved = true;
+        if (onDone) onDone();
+        return;
+      }
+      const from = path[stepIndex - 1];
+      const to = path[stepIndex];
+      const startPos = worldPos(from.x, from.y).clone();
+      const endPos = worldPos(to.x, to.y).clone();
+      const dx = endPos.x - startPos.x;
+      const dz = endPos.z - startPos.z;
+      if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
+      const startTime = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+        const eased = t * (2 - t);
+        mesh.position.lerpVectors(startPos, endPos, eased);
+        setWalkPose(mesh, t);
+        if (t < 1) requestAnimationFrame(tick);
+        else { stepIndex++; animateStep(); }
+      }
+      requestAnimationFrame(tick);
+    }
+    animateStep();
+  }
+
+  function performAttack(unit, target) {
+    const evasionMax = target.agi * 0.7 + target.luk * 0.3;
+    const evasionRoll = Math.random() * evasionMax;
+    const isHit = evasionRoll <= unit.dex;
+    if (isHit) {
+      const rawDamage = (unit.str * 0.7 + unit.dex * 0.1 + unit.int * 0.07) - (target.vit * 0.3 + target.luk * 0.1);
+      const damage = Math.max(1, Math.floor(rawDamage));
+      target.hp = Math.max(0, target.hp - damage);
+      showFloatingCombatText(target.x, target.y, String(damage), false);
+      if (target.hp <= 0) handleUnitDeath(target);
+    } else {
+      showFloatingCombatText(target.x, target.y, 'MISS', true);
+    }
+    hasAttacked = true;
+    selectedUnitId = null;
+    isAttackMode = false;
+    clearHighlights();
+    if (hasMoved) setTimeout(() => endTurn(), 400);
+    else setTimeout(() => updateTurnUI(), 400);
+  }
+
+  function runPlayingAI() {
+    if (phase !== 'playing' || !isCPUPlayer(currentPlayer) || isUnitMoving || initiativeOrder.length === 0) return;
+    const uid = initiativeOrder[currentTurnIndex];
+    const unit = units.find((u) => u.id === uid);
+    if (!unit || unit.hp <= 0) return;
+
+    const reachableDist = getReachable(world, unit.x, unit.y, unit.agi, units, unit);
+    const reachableTiles = [];
+    reachableDist.forEach((d, k) => {
+      if (d === 0) return;
+      const gx = k % world.w;
+      const gy = Math.floor(k / world.w);
+      const occupied = units.some((o) => o.id !== unit.id && o.x === gx && o.y === gy && o.hp > 0);
+      if (!occupied) reachableTiles.push({ gx, gy, dist: d });
+    });
+
+    const enemiesInRange = getEnemiesInRange(unit);
+    const centerTiles = getCenterTiles();
+    const enemyBaseTiles = getEnemyBaseTiles(unit.player);
+    const lowHpThreshold = 0.35;
+    const isLowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < lowHpThreshold;
+
+    function closestTileToTargets(tiles, targets) {
+      if (targets.length === 0) return null;
+      let best = null;
+      let bestDist = Infinity;
+      for (const t of tiles) {
+        let total = 0;
+        for (const g of targets) total += manhattanDist(t.gx, t.gy, g.gx, g.gy);
+        if (total < bestDist) { bestDist = total; best = t; }
+      }
+      return best;
+    }
+
+    /** Pick the reachable tile that gets closest to the target region (min distance to nearest target). */
+    function farthestReachableTowardTargets(tiles, targets) {
+      if (targets.length === 0 || tiles.length === 0) return null;
+      let best = null;
+      let bestMinDist = Infinity;
+      for (const t of tiles) {
+        const minDistToTarget = Math.min(...targets.map((g) => manhattanDist(t.gx, t.gy, g.gx, g.gy)));
+        if (minDistToTarget < bestMinDist) { bestMinDist = minDistToTarget; best = t; }
+      }
+      return best;
+    }
+
+    const reachableKeys = new Set(reachableTiles.map((t) => t.gy * world.w + t.gx));
+
+    /** Return the farthest tile along the path that is reachable this turn (path[0] = current pos). */
+    function farthestReachableOnPath(path, maxSteps) {
+      if (!path || path.length <= 1) return null;
+      const limit = Math.min(maxSteps, path.length - 1);
+      for (let i = limit; i >= 1; i--) {
+        const p = path[i];
+        const k = p.y * world.w + p.x;
+        if (reachableKeys.has(k)) return { gx: p.x, gy: p.y };
+      }
+      return null;
+    }
+
+    /** Farthest path step within maxSteps that is unoccupied (allows passing through allies toward base). */
+    function farthestUnoccupiedOnPath(path, maxSteps) {
+      if (!path || path.length <= 1) return null;
+      const limit = Math.min(maxSteps, path.length - 1);
+      for (let i = limit; i >= 1; i--) {
+        const p = path[i];
+        const occupied = units.some((o) => o.id !== unit.id && o.hp > 0 && o.x === p.x && o.y === p.y);
+        if (!occupied) return { gx: p.x, gy: p.y };
+      }
+      return null;
+    }
+
+    /** Find the shortest path from unit to any target; return { path, target } or null. */
+    function getPathToNearestTarget(targets) {
+      let bestPath = null;
+      let bestTarget = null;
+      let bestLen = Infinity;
+      for (const g of targets) {
+        const path = getPath(world, unit.x, unit.y, g.gx, g.gy, units, unit);
+        if (path && path.length > 1 && path.length < bestLen) {
+          bestLen = path.length;
+          bestPath = path;
+          bestTarget = g;
+        }
+      }
+      return bestPath && bestTarget ? { path: bestPath, target: bestTarget } : null;
+    }
+
+    function safestReachableTile() {
+      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+      if (enemies.length === 0) return reachableTiles[0];
+      let best = null;
+      let bestMinDist = -1;
+      for (const t of reachableTiles) {
+        const minDist = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
+        if (minDist > bestMinDist) { bestMinDist = minDist; best = t; }
+      }
+      return best;
+    }
+
+    /** After attacking: retreat tile that is away from enemies and close to allies. */
+    function bestRetreatTowardAlliesTile() {
+      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+      const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
+      if (enemies.length === 0) return reachableTiles[0];
+      let best = null;
+      let bestScore = -Infinity;
+      for (const t of reachableTiles) {
+        const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
+        const minDistToAlly = allies.length > 0
+          ? Math.min(...allies.map((a) => manhattanDist(t.gx, t.gy, a.x, a.y)))
+          : 0;
+        const score = minDistToEnemy - minDistToAlly;
+        if (score > bestScore) { bestScore = score; best = t; }
+      }
+      return best;
+    }
+
+    /** For ranged units: reachable tile that keeps at least one enemy in range but maximizes distance to nearest enemy. */
+    function bestKiteTile() {
+      const range = unit.range != null ? unit.range : 1;
+      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+      if (enemies.length === 0) return null;
+      let best = null;
+      let bestMinDistToEnemy = -1;
+      for (const t of reachableTiles) {
+        const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
+        const hasEnemyInRange = enemies.some((e) => manhattanDist(t.gx, t.gy, e.x, e.y) <= range);
+        if (hasEnemyInRange && minDistToEnemy > bestMinDistToEnemy) {
+          bestMinDistToEnemy = minDistToEnemy;
+          best = t;
+        }
+      }
+      return best;
+    }
+
+    if (hasAttacked) {
+      if (hasMoved) {
+        endTurn();
+        return;
+      }
+      const retreat = bestRetreatTowardAlliesTile();
+      if (retreat && (retreat.gx !== unit.x || retreat.gy !== unit.y)) {
+        performMove(unit, retreat.gx, retreat.gy, () => setTimeout(endTurn, 400));
+        return;
+      }
+      endTurn();
+      return;
+    }
+
+    if (isAllyInDanger(unit) && enemiesInRange.length > 0) {
+      enemiesInRange.sort((a, b) => a.target.hp - b.target.hp || a.dist - b.dist);
+      const target = enemiesInRange[0].target;
+      performAttack(unit, target);
+      return;
+    }
+
+    if (enemiesInRange.length > 0) {
+      enemiesInRange.sort((a, b) => a.target.hp - b.target.hp || a.dist - b.dist);
+      const target = enemiesInRange[0].target;
+      performAttack(unit, target);
+      return;
+    }
+
+    if (isLowHp && reachableTiles.length > 0 && !hasMoved) {
+      const lowHpEnemiesInRange = enemiesInRange.filter(
+        (e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold
+      );
+      if (lowHpEnemiesInRange.length > 0) {
+        lowHpEnemiesInRange.sort((a, b) => a.target.hp - b.target.hp || a.dist - b.dist);
+        performAttack(unit, lowHpEnemiesInRange[0].target);
+        return;
+      }
+      if (unit.level === 2 && enemyBaseTiles.length > 0) {
+        const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+        if (!onEnemyBase) {
+          const result = getPathToNearestTarget(enemyBaseTiles);
+          const veryCloseBy = result != null && result.path.length <= 3;
+          if (veryCloseBy) {
+            const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
+            if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+              performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+              return;
+            }
+            const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+            if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+              return;
+            }
+          }
+        }
+      }
+      const safe = safestReachableTile();
+      if (safe && manhattanDist(unit.x, unit.y, safe.gx, safe.gy) > 0) {
+        performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
+        return;
+      }
+      endTurn();
+      return;
+    }
+
+    const turnsLeft = MAX_TURNS - turnCount;
+    if (turnsLeft <= 10 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+      if (!onCenter) {
+        const result = getPathToNearestTarget(centerTiles);
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        const fallback = farthestReachableTowardTargets(reachableTiles, centerTiles);
+        if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+          performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
+    }
+
+    if (unit.level === 1 && centerTiles.length > 0 && !hasMoved) {
+      const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+      if (!onCenter && reachableTiles.length > 0) {
+        const result = getPathToNearestTarget(centerTiles);
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        const fallback = farthestReachableTowardTargets(reachableTiles, centerTiles);
+        if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+          performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
+    }
+
+    if (unit.level === 2 && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+      if (!onEnemyBase) {
+        const result = getPathToNearestTarget(enemyBaseTiles);
+        const veryCloseBy = result != null && result.path.length <= 3;
+        if (veryCloseBy) {
+          const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
+          if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+            performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+            return;
+          }
+          const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+          if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+            performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+            return;
+          }
+        }
+      }
+    }
+
+    const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+    const isLevel2Ranged = unit.level === 2 && (unit.range != null && unit.range >= 2);
+    if (isLevel2Ranged && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const kite = bestKiteTile();
+      if (kite && (kite.gx !== unit.x || kite.gy !== unit.y)) {
+        performMove(unit, kite.gx, kite.gy, () => setTimeout(runPlayingAI, 600));
+        return;
+      }
+    }
+
+    if (enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+      function pathToAdjacentOf(enemy) {
+        let bestPath = null;
+        for (const [dx, dy] of dirs) {
+          const ax = enemy.x + dx;
+          const ay = enemy.y + dy;
+          if (!isWalkable(world, ax, ay)) continue;
+          const occupied = units.some((u) => u.hp > 0 && u.x === ax && u.y === ay);
+          if (occupied) continue;
+          const path = getPath(world, unit.x, unit.y, ax, ay, units, unit);
+          if (path && path.length > 1 && (!bestPath || path.length < bestPath.length)) bestPath = path;
+        }
+        return bestPath;
+      }
+      const pathable = [];
+      for (const e of enemies) {
+        const path = pathToAdjacentOf(e);
+        if (path) pathable.push({ enemy: e, path });
+      }
+      if (pathable.length > 0) {
+        const weakPathable = pathable.filter(
+          (p) => p.enemy.maxHp > 0 && (p.enemy.hp / p.enemy.maxHp) < lowHpThreshold
+        );
+        const candidates = weakPathable.length > 0 ? weakPathable : pathable;
+        candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
+        const chosen = candidates[0];
+        const toward = farthestReachableOnPath(chosen.path, unit.agi);
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
+    }
+
+    if (unit.level === 2 && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+      if (!onEnemyBase) {
+        const result = getPathToNearestTarget(enemyBaseTiles);
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+        if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+          performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
+    }
+
+    endTurn();
+  }
 
   function clearHighlights() {
     highlightMaterials.length = 0;
@@ -1449,6 +2092,7 @@ function main() {
     }
 
     if (phase !== 'playing') return;
+    if (gameMode === 'cvcpu') return;
 
     if (isChoosingFacing) {
       const uid = initiativeOrder[currentTurnIndex];
@@ -1486,11 +2130,11 @@ function main() {
       }
       if (!reachable.has(k) || reachable.get(k) === 0) return;
       if (target && target.player !== currentPlayer) {
-        const evasionMax = target.agi + target.luk * 0.7;
+        const evasionMax = target.agi + target.luk * 0.3;
         const evasionRoll = Math.random() * evasionMax;
         const isHit = evasionRoll <= u.dex;
         if (isHit) {
-          const rawDamage = (u.str * 0.7 + u.dex * 0.1) - (target.vit * 0.3 + target.luk * 0.2);
+          const rawDamage = (u.str * 0.7 + u.dex * 0.1 + u.int * 0.07) - (target.vit * 0.3 + target.luk * 0.1);
           const damage = Math.max(1, Math.floor(rawDamage));
           target.hp = Math.max(0, target.hp - damage);
           showFloatingCombatText(target.x, target.y, String(damage), false);
@@ -1543,6 +2187,7 @@ function main() {
       const occupied = units.some((o) => o.id !== u.id && o.x === gx && o.y === gy && o.hp > 0);
       if (occupied) return;
       if (isUnitMoving) return;
+      if (hasMoved) return;
 
       const path = getPath(world, u.x, u.y, gx, gy, units, u);
       if (!path || path.length <= 1) return;
@@ -1550,6 +2195,7 @@ function main() {
       selectedUnitId = null;
       clearHighlights();
       isUnitMoving = true;
+      updateUnitTileBorders(u.id);
       const MOVE_DURATION_MS = 220;
       const mesh = unitMeshes.get(u.id);
       let stepIndex = 1;
@@ -1558,9 +2204,10 @@ function main() {
         if (stepIndex >= path.length) {
           u.x = path[path.length - 1].x;
           u.y = path[path.length - 1].y;
-          if (world.type[u.y][u.x] === TileType.CENTER && u.level === 1) levelUpUnit(u);
           isUnitMoving = false;
           resetWalkPose(mesh);
+          updateUnitTileBorders();
+          reachable = new Map();
           hasMoved = true;
           if (hasAttacked) endTurn();
           else updateTurnUI();
@@ -1719,6 +2366,7 @@ function main() {
         scene.remove(mesh);
         unitMeshes.delete(unit.id);
       }
+      updateUnitTileBorders();
       checkGameOver();
     }, 1600);
   }
@@ -1734,7 +2382,36 @@ function main() {
     }
   }
 
-  function showGameOver(winningPlayer) {
+  function endGameByTurnLimit() {
+    const centerTiles = getCenterTiles();
+    const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
+    const p1OnCenter = units.filter((u) => u.hp > 0 && u.player === 1 && centerKeys.has(u.y * world.w + u.x)).length;
+    const p2OnCenter = units.filter((u) => u.hp > 0 && u.player === 2 && centerKeys.has(u.y * world.w + u.x)).length;
+    let winningPlayer = null;
+    let title = '';
+    if (p1OnCenter > p2OnCenter) {
+      winningPlayer = 1;
+      title = `Time's up! Player 1 wins! (${p1OnCenter} vs ${p2OnCenter} units on center base)`;
+    } else if (p2OnCenter > p1OnCenter) {
+      winningPlayer = 2;
+      title = `Time's up! Player 2 wins! (${p2OnCenter} vs ${p1OnCenter} units on center base)`;
+    } else {
+      const p1TotalHp = units.filter((u) => u.hp > 0 && u.player === 1).reduce((sum, u) => sum + u.hp, 0);
+      const p2TotalHp = units.filter((u) => u.hp > 0 && u.player === 2).reduce((sum, u) => sum + u.hp, 0);
+      if (p1TotalHp > p2TotalHp) {
+        winningPlayer = 1;
+        title = `Time's up! Draw on center — Player 1 wins on total HP (${p1TotalHp} vs ${p2TotalHp})`;
+      } else if (p2TotalHp > p1TotalHp) {
+        winningPlayer = 2;
+        title = `Time's up! Draw on center — Player 2 wins on total HP (${p2TotalHp} vs ${p1TotalHp})`;
+      } else {
+        title = `Draw! (equal units on center: ${p1OnCenter}, equal HP)`;
+      }
+    }
+    showGameOver(winningPlayer, title);
+  }
+
+  function showGameOver(winningPlayer, titleOverride) {
     phase = 'gameover';
     document.getElementById('turn-menu').style.display = 'none';
     hideUnitPreviewCard();
@@ -1742,18 +2419,20 @@ function main() {
     const overlay = document.getElementById('game-over-overlay');
     const titleEl = document.getElementById('game-over-title');
     const cardsEl = document.getElementById('game-over-cards');
-    titleEl.textContent = `Player ${winningPlayer} wins!`;
-    const winnerUnits = units.filter((u) => u.player === winningPlayer);
+    titleEl.textContent = titleOverride != null ? titleOverride : `Player ${winningPlayer} wins!`;
+    const winnerUnits = units.filter((u) => u.player === (winningPlayer != null ? winningPlayer : 1));
     cardsEl.innerHTML = winnerUnits.map((unit) => {
       const c = unit;
+      const levelClass = unit.level >= 3 ? ' level-3' : unit.level >= 2 ? ' level-2' : '';
+      const lowHpClass = c.maxHp > 0 && (c.hp / c.maxHp) < 0.3 ? ' low-hp' : '';
       return `
-        <div class="game-over-card">
+        <div class="game-over-card${levelClass}${lowHpClass}">
           <img class="game-over-card-image" src="${CLASS_IMAGES[unit.class] || ''}" alt="${c.name}" referrerpolicy="no-referrer" onerror="this.style.background='#21262d';this.onerror=null" />
           <div class="game-over-card-body">
             <div class="game-over-card-name">${c.name}</div>
             <div class="game-over-card-meta">Lv.${c.level} ${c.class} — HP ${c.hp}/${c.maxHp}</div>
             <div class="game-over-card-stats">
-              <span class="stat-label">HP</span><span class="stat-val">${c.hp}/${c.maxHp}</span>
+              <span class="stat-label">HP</span><span class="stat-val stat-val-hp">${c.hp}/${c.maxHp}</span>
               <span class="stat-label">MP</span><span class="stat-val">${c.mp}/${c.maxMp}</span>
               <span class="stat-label">STR</span><span class="stat-val">${c.str}</span>
               <span class="stat-label">AGI</span><span class="stat-val">${c.agi}</span>

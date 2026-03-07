@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "esbuild js/game.js --bundle --format=esm --minify --outfile=game.js"
+    "build": "esbuild src/game.js --bundle --format=esm --minify --outfile=game.js && esbuild src/style.css --minify --outfile=style.css && node -e \"let h=require('fs').readFileSync('src/index.html','utf8'); require('fs').writeFileSync('index.html', h.replace('game.bundle.js','game.js'))\"",
+    "dev": "esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js && concurrently \"esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js --watch\" \"npx live-server src --port=3000\"",
+    "preview": "npm run build && npx serve . -p 3000"
   },
   "dependencies": {
     "three": "^0.160.0"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.24.0",
+    "live-server": "^1.2.2",
+    "serve": "^14.2.4"
   }
 }
