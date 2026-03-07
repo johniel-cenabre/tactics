@@ -11,7 +11,7 @@ const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 5;
 const MAX_TURNS = 200;
-const MOVE_DURATION_MS = 100;
+const MOVE_DURATION_MS = 240;
 
 const TileType = {
   PATH: 0,
