@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
   <title>Tactics — Turn-Based Tile Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -59,6 +60,10 @@
       <button type="button" id="mode-pvcpu" class="mode-btn">Player vs CPU</button>
       <button type="button" id="mode-cvcpu" class="mode-btn">CPU vs CPU</button>
     </div>
+  </div>
+  <div id="rotate-overlay" aria-hidden="true">
+    <div class="rotate-overlay-icon">↻</div>
+    <p class="rotate-overlay-text">Please rotate your device to landscape to play</p>
   </div>
   <script type="module" src="game.js"></script>
 </body>

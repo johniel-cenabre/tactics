@@ -1110,6 +1110,8 @@ function main() {
       turnEl.textContent = `Draft: Player ${getCurrentDraftPlayer()} — place ${CLASSES[pendingClassKey].name}`;
       const p = getCurrentDraftPlayer();
       placementCardEl.style.display = 'flex';
+      placementCardEl.classList.remove('player-1', 'player-2');
+      placementCardEl.classList.add('player-' + p);
       placementCardEl.style.left = p === 1 ? '24px' : '';
       placementCardEl.style.right = p === 2 ? '24px' : '';
       const selectedClassKeys = [
@@ -1255,12 +1257,32 @@ function main() {
     pendingClassKey = null;
     placementTileKeys.clear();
     clearHighlights();
+    const placementCardEl = document.getElementById('draft-placement-card');
+    if (placementCardEl) {
+      placementCardEl.style.display = 'none';
+      placementCardEl.innerHTML = '';
+    }
     draftPickIndex++;
     if (draftPickIndex >= 2 * DRAFT_PICKS_PER_PLAYER) {
       endDraftPhase();
       return;
     }
-    updateDraftUI();
+    const nextP = getCurrentDraftPlayer();
+    const nextPickCount = getCurrentPlayerPickCount();
+    const draftPanel = document.getElementById('draft-panel');
+    const draftTitle = document.getElementById('draft-title');
+    const draftMessage = document.getElementById('draft-message');
+    const draftClasses = document.getElementById('draft-classes');
+    const turnEl = document.getElementById('turn-player');
+    if (draftPanel && draftTitle && draftClasses && turnEl) {
+      draftPanel.style.display = 'flex';
+      draftTitle.textContent = `Player ${nextP}: Pick a class (${nextPickCount}/${DRAFT_PICKS_PER_PLAYER})`;
+      if (draftMessage) draftMessage.textContent = 'Get ready…';
+      draftClasses.innerHTML = '';
+      turnEl.textContent = `Draft: Player ${nextP} — pick a class`;
+    }
+    const DRAFT_AFTER_PLACEMENT_DELAY_MS = 1500;
+    setTimeout(updateDraftUI, DRAFT_AFTER_PLACEMENT_DELAY_MS);
   }
 
   function updateTurnUI() {
@@ -2323,6 +2345,33 @@ function main() {
     container.style.cursor = e.ctrlKey ? 'grabbing' : 'grabbing';
   }
 
+  function touchCoords(e) {
+    if (e.touches && e.touches.length > 0)
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+    if (e.changedTouches && e.changedTouches.length > 0)
+      return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+    return { clientX: e.clientX, clientY: e.clientY };
+  }
+
+  function onTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    const c = touchCoords(e);
+    onPointerDown({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
+  }
+
+  function onTouchMove(e) {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const c = touchCoords(e);
+    onPointerMove({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
+  }
+
+  function onTouchEnd(e) {
+    if (e.changedTouches.length === 0) return;
+    const c = touchCoords(e);
+    onPointerUp({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
+  }
+
   function onPointerMove(e) {
     if (isChoosingFacing) {
       updateFacingFromPointer(e.clientX, e.clientY);
@@ -2393,6 +2442,9 @@ function main() {
   container.addEventListener('mousemove', onPointerMove);
   container.addEventListener('mouseup', onPointerUp);
   container.addEventListener('mouseleave', onPointerUp);
+  container.addEventListener('touchstart', onTouchStart, { passive: true });
+  container.addEventListener('touchmove', onTouchMove, { passive: false });
+  container.addEventListener('touchend', onTouchEnd, { passive: true });
   container.addEventListener('wheel', onWheel, { passive: false });
 
   function resize() {
@@ -2400,6 +2452,8 @@ function main() {
     const h = container.clientHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   }
   window.addEventListener('resize', resize);
 
@@ -2409,6 +2463,7 @@ function main() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
+  resize();
 
   const combatTextLayer = document.createElement('div');
   combatTextLayer.id = 'combat-text-layer';
