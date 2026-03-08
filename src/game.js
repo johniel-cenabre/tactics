@@ -9,7 +9,7 @@ const GRID_W = 37;
 const GRID_H = 27;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 5;
+const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 200;
 const MOVE_DURATION_MS = 240;
 
@@ -27,18 +27,18 @@ const TileType = {
 const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf'];
 
 const CLASSES = {
-  knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 13, dex: 10, luk: 4,  int: 7,  range: 1 },
+  knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
   mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
-  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 10, dex: 9,  luk: 9,  int: 10, range: 1 },
+  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 9,  int: 10, range: 1 },
   ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 11, int: 5,  range: 1 },
-  lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 6,  luk: 5,  int: 8,  range: 2 },
+  lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
   hunter:  { name: 'Hunter',   gender: 'female', hp: 19, maxHp: 19, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
   assassin:{ name: 'Assassin', gender: 'female', hp: 18, maxHp: 18, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
-  berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 2,  maxMp: 2,  str: 15, agi: 7,  vit: 12, dex: 8,  luk: 6,  int: 2,  range: 1 },
+  berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
   witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
   ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
   samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 12, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
-  werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 7,  luk: 6,  int: 3,  range: 1 },
+  werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
 };
 
 const CLASS_LOOK = {
@@ -1664,6 +1664,11 @@ function main() {
     const enemyBaseTiles = getEnemyBaseTiles(unit.player);
     const lowHpThreshold = 0.35;
     const isLowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < lowHpThreshold;
+    /** Level 2 only: go to enemy base to level up. Level 3 units prioritize fighting/surviving. */
+    const prioritizeEnemyBase = unit.level === 2;
+    const occupiedByOther = (t) => units.some((u) => u.hp > 0 && u.x === t.gx && u.y === t.gy && u.id !== unit.id);
+    const unoccupiedCenterTiles = centerTiles.filter((t) => !occupiedByOther(t));
+    const unoccupiedEnemyBaseTiles = enemyBaseTiles.filter((t) => !occupiedByOther(t));
 
     function closestTileToTargets(tiles, targets) {
       if (targets.length === 0) return null;
@@ -1743,19 +1748,26 @@ function main() {
       return best;
     }
 
-    /** After attacking: retreat tile that is away from enemies and close to allies. */
+    /** After attacking: retreat tile that is away from enemies. High-HP units stay in front of allies; low-HP prefer moving toward allies. */
     function bestRetreatTowardAlliesTile() {
       const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
       if (enemies.length === 0) return reachableTiles[0];
+      const isHighHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) >= 0.6;
       let best = null;
       let bestScore = -Infinity;
       for (const t of reachableTiles) {
         const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
         const minDistToAlly = allies.length > 0
           ? Math.min(...allies.map((a) => manhattanDist(t.gx, t.gy, a.x, a.y)))
-          : 0;
-        const score = minDistToEnemy - minDistToAlly;
+          : 999;
+        let score;
+        if (isHighHp) {
+          const behindAllies = minDistToAlly < minDistToEnemy;
+          score = behindAllies ? minDistToEnemy - 1000 : minDistToEnemy;
+        } else {
+          score = minDistToEnemy - minDistToAlly;
+        }
         if (score > bestScore) { bestScore = score; best = t; }
       }
       return best;
@@ -1784,7 +1796,17 @@ function main() {
         endTurn();
         return;
       }
-      const retreat = bestRetreatTowardAlliesTile();
+      const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
+      let retreat = null;
+      if (allies.length > 0) {
+        retreat = bestRetreatTowardAlliesTile();
+        if (retreat) {
+          const path = getPath(world, unit.x, unit.y, retreat.gx, retreat.gy, units, unit);
+          const steps = path ? path.length - 1 : Infinity;
+          if (!path || path.length <= 1 || steps > unit.agi) retreat = safestReachableTile();
+        }
+      }
+      if (!retreat) retreat = safestReachableTile();
       if (retreat && (retreat.gx !== unit.x || retreat.gy !== unit.y)) {
         performMove(unit, retreat.gx, retreat.gy, () => setTimeout(endTurn, 400));
         return;
@@ -1807,6 +1829,25 @@ function main() {
       return;
     }
 
+    const turnsLeft = MAX_TURNS - turnCount;
+    if (turnsLeft <= 20 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+      if (!onCenter) {
+        const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
+        const result = getPathToNearestTarget(centerTargets);
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
+        if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+          performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
+    }
+
     if (isLowHp && reachableTiles.length > 0 && !hasMoved) {
       const lowHpEnemiesInRange = enemiesInRange.filter(
         (e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold
@@ -1816,18 +1857,19 @@ function main() {
         performAttack(unit, lowHpEnemiesInRange[0].target);
         return;
       }
-      if (unit.level === 2 && enemyBaseTiles.length > 0) {
+      if (prioritizeEnemyBase && enemyBaseTiles.length > 0) {
         const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
         if (!onEnemyBase) {
-          const result = getPathToNearestTarget(enemyBaseTiles);
-          const veryCloseBy = result != null && result.path.length <= 3;
-          if (veryCloseBy) {
+          const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+          const result = getPathToNearestTarget(baseTargets);
+          const veryCloseByForSurvival = result != null && result.path.length <= 5;
+          if (veryCloseByForSurvival) {
             const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
               performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
               return;
             }
-            const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+            const fallback = farthestReachableTowardTargets(reachableTiles, baseTargets);
             if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
               performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
               return;
@@ -1844,17 +1886,17 @@ function main() {
       return;
     }
 
-    const turnsLeft = MAX_TURNS - turnCount;
     if (turnsLeft <= 10 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter) {
-        const result = getPathToNearestTarget(centerTiles);
+        const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
+        const result = getPathToNearestTarget(centerTargets);
         const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
         }
-        const fallback = farthestReachableTowardTargets(reachableTiles, centerTiles);
+        const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
         if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
           performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -1865,13 +1907,14 @@ function main() {
     if (unit.level === 1 && centerTiles.length > 0 && !hasMoved) {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter && reachableTiles.length > 0) {
-        const result = getPathToNearestTarget(centerTiles);
+        const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
+        const result = getPathToNearestTarget(centerTargets);
         const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
         }
-        const fallback = farthestReachableTowardTargets(reachableTiles, centerTiles);
+        const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
         if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
           performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -1879,10 +1922,11 @@ function main() {
       }
     }
 
-    if (unit.level === 2 && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+    if (prioritizeEnemyBase && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onEnemyBase) {
-        const result = getPathToNearestTarget(enemyBaseTiles);
+        const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+        const result = getPathToNearestTarget(baseTargets);
         const veryCloseBy = result != null && result.path.length <= 3;
         if (veryCloseBy) {
           const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
@@ -1890,7 +1934,7 @@ function main() {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
           }
-          const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+          const fallback = farthestReachableTowardTargets(reachableTiles, baseTargets);
           if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
             performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
             return;
@@ -1900,8 +1944,8 @@ function main() {
     }
 
     const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
-    const isLevel2Ranged = unit.level === 2 && (unit.range != null && unit.range >= 2);
-    if (isLevel2Ranged && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
+    const isRangedUnit = unit.level >= 2 && (unit.range != null && unit.range >= 2);
+    if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const kite = bestKiteTile();
       if (kite && (kite.gx !== unit.x || kite.gy !== unit.y)) {
         performMove(unit, kite.gx, kite.gy, () => setTimeout(runPlayingAI, 600));
@@ -1910,23 +1954,30 @@ function main() {
     }
 
     if (enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
-      const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-      function pathToAdjacentOf(enemy) {
+      const attackRange = unit.range != null ? unit.range : 1;
+      function pathToTileInAttackRangeOf(enemy, requireReachableInOneTurn) {
         let bestPath = null;
-        for (const [dx, dy] of dirs) {
-          const ax = enemy.x + dx;
-          const ay = enemy.y + dy;
-          if (!isWalkable(world, ax, ay)) continue;
-          const occupied = units.some((u) => u.hp > 0 && u.x === ax && u.y === ay);
-          if (occupied) continue;
-          const path = getPath(world, unit.x, unit.y, ax, ay, units, unit);
-          if (path && path.length > 1 && (!bestPath || path.length < bestPath.length)) bestPath = path;
+        for (let dy = -attackRange; dy <= attackRange; dy++) {
+          for (let dx = -attackRange; dx <= attackRange; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            if (Math.abs(dx) + Math.abs(dy) > attackRange) continue;
+            const tx = enemy.x + dx;
+            const ty = enemy.y + dy;
+            if (tx < 0 || tx >= world.w || ty < 0 || ty >= world.h) continue;
+            if (!isWalkable(world, tx, ty)) continue;
+            const occupied = units.some((u) => u.hp > 0 && u.x === tx && u.y === ty);
+            if (occupied) continue;
+            const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
+            const steps = path ? path.length - 1 : Infinity;
+            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unit.agi);
+            if (ok && (!bestPath || path.length < bestPath.length)) bestPath = path;
+          }
         }
         return bestPath;
       }
       const pathable = [];
       for (const e of enemies) {
-        const path = pathToAdjacentOf(e);
+        const path = pathToTileInAttackRangeOf(e, true);
         if (path) pathable.push({ enemy: e, path });
       }
       if (pathable.length > 0) {
@@ -1934,7 +1985,11 @@ function main() {
           (p) => p.enemy.maxHp > 0 && (p.enemy.hp / p.enemy.maxHp) < lowHpThreshold
         );
         const candidates = weakPathable.length > 0 ? weakPathable : pathable;
-        candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
+        if (weakPathable.length > 0) {
+          candidates.sort((a, b) => a.enemy.hp - b.enemy.hp || a.path.length - b.path.length);
+        } else {
+          candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
+        }
         const chosen = candidates[0];
         const toward = farthestReachableOnPath(chosen.path, unit.agi);
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
@@ -1942,18 +1997,37 @@ function main() {
           return;
         }
       }
+      if (pathable.length === 0) {
+        let bestPath = null;
+        let bestLen = Infinity;
+        for (const e of enemies) {
+          const path = pathToTileInAttackRangeOf(e, false);
+          if (path && path.length < bestLen) {
+            bestLen = path.length;
+            bestPath = path;
+          }
+        }
+        if (bestPath) {
+          const toward = farthestReachableOnPath(bestPath, unit.agi);
+          if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+            performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+            return;
+          }
+        }
+      }
     }
 
-    if (unit.level === 2 && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+    if (prioritizeEnemyBase && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onEnemyBase) {
-        const result = getPathToNearestTarget(enemyBaseTiles);
+        const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+        const result = getPathToNearestTarget(baseTargets);
         const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
         }
-        const fallback = farthestReachableTowardTargets(reachableTiles, enemyBaseTiles);
+        const fallback = farthestReachableTowardTargets(reachableTiles, baseTargets);
         if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
           performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
           return;
