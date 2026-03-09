@@ -672,7 +672,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     bottom: max(8px, env(safe-area-inset-bottom));
     left: max(8px, env(safe-area-inset-left));
     right: auto;
-    flex-direction: row;
     gap: 10px;
     padding: 8px 12px;
     align-items: center;
@@ -685,20 +684,21 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     min-width: 0;
     padding-bottom: 0;
     border-bottom: none;
-    border-right: 1px solid rgba(48, 54, 61, 0.8);
     padding-right: 10px;
     margin-right: 4px;
+    display: flex;
+    width: 100%;
   }
   #turn-menu .unit-info .unit-class-image {
-    height: 64px;
-    width: 48px;
+    height: 100px;
+    width: auto;
   }
   #turn-menu .unit-info .unit-name { font-size: 0.78rem; }
   #turn-menu .unit-info .unit-level-class { font-size: 0.62rem; }
   #turn-menu .unit-info .unit-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1px 8px;
-    font-size: 0.58rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px 12px;
+    font-size: 0.7rem;
   }
   #turn-menu .menu-actions { flex-wrap: nowrap; }
   #turn-menu .menu-label { font-size: 0.65rem; padding-right: 6px; margin-right: 2px; }
@@ -736,7 +736,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     height: auto;
     max-height: 38vh;
     width: auto;
-    max-width: 52%;
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
@@ -788,6 +787,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   #draft-placement-card .draft-class-card-stats {
     font-size: 0.55rem;
     gap: 1px 6px;
+    display: none;
   }
 
   #mode-select-overlay { padding: 16px; gap: 16px; }

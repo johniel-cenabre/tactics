@@ -501,6 +501,8 @@ function main() {
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 40;
   const ZOOM_SENSITIVITY = 0.08;
+  const PINCH_ZOOM_SENSITIVITY = 0.15;
+  let pinchLastDistance = null;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.45);
   scene.add(ambient);
@@ -2353,13 +2355,40 @@ function main() {
     return { clientX: e.clientX, clientY: e.clientY };
   }
 
+  function touchDistance(touches) {
+    if (!touches || touches.length < 2) return 0;
+    const a = touches[0], b = touches[1];
+    return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+  }
+
   function onTouchStart(e) {
+    if (e.touches.length === 2) {
+      pinchLastDistance = touchDistance(e.touches);
+      prevPointerNdc = null;
+      return;
+    }
     if (e.touches.length !== 1) return;
+    pinchLastDistance = null;
     const c = touchCoords(e);
     onPointerDown({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
   }
 
   function onTouchMove(e) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const d = touchDistance(e.touches);
+      if (pinchLastDistance != null && pinchLastDistance > 0) {
+        const delta = d - pinchLastDistance;
+        const dist = camera.position.distanceTo(cameraTarget);
+        const newDist = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, dist - delta * PINCH_ZOOM_SENSITIVITY));
+        zoomDir.copy(cameraTarget).sub(camera.position).normalize();
+        camera.position.copy(cameraTarget).sub(zoomDir.multiplyScalar(newDist));
+        camera.lookAt(cameraTarget);
+      }
+      pinchLastDistance = d;
+      return;
+    }
+    pinchLastDistance = null;
     if (e.touches.length !== 1) return;
     e.preventDefault();
     const c = touchCoords(e);
@@ -2367,6 +2396,8 @@ function main() {
   }
 
   function onTouchEnd(e) {
+    if (e.touches.length < 2) pinchLastDistance = null;
+    if (e.touches.length === 2) return;
     if (e.changedTouches.length === 0) return;
     const c = touchCoords(e);
     onPointerUp({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
