@@ -2754,7 +2754,7 @@ function main() {
       const HEAL_KEYS = new Set(['chakra']);
       const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl']);
       const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
-      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind']);
+      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'mantra', 'weaken', 'cripple', 'hex', 'blind']);
 
       function getEnemyTargets(skill) {
         const targets = getSkillTargetTiles(unit, skill, units);
