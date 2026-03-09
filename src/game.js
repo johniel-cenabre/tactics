@@ -2546,7 +2546,7 @@ function main() {
     const enemiesInRange = getEnemiesInRange(unit);
     const centerTiles = getCenterTiles();
     const enemyBaseTiles = getEnemyBaseTiles(unit.player);
-    const lowHpThreshold = 0.35;
+    const lowHpThreshold = 0.15;
     const SURVIVAL_ONLY_HP_RATIO = 0.03;
     const isLowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < lowHpThreshold;
     const isCriticalHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < SURVIVAL_ONLY_HP_RATIO;
@@ -2706,8 +2706,12 @@ function main() {
         return;
       }
       const turnsLeft = MAX_TURNS - turnCount;
+      if (turnsLeft <= 20) {
+        endTurn();
+        return;
+      }
       const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
-      const reachableCenterTiles = turnsLeft <= 20 && centerTiles.length > 0
+      const reachableCenterTiles = centerTiles.length > 0
         ? reachableTiles.filter((t) => centerKeys.has(t.gy * world.w + t.gx))
         : null;
       const retreatTileSet = (reachableCenterTiles != null && reachableCenterTiles.length > 0)
@@ -2733,8 +2737,8 @@ function main() {
       return;
     }
 
-    /** Only play for survival when HP is below 3% of max: just move to safest tile or end turn. */
-    if (isCriticalHp && !hasMoved && reachableTiles.length > 0) {
+    /** Only play for survival when HP is below 3% of max: just move to safest tile or end turn. Skip when ≤20 turns left. */
+    if (isCriticalHp && (MAX_TURNS - turnCount) > 20 && !hasMoved && reachableTiles.length > 0) {
       const safe = safestReachableTile();
       if (safe && (safe.gx !== unit.x || safe.gy !== unit.y)) {
         performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
@@ -2920,7 +2924,7 @@ function main() {
         performAttack(unit, lowHpEnemiesInRange[0].target);
         return;
       }
-      if (prioritizeEnemyBase && enemyBaseTiles.length > 0) {
+      if (turnsLeft > 20 && prioritizeEnemyBase && enemyBaseTiles.length > 0) {
         const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
         if (!onEnemyBase) {
           const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
@@ -2940,13 +2944,15 @@ function main() {
           }
         }
       }
-      const safe = safestReachableTile();
-      if (safe && manhattanDist(unit.x, unit.y, safe.gx, safe.gy) > 0) {
-        performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
+      if (turnsLeft > 20) {
+        const safe = safestReachableTile();
+        if (safe && manhattanDist(unit.x, unit.y, safe.gx, safe.gy) > 0) {
+          performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        endTurn();
         return;
       }
-      endTurn();
-      return;
     }
 
     if (turnsLeft <= 10 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
@@ -2985,14 +2991,22 @@ function main() {
       }
     }
 
-    if (prioritizeEnemyBase && enemyBaseTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
+    if (prioritizeEnemyBase && enemyBaseTiles.length > 0 && !hasMoved) {
       const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
-      if (!onEnemyBase) {
-        const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
-        const result = getPathToNearestTarget(baseTargets);
-        const veryCloseBy = result != null && result.path.length <= 3;
-        if (veryCloseBy) {
-          const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
+      if (!onEnemyBase && reachableTiles.length > 0) {
+        /** Level 2: only prioritize enemy base if there is no reachable low-HP enemy (we'll fight instead). */
+        const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+        const hasReachableLowHpEnemy = enemies.some((e) => {
+          if (e.maxHp <= 0 || (e.hp / e.maxHp) >= lowHpThreshold) return false;
+          return reachableTiles.some((t) => {
+            const fromHere = getEnemiesInRangeFrom(t.gx, t.gy);
+            return fromHere.some((x) => x.target.id === e.id);
+          });
+        });
+        if (!hasReachableLowHpEnemy) {
+          const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+          const result = getPathToNearestTarget(baseTargets);
+          const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
@@ -3642,10 +3656,11 @@ function main() {
     el.textContent = text;
     el.style.position = 'absolute';
     combatTextLayer.appendChild(el);
+    const yOffset = extraClass === 'skill-name' ? 1.7 : 1.2;
     const startTime = performance.now();
     function updatePosition() {
       _projVec.copy(worldPos(gx, gy));
-      _projVec.y += 1.2;
+      _projVec.y += yOffset;
       _projVec.project(camera);
       const w = container.clientWidth;
       const h = container.clientHeight;
