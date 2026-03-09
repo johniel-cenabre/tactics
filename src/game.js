@@ -2841,14 +2841,12 @@ function main() {
         }
       }
 
-      if (chosen && chosen.target === 'enemy' && !chosenTarget) {
-        /* skip: no valid target for enemy skill */
-      } else {
-        unit.mp -= chosen.cost;
-        hasAttacked = true;
-        const skillTarget = chosen.target === 'self' ? unit : chosenTarget;
-        executeSkillWithProjectile(unit, skillTarget, chosen, skillCtx, () => setTimeout(runPlayingAI, 600));
-        return;
+      if (chosen && chosenTarget) {
+          unit.mp -= chosen.cost;
+          hasAttacked = true;
+          const skillTarget = chosen.target === 'self' ? unit : chosenTarget;
+          executeSkillWithProjectile(unit, skillTarget, chosen, skillCtx, () => setTimeout(runPlayingAI, 600));
+          return;
       }
     }
 
