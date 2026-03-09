@@ -489,6 +489,9 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 }
 .combat-text-float.miss { color: #ffffff; }
 .combat-text-float.damage { color: #f85149; }
+.combat-text-float.levelup { font-size: 1rem; }
+.combat-text-float.level2 { color: #e68600; }
+.combat-text-float.level3 { color: #a855f7; }
 @keyframes combat-text-float {
   0% { opacity: 1; transform: translate(-50%, -100%); }
   100% { opacity: 0; transform: translate(-50%, -180%); }

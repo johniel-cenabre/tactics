@@ -5,8 +5,8 @@
 
 import * as THREE from 'three';
 
-const GRID_W = 37;
-const GRID_H = 27;
+const GRID_W = 27;
+const GRID_H = 17;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
@@ -294,6 +294,44 @@ function isWalkable(world, x, y) {
   if (x < 0 || x >= world.w || y < 0 || y >= world.h) return false;
   const t = world.type[y][x];
   if (t === TileType.TREE || t === TileType.WATER || t === TileType.ROCK) return false;
+  return true;
+}
+
+/** Tiles that the line from (ax,ay) to (bx,by) passes through (Bresenham). */
+function getTilesOnLine(ax, ay, bx, by) {
+  const cells = [];
+  let x = ax;
+  let y = ay;
+  const x1 = bx;
+  const y1 = by;
+  const dx = Math.abs(x1 - x);
+  const dy = Math.abs(y1 - y);
+  const sx = x < x1 ? 1 : -1;
+  const sy = y < y1 ? 1 : -1;
+  let err = dx - dy;
+  for (;;) {
+    cells.push({ x, y });
+    if (x === x1 && y === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+  return cells;
+}
+
+/** True if there is no obstacle blocking the line from (ax,ay) to (bx,by). */
+function hasLineOfSight(world, ax, ay, bx, by) {
+  const cells = getTilesOnLine(ax, ay, bx, by);
+  for (let i = 1; i < cells.length - 1; i++) {
+    const c = cells[i];
+    if (!isWalkable(world, c.x, c.y)) return false;
+  }
   return true;
 }
 
@@ -722,6 +760,40 @@ function main() {
     body.userData.unitId = unit.id;
     scene.add(body);
     unitMeshes.set(unit.id, body);
+    updateUnitMeshLowHp(body, unit.maxHp > 0 && (unit.hp / unit.maxHp) < 0.35);
+  }
+
+  const LOW_HP_VISUAL_THRESHOLD = 0.35;
+  function updateUnitMeshLowHp(mesh, isLowHp) {
+    if (!mesh) return;
+    if (isLowHp) {
+      mesh.rotation.x = 0.14;
+      mesh.scale.setScalar(0.96);
+      const u = mesh.userData;
+      if (u && u.leftArm && u.rightArm) {
+        u.leftArm.rotation.y = 0.2;
+        u.rightArm.rotation.y = 0.2;
+      }
+      mesh.traverse((child) => {
+        if (child.isMesh && child.material && child.material.color) {
+          if (!child.userData.originalColor) child.userData.originalColor = child.material.color.clone();
+          child.material.color.copy(child.userData.originalColor).multiplyScalar(0.82);
+        }
+      });
+    } else {
+      mesh.rotation.x = 0;
+      mesh.scale.setScalar(1);
+      const u = mesh.userData;
+      if (u && u.leftArm && u.rightArm) {
+        u.leftArm.rotation.y = 0;
+        u.rightArm.rotation.y = 0;
+      }
+      mesh.traverse((child) => {
+        if (child.isMesh && child.material && child.userData.originalColor) {
+          child.material.color.copy(child.userData.originalColor);
+        }
+      });
+    }
   }
 
   function levelUpUnit(unit) {
@@ -743,9 +815,34 @@ function main() {
     if (unit.range > 2) {
       unit.range = boostStat(unit.range);
     }
+    showLevelUpAnimation(unit);
+  }
+
+  function showLevelUpAnimation(unit) {
+    const mesh = unitMeshes.get(unit.id);
+    const levelClass = unit.level === 3 ? 'levelup level3' : unit.level === 2 ? 'levelup level2' : 'levelup';
+    showFloatingCombatText(unit.x, unit.y, 'LEVEL UP!', false, levelClass);
+    if (!mesh) return;
+    const startTime = performance.now();
+    function levelUpTick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / LEVEL_UP_ANIMATION_MS);
+      const s = t < 0.5 ? 1 + 0.35 * (t / 0.5) : 1 + 0.35 * (1 - (t - 0.5) / 0.5);
+      mesh.scale.setScalar(s);
+      if (t < 1) requestAnimationFrame(levelUpTick);
+      else mesh.scale.setScalar(1);
+    }
+    requestAnimationFrame(levelUpTick);
   }
 
   const CAMERA_TWEEN_MS = 430;
+  const MOVE_DURATION_MS = 320;
+  const ATTACK_ANIMATION_MS = 280;
+  const ATTACK_HIT_AT_T = 0.45;
+  const HIT_REACT_MS = 160;
+  const PROJECTILE_MS = 280;
+  const DEATH_ANIMATION_MS = 500;
+  const LEVEL_UP_ANIMATION_MS = 600;
   let cameraTweenActive = false;
   const _startTarget = new THREE.Vector3(); 
   const _startPosition = new THREE.Vector3();
@@ -1288,6 +1385,13 @@ function main() {
   }
 
   function updateTurnUI() {
+    if (phase === 'playing') {
+      units.forEach((u) => {
+        if (u.hp <= 0) return;
+        const mesh = unitMeshes.get(u.id);
+        if (mesh) updateUnitMeshLowHp(mesh, u.maxHp > 0 && (u.hp / u.maxHp) < LOW_HP_VISUAL_THRESHOLD);
+      });
+    }
     const turnEl = document.getElementById('turn-player');
     const menuLabel = document.getElementById('menu-label');
     const turnMenu = document.getElementById('turn-menu');
@@ -1453,7 +1557,13 @@ function main() {
     const range = unit.range != null ? unit.range : 1;
     selectedUnitId = uid;
     isAttackMode = true;
-    reachable = getTilesInManhattanRange(world, unit.x, unit.y, range);
+    const rawRange = getTilesInManhattanRange(world, unit.x, unit.y, range);
+    reachable = new Map();
+    rawRange.forEach((d, k) => {
+      const gx = k % world.w;
+      const gy = Math.floor(k / world.w);
+      if (hasLineOfSight(world, unit.x, unit.y, gx, gy)) reachable.set(k, d);
+    });
     showAttackRange(reachable);
     updateTurnUI();
   });
@@ -1582,7 +1692,9 @@ function main() {
     for (const o of units) {
       if (o.hp <= 0 || o.player === unit.player) continue;
       const d = manhattanDist(unit.x, unit.y, o.x, o.y);
-      if (d <= range && d > 0) enemies.push({ target: o, dist: d });
+      if (d <= range && d > 0 && hasLineOfSight(world, unit.x, unit.y, o.x, o.y)) {
+        enemies.push({ target: o, dist: d });
+      }
     }
     return enemies;
   }
@@ -1594,7 +1706,7 @@ function main() {
       for (const en of enemiesNear) {
         const r = en.range != null ? en.range : 1;
         const d = manhattanDist(en.x, en.y, ally.x, ally.y);
-        if (d <= r) return true;
+        if (d <= r && d > 0 && hasLineOfSight(world, en.x, en.y, ally.x, ally.y)) return true;
       }
     }
     return false;
@@ -1650,21 +1762,210 @@ function main() {
     const evasionMax = target.agi * 0.7 + target.luk * 0.3;
     const evasionRoll = Math.random() * evasionMax;
     const isHit = evasionRoll <= unit.dex;
+    let damage = 0;
     if (isHit) {
       const rawDamage = (unit.str * 0.7 + unit.dex * 0.1 + unit.int * 0.07) - (target.vit * 0.3 + target.luk * 0.1);
-      const damage = Math.max(1, Math.floor(rawDamage));
-      target.hp = Math.max(0, target.hp - damage);
-      showFloatingCombatText(target.x, target.y, String(damage), false);
-      if (target.hp <= 0) handleUnitDeath(target);
-    } else {
-      showFloatingCombatText(target.x, target.y, 'MISS', true);
+      damage = Math.max(1, Math.floor(rawDamage));
     }
     hasAttacked = true;
     selectedUnitId = null;
     isAttackMode = false;
     clearHighlights();
-    if (hasMoved) setTimeout(() => endTurn(), 400);
-    else setTimeout(() => updateTurnUI(), 400);
+
+    const mesh = unitMeshes.get(unit.id);
+    if (!mesh || !mesh.userData.rightArm) {
+      if (isHit) {
+        target.hp = Math.max(0, target.hp - damage);
+        showFloatingCombatText(target.x, target.y, String(damage), false);
+        if (target.hp <= 0) handleUnitDeath(target);
+      } else {
+        showFloatingCombatText(target.x, target.y, 'MISS', true);
+      }
+      if (hasMoved) setTimeout(() => endTurn(), 400);
+      else setTimeout(() => updateTurnUI(), 400);
+      return;
+    }
+
+    const startPos = worldPos(unit.x, unit.y).clone();
+    const endPos = worldPos(target.x, target.y).clone();
+    const lungePos = startPos.clone().lerp(endPos, 0.35);
+    const dx = endPos.x - startPos.x;
+    const dz = endPos.z - startPos.z;
+    if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
+
+    const attackRange = unit.range != null ? unit.range : 1;
+    const isRanged = attackRange > 2;
+
+    if (isRanged) {
+      const shaftGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.4, 6);
+      const projectileMat = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
+      const projectile = new THREE.Mesh(shaftGeo, projectileMat);
+      projectile.position.copy(startPos);
+      projectile.position.y += 0.6;
+      const dir = endPos.clone().sub(startPos).normalize();
+      projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      scene.add(projectile);
+      const targetBasePos = worldPos(target.x, target.y).clone();
+      const knockbackDir = endPos.clone().sub(startPos).normalize();
+      const knockbackAmount = 0.4;
+      let hitApplied = false;
+      let hitReactStartTime = null;
+      let targetDeathPending = false;
+      const projStart = projectile.position.clone();
+      const projEnd = endPos.clone();
+      projEnd.y += 0.6;
+      const startTime = performance.now();
+
+      function projectileTick(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / PROJECTILE_MS);
+        projectile.position.lerpVectors(projStart, projEnd, t);
+
+        if (!hitApplied && t >= 1) {
+          hitApplied = true;
+          scene.remove(projectile);
+          shaftGeo.dispose();
+          projectileMat.dispose();
+          if (isHit) {
+            target.hp = Math.max(0, target.hp - damage);
+            showFloatingCombatText(target.x, target.y, String(damage), false);
+            if (target.hp <= 0) targetDeathPending = true;
+            const targetMesh = unitMeshes.get(target.id);
+            if (targetMesh) hitReactStartTime = now;
+            else if (targetDeathPending) {
+              handleUnitDeath(target);
+              targetDeathPending = false;
+            }
+          } else {
+            showFloatingCombatText(target.x, target.y, 'MISS', true);
+          }
+        }
+
+        if (hitReactStartTime != null && isHit) {
+          const targetMesh = unitMeshes.get(target.id);
+          if (targetMesh) {
+            const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
+            const easeOut = 1 - tReact;
+            targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+            if (tReact >= 1) {
+              targetMesh.position.copy(targetBasePos);
+              hitReactStartTime = null;
+              if (targetDeathPending) {
+                handleUnitDeath(target);
+                targetDeathPending = false;
+              }
+            }
+          } else {
+            hitReactStartTime = null;
+            if (targetDeathPending) {
+              handleUnitDeath(target);
+              targetDeathPending = false;
+            }
+          }
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(projectileTick);
+        } else {
+          const hitReactDone = hitReactStartTime == null;
+          if (hitReactDone && targetDeathPending) {
+            handleUnitDeath(target);
+            targetDeathPending = false;
+          }
+          if (hitReactDone) {
+            if (hasMoved) setTimeout(() => endTurn(), 400);
+            else setTimeout(() => updateTurnUI(), 400);
+          } else {
+            requestAnimationFrame(projectileTick);
+          }
+        }
+      }
+      requestAnimationFrame(projectileTick);
+      return;
+    }
+
+    let hitApplied = false;
+    const startTime = performance.now();
+    const rightArm = mesh.userData.rightArm;
+    let hitReactStartTime = null;
+    let targetDeathPending = false;
+    const targetBasePos = worldPos(target.x, target.y).clone();
+    const knockbackDir = endPos.clone().sub(startPos).normalize();
+    const knockbackAmount = 0.4;
+
+    function attackTick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
+      const lungeOut = t <= 0.4 ? t / 0.4 : 1;
+      const lungeBack = t > 0.4 ? (t - 0.4) / 0.6 : 0;
+      if (t <= 0.4) {
+        mesh.position.lerpVectors(startPos, lungePos, lungeOut);
+      } else {
+        mesh.position.lerpVectors(lungePos, startPos, lungeBack);
+      }
+      const armSwing = t <= 0.35 ? t / 0.35 : t <= 0.7 ? (0.7 - t) / 0.35 : 0;
+      rightArm.rotation.y = -armSwing * 1.1;
+
+      if (!hitApplied && t >= ATTACK_HIT_AT_T) {
+        hitApplied = true;
+        if (isHit) {
+          target.hp = Math.max(0, target.hp - damage);
+          showFloatingCombatText(target.x, target.y, String(damage), false);
+          if (target.hp <= 0) targetDeathPending = true;
+          const targetMesh = unitMeshes.get(target.id);
+          if (targetMesh) {
+            hitReactStartTime = now;
+          } else if (targetDeathPending) {
+            handleUnitDeath(target);
+            targetDeathPending = false;
+          }
+        } else {
+          showFloatingCombatText(target.x, target.y, 'MISS', true);
+        }
+      }
+
+      if (hitReactStartTime != null && isHit) {
+        const targetMesh = unitMeshes.get(target.id);
+        if (targetMesh) {
+          const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
+          const easeOut = 1 - tReact;
+          targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+          if (tReact >= 1) {
+            targetMesh.position.copy(targetBasePos);
+            hitReactStartTime = null;
+            if (targetDeathPending) {
+              handleUnitDeath(target);
+              targetDeathPending = false;
+            }
+          }
+        } else {
+          hitReactStartTime = null;
+          if (targetDeathPending) {
+            handleUnitDeath(target);
+            targetDeathPending = false;
+          }
+        }
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(attackTick);
+      } else {
+        mesh.position.copy(startPos);
+        rightArm.rotation.y = 0;
+        const hitReactDone = hitReactStartTime == null;
+        if (hitReactDone && targetDeathPending) {
+          handleUnitDeath(target);
+          targetDeathPending = false;
+        }
+        if (hitReactDone) {
+          if (hasMoved) setTimeout(() => endTurn(), 400);
+          else setTimeout(() => updateTurnUI(), 400);
+        } else {
+          requestAnimationFrame(attackTick);
+        }
+      }
+    }
+    requestAnimationFrame(attackTick);
   }
 
   function runPlayingAI() {
@@ -1989,6 +2290,7 @@ function main() {
             const ty = enemy.y + dy;
             if (tx < 0 || tx >= world.w || ty < 0 || ty >= world.h) continue;
             if (!isWalkable(world, tx, ty)) continue;
+            if (!hasLineOfSight(world, tx, ty, enemy.x, enemy.y)) continue;
             const occupied = units.some((u) => u.hp > 0 && u.x === tx && u.y === ty);
             if (occupied) continue;
             const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
@@ -2501,7 +2803,7 @@ function main() {
   container.appendChild(combatTextLayer);
 
   const _projVec = new THREE.Vector3();
-  function showFloatingCombatText(gx, gy, text, isMiss) {
+  function showFloatingCombatText(gx, gy, text, isMiss, extraClass) {
     _projVec.copy(worldPos(gx, gy));
     _projVec.y += 1.2;
     _projVec.project(camera);
@@ -2510,7 +2812,7 @@ function main() {
     const x = (_projVec.x * 0.5 + 0.5) * w;
     const y = (1 - (_projVec.y * 0.5 + 0.5)) * h;
     const el = document.createElement('div');
-    el.className = 'combat-text-float ' + (isMiss ? 'miss' : 'damage');
+    el.className = 'combat-text-float ' + (isMiss ? 'miss' : 'damage') + (extraClass ? ' ' + extraClass : '');
     el.textContent = text;
     el.style.left = x + 'px';
     el.style.top = y + 'px';
@@ -2520,15 +2822,28 @@ function main() {
 
   function handleUnitDeath(unit) {
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
-    setTimeout(() => {
-      const mesh = unitMeshes.get(unit.id);
-      if (mesh) {
-        scene.remove(mesh);
-        unitMeshes.delete(unit.id);
-      }
+    const mesh = unitMeshes.get(unit.id);
+    if (!mesh) {
       updateUnitTileBorders();
       checkGameOver();
-    }, 1600);
+      return;
+    }
+    const startTime = performance.now();
+    function deathTick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / DEATH_ANIMATION_MS);
+      const easeIn = t * t;
+      mesh.rotation.x = easeIn * Math.PI * 0.5;
+      if (t < 1) {
+        requestAnimationFrame(deathTick);
+      } else {
+        scene.remove(mesh);
+        unitMeshes.delete(unit.id);
+        updateUnitTileBorders();
+        checkGameOver();
+      }
+    }
+    requestAnimationFrame(deathTick);
   }
 
   function checkGameOver() {
