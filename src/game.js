@@ -32,8 +32,8 @@ const CLASSES = {
   monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 9,  int: 10, range: 1 },
   ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 11, int: 5,  range: 1 },
   lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
-  hunter:  { name: 'Hunter',   gender: 'female', hp: 19, maxHp: 19, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
-  assassin:{ name: 'Assassin', gender: 'female', hp: 18, maxHp: 18, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
+  hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
+  assassin:{ name: 'Assassin', gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
   berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
   witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
   ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
@@ -72,21 +72,219 @@ const CLASS_IMAGES = {
 };
 
 const CLASS_SKILLS = {
+  knight: [
+    { name: 'Shield Wall', description: 'Gain +2 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'shieldWall' },
+    { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
+  ],
+  mage: [
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 4, target: 'enemy', range: 4, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'freeze', type: 'spell' },
+  ],
+  monk: [
+    { name: 'Mantra', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'mantra' },
+    { name: 'Chakra', description: 'Restore INT-based HP to self.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'chakra' },
+  ],
+  ghoul: [
+    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
+    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
+  ],
+  lancer: [
+    { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 3 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
+    { name: 'Pierce', description: 'Deal STR-based damage through the defense.', cost: 6, target: 'enemy', range: 2, level: 3, effectKey: 'pierce' },
+  ],
+  hunter: [
+    { name: 'Focus', description: 'Gain +2 DEX for 2 turns.', cost: 4, target: 'self', range: 6, level: 2, effectKey: 'focus' },
+    { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 3, effectKey: 'snipe' },
+  ],
+  assassin: [
+    { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
+    { name: 'Poison', description: 'Reduce target\'s VIT by 3 for 3 turns.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'poison' },
+  ],
+  berserker: [
+    { name: 'Berserk', description: 'Deal STR-based damage for -2 HP.', cost: 0, target: 'enemy', range: 1, level: 2, effectKey: 'berserk' },
+    { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 2 turns.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
+  ],
+  witch: [
+    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 3, level: 1, effectKey: 'hex', type: 'spell' },
+    { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'drain', type: 'spell' },
+  ],
   ninja: [
-    {
-      name: 'Blind',
-      description: 'Steals 1 dex from an enemy unit.',
-      cost: 6,
-      target: 'enemy',
-      range: 1,
-      level: 2,
-      effect: (unit, target) => blind({ unit, target, mp: 6, level: 2 }),
-    }, 
-    {
-
-    }
+    { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'shuriken' },
+    { name: 'Blind', description: 'Steal 2 DEX from an enemy.', cost: 8, target: 'enemy', range: 1, level: 3, effectKey: 'blind' },
+  ],
+  samurai: [
+    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
+    { name: 'Strike', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'strike' },
+  ],
+  werewolf: [
+    { name: 'Bite', description: 'Deal STR+AGI-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'bite' },
+    { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 2 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
   ],
 };
+
+function getEffectiveStat(unit, key) {
+  const base = unit[key] != null ? unit[key] : 0;
+  const buff = unit.tempBuff && unit.tempBuff[key] != null ? unit.tempBuff[key] : 0;
+  const debuff = unit.tempDebuff && unit.tempDebuff[key] != null ? unit.tempDebuff[key] : 0;
+  return base + buff - debuff;
+}
+
+function applySkillEffect(effectKey, unit, target, ctx) {
+  const u = unit;
+  const t = target;
+  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', poison: 'Poison', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', strike: 'Strike', bite: 'Bite', howl: 'Howl' };
+  const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
+  const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  const targetDesc = t ? `${t.name} (${t.class}, P${t.player})` : 'self';
+  console.log('[SKILL]', `${u.name} (${u.class}, P${u.player})`, 'uses', skillName, '→', targetDesc, `| MP ${u.mp}`);
+  const applyDamage = (victim, d, isHeal, isSpell) => {
+    if (isHeal) {
+      victim.hp = Math.min(victim.maxHp, victim.hp + d);
+      if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, `+${d}`, false);
+    } else {
+      const isSelfDamage = victim === u;
+      let isHit = true;
+      if (!isSelfDamage && !isSpell) {
+        const evasionMax = getEffectiveStat(victim, 'agi') * 0.7 + getEffectiveStat(victim, 'luk') * 0.3;
+        const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
+        isHit = evasionRoll <= getEffectiveStat(u, 'dex');
+      }
+      if (isHit) {
+        victim.hp = Math.max(0, victim.hp - d);
+        if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, String(d), false);
+        if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(victim);
+        if (victim.hp <= 0 && ctx.handleUnitDeath) ctx.handleUnitDeath(victim);
+      } else {
+        if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, 'MISS', true);
+      }
+
+      return isHit;
+    }
+  };
+  const showStatChange = (gx, gy, text, isBuff) => {
+    if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(gx, gy, text, false, isBuff ? 'buff' : 'debuff');
+  };
+  switch (effectKey) {
+    case 'shieldWall':
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.vit = 2; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, '+2 VIT', true); break;
+    case 'dominate':
+      if (t) {
+        t.str = Math.max(1, (t.str || 0) - 1); u.str = (u.str || 0) + 1;
+        showStatChange(t.x, t.y, '-1 STR', false); showStatChange(u.x, u.y, '+1 STR', true);
+      } break;
+    case 'arcaneBolt': {
+      if (!t) break;
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 1.5) - (getEffectiveStat(t, 'int') * 1.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      applyDamage(t, d, false, true);
+      break;
+    }
+    case 'freeze': if (t) {
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 1;
+      showStatChange(t.x, t.y, '-10 AGI', false);
+    } break;
+    case 'mantra': if (t) {
+      t.luk = Math.max(1, (t.luk || 0) - 2); u.luk = (u.luk || 0) + 2;
+      showStatChange(t.x, t.y, '-2 LUK', false); showStatChange(u.x, u.y, '+2 LUK', true);
+    } break;
+    case 'chakra':
+      u.hp = Math.min(u.maxHp, u.hp + getEffectiveStat(u, 'int'));
+      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.6)), true);
+      break;
+    case 'weaken': if (t) {
+      t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
+      showStatChange(t.x, t.y, '-1 VIT', false); showStatChange(u.x, u.y, '+1 VIT', true);
+    } break;
+    case 'feast': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const isHit = applyDamage(t, d, false);
+      if (isHit) {
+        applyDamage(u, d, true);
+      }
+      break;
+    }
+    case 'impale': if (t) {
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 2; t.tempDebuff.duration = 4;
+      showStatChange(t.x, t.y, '-2 AGI', false);
+    } break;
+    case 'pierce': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.6));
+      applyDamage(t, d, false);
+      break;
+    }
+    case 'focus':
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = 2; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, '+2 DEX', true); break;
+    case 'snipe': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      applyDamage(t, d, false);
+      break;
+    }
+    case 'poison': if (t) {
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.vit = 3; t.tempDebuff.duration = 4;
+      showStatChange(t.x, t.y, '-3 VIT', false);
+    } break;
+    case 'cripple': if (t) {
+      t.agi = Math.max(1, (t.agi || 0) - 1); u.agi = (u.agi || 0) + 1;
+      showStatChange(t.x, t.y, '-1 AGI', false); showStatChange(u.x, u.y, '+1 AGI', true);
+    } break;
+    case 'berserk':
+      u.hp = Math.max(0, u.hp - 2);
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)), false);
+      applyDamage(u, 2, false);
+      break;
+    case 'bloodlust': {
+      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.5));
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true); break;
+    }
+    case 'hex': if (t) {
+      t.int = Math.max(1, (t.int || 0) - 1); u.int = (u.int || 0) + 1;
+      showStatChange(t.x, t.y, '-1 INT', false); showStatChange(u.x, u.y, '+1 INT', true);
+    } break;
+    case 'drain': {
+      if (!t) break;
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.1)));
+      applyDamage(t, d, false, true);
+      applyDamage(u, d, true);
+      break;
+    }
+    case 'shuriken': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.5) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      applyDamage(t, d, false);
+      break;
+    }
+    case 'blind': if (t) {
+      t.dex = Math.max(1, (t.dex || 0) - 2); u.dex = (u.dex || 0) + 2;
+      showStatChange(t.x, t.y, '-2 DEX', false); showStatChange(u.x, u.y, '+2 DEX', true);
+    } break;
+    case 'iaido':
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = 1; u.tempBuff.dex = 1; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, '+1 STR, +1 DEX', true); break;
+    case 'strike': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((u.str || 0) + (u.dex || 0) * 0.3));
+      applyDamage(t, d, false);
+      break;
+    }
+    case 'bite': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.4 + getEffectiveStat(u, 'agi') * 0.3) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      applyDamage(t, d, false);
+      break;
+    }
+    case 'howl':
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = 2; u.tempBuff.agi = 2; u.tempBuff.duration = 2;
+      showStatChange(u.x, u.y, '+2 STR, +2 AGI', true); break;
+    default: break;
+  }
+  if (ctx.updateTurnUI) ctx.updateTurnUI();
+}
 
 function createWorld() {
   const w = GRID_W;
@@ -774,9 +972,36 @@ function main() {
     body.position.copy(worldPos(unit.x, unit.y));
     body.castShadow = true;
     body.userData.unitId = unit.id;
+
+    const legH = 0.28;
+    const torsoH = 0.28;
+    const torsoD = 0.12;
+    const slashW = 0.18;
+    const slashH = 0.04;
+    const slashGeo = new THREE.PlaneGeometry(slashW, slashH);
+    const slashMat = new THREE.MeshBasicMaterial({
+      color: 0x5c2018,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: false,
+    });
+    const slashMark = new THREE.Mesh(slashGeo, slashMat);
+    slashMark.position.set(0, legH + torsoH / 2, torsoD / 2 + 0.02);
+    slashMark.rotation.x = -Math.PI / 2;
+    slashMark.rotation.z = Math.PI / 4;
+    slashMark.visible = unit.maxHp > 0 && unit.hp < unit.maxHp && unit.hp > 0;
+    body.add(slashMark);
+    body.userData.slashMark = slashMark;
+
     scene.add(body);
     unitMeshes.set(unit.id, body);
     updateUnitMeshLowHp(body, unit.maxHp > 0 && (unit.hp / unit.maxHp) < 0.35);
+  }
+
+  function updateUnitSlashVisibility(unit) {
+    const mesh = unitMeshes.get(unit.id);
+    if (!mesh || !mesh.userData.slashMark) return;
+    mesh.userData.slashMark.visible = unit.maxHp > 0 && unit.hp < unit.maxHp && unit.hp > 0;
   }
 
   const LOW_HP_VISUAL_THRESHOLD = 0.35;
@@ -831,6 +1056,7 @@ function main() {
     if (unit.range > 2) {
       unit.range = boostStat(unit.range);
     }
+    console.log('[LEVEL UP]', `${unit.name} (${unit.class}, P${unit.player})`, `→ Lv.${unit.level}`, `| HP ${unit.hp}/${unit.maxHp} MP ${unit.mp}/${unit.maxMp} STR ${unit.str} VIT ${unit.vit}`);
     showLevelUpAnimation(unit);
   }
 
@@ -857,6 +1083,7 @@ function main() {
   const ATTACK_HIT_AT_T = 0.45;
   const HIT_REACT_MS = 160;
   const PROJECTILE_MS = 280;
+  const SPELL_EXPLOSION_MS = 350;
   const DEATH_ANIMATION_MS = 500;
   const LEVEL_UP_ANIMATION_MS = 600;
   let cameraTweenActive = false;
@@ -937,12 +1164,12 @@ function main() {
     statsEl.innerHTML = [
       ['HP', `${unit.hp}/${unit.maxHp}`],
       ['MP', `${unit.mp}/${unit.maxMp}`],
-      ['STR', unit.str],
-      ['AGI', unit.agi],
-      ['VIT', unit.vit],
-      ['DEX', unit.dex],
-      ['LUK', unit.luk],
-      ['INT', unit.int],
+      ['STR', getEffectiveStat(unit, 'str')],
+      ['AGI', getEffectiveStat(unit, 'agi')],
+      ['VIT', getEffectiveStat(unit, 'vit')],
+      ['DEX', getEffectiveStat(unit, 'dex')],
+      ['LUK', getEffectiveStat(unit, 'luk')],
+      ['INT', getEffectiveStat(unit, 'int')],
     ].map(([label, val]) => `<span class="stat-label">${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
     const lowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < 0.3;
     card.classList.toggle('low-hp', lowHp);
@@ -957,6 +1184,8 @@ function main() {
   }
   let isUnitMoving = false;
   let isAttackMode = false;
+  let isSkillMode = false;
+  let selectedSkill = null;
   let hasMoved = false;
   let hasAttacked = false;
   let isChoosingFacing = false;
@@ -1446,12 +1675,12 @@ function main() {
         unitStatsEl.innerHTML = [
           ['HP', `${u.hp}/${u.maxHp}`],
           ['MP', `${u.mp}/${u.maxMp}`],
-          ['STR', u.str],
-          ['AGI', u.agi],
-          ['VIT', u.vit],
-          ['DEX', u.dex],
-          ['LUK', u.luk],
-          ['INT', u.int],
+          ['STR', getEffectiveStat(u, 'str')],
+          ['AGI', getEffectiveStat(u, 'agi')],
+          ['VIT', getEffectiveStat(u, 'vit')],
+          ['DEX', getEffectiveStat(u, 'dex')],
+          ['LUK', getEffectiveStat(u, 'luk')],
+          ['INT', getEffectiveStat(u, 'int')],
         ].map(([label, val]) => `<span>${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
       } else {
         turnMenu.classList.remove('low-hp', 'level-2', 'level-3');
@@ -1497,7 +1726,11 @@ function main() {
       turnEl.textContent = 'Click on map to choose facing direction';
     } else if (phase === 'playing') {
       btnAttack.disabled = hasAttacked;
-      btnSkill.disabled = false;
+      const currentUid = initiativeOrder.length ? initiativeOrder[currentTurnIndex] : null;
+      const currentUnit = currentUid ? units.find((u) => u.id === currentUid && u.hp > 0) : null;
+      const isHumanTurn = gameMode !== 'cvcpu' && (gameMode !== 'pvcpu' || currentPlayer === 1);
+      const availableSkills = isHumanTurn && currentUnit && !hasAttacked ? getAvailableSkills(currentUnit) : [];
+      btnSkill.disabled = hasAttacked || !isHumanTurn || availableSkills.length === 0;
       btnSpell.disabled = false;
       if (btnEnd) btnEnd.disabled = false;
     }
@@ -1522,6 +1755,8 @@ function main() {
   function endTurn() {
     hideUnitPreviewCard();
     isAttackMode = false;
+    isSkillMode = false;
+    selectedSkill = null;
     isChoosingFacing = false;
     allowedFacingAngles = [];
     hideFacingArrow();
@@ -1530,6 +1765,14 @@ function main() {
     if (n === 0) return;
     const currentUid = initiativeOrder[currentTurnIndex];
     const currentUnit = units.find((u) => u.id === currentUid);
+    if (currentUnit && currentUnit.tempDebuff) currentUnit.tempDebuff.duration--;
+    if (currentUnit && currentUnit.tempDebuff && currentUnit.tempDebuff.duration <= 0) currentUnit.tempDebuff = undefined;
+    if (currentUnit && currentUnit.tempBuff) currentUnit.tempBuff.duration--;
+    if (currentUnit && currentUnit.tempBuff && currentUnit.tempBuff.duration <= 0) currentUnit.tempBuff = undefined;
+    if (currentUnit && currentUnit.hp > 0) {
+      const regen = Math.ceil(getEffectiveStat(currentUnit, 'int') * 0.15);
+      currentUnit.mp = Math.min(currentUnit.maxMp, currentUnit.mp + regen);
+    }
     if (currentUnit && currentUnit.hp > 0) {
       const gx = currentUnit.x;
       const gy = currentUnit.y;
@@ -1557,7 +1800,6 @@ function main() {
     hasMoved = false;
     hasAttacked = false;
     selectedUnitId = initiativeOrder[currentTurnIndex];
-    selectedUnitId = initiativeOrder[currentTurnIndex];
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer();
@@ -1584,9 +1826,74 @@ function main() {
     showAttackRange(reachable);
     updateTurnUI();
   });
-  document.getElementById('btn-skill').addEventListener('click', () => {
-    if (isUnitMoving) return;
-    // TODO: skill mode
+  document.getElementById('btn-skill').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isUnitMoving || hasAttacked) return;
+    const uid = initiativeOrder[currentTurnIndex];
+    const unit = uid ? units.find((u) => u.id === uid && u.hp > 0) : null;
+    if (!unit || unit.player !== currentPlayer) return;
+    let overlay = document.getElementById('skill-list-overlay');
+    const btnSkill = document.getElementById('btn-skill');
+    if (!btnSkill) return;
+    if (overlay && overlay.style.display === 'block') {
+      overlay.style.display = 'none';
+      return;
+    }
+    const available = getAvailableSkills(unit);
+    const rect = btnSkill.getBoundingClientRect();
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'skill-list-overlay';
+      overlay.className = 'skill-list-overlay';
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(overlay);
+    }
+    overlay.style.left = `${rect.left}px`;
+    overlay.style.top = `${rect.top - 4}px`;
+    overlay.style.transform = 'translateY(-100%)';
+    overlay.style.right = 'auto';
+    overlay.style.bottom = 'auto';
+    overlay.style.display = 'none';
+    if (available.length === 0) {
+      overlay.innerHTML = '<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>';
+    } else {
+      overlay.innerHTML = available.map((skill, i) => {
+        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost ? 'disabled' : ''}>
+          <span class="skill-name">${skill.name}</span> <span class="skill-meta">${skill.cost} MP · Lv.${skill.level}</span><br/>
+          <span class="skill-meta">${skill.description}</span>
+        </button>`;
+      }).join('');
+      overlay.querySelectorAll('.skill-option').forEach((btn, i) => {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const skill = available[i];
+          selectedSkill = skill;
+          overlay.style.display = 'none';
+          overlay.setAttribute('aria-hidden', 'true');
+          isSkillMode = true;
+          isAttackMode = false;
+          showSkillTargetTiles(unit, skill);
+          updateTurnUI();
+        });
+      });
+    }
+    requestAnimationFrame(() => {
+      overlay.style.display = 'block';
+      overlay.style.visibility = 'visible';
+      overlay.setAttribute('aria-hidden', 'false');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    const overlay = document.getElementById('skill-list-overlay');
+    const btnSkill = document.getElementById('btn-skill');
+    const wrap = document.querySelector('.skill-wrap');
+    if (!overlay || overlay.style.display !== 'block') return;
+    if (wrap && wrap.contains(e.target)) return;
+    if (overlay.contains(e.target)) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
   });
   document.getElementById('btn-spell').addEventListener('click', () => {
     if (isUnitMoving) return;
@@ -1674,20 +1981,20 @@ function main() {
     const available = CLASS_KEYS.filter((k) => availableClasses.has(k));
     if (available.length === 0) return null;
     const statKeys = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
-    let bestKey = available[0];
-    let bestVariance = Infinity;
-    for (const key of available) {
+    function variance(key) {
       const c = CLASSES[key];
-      if (!c) continue;
+      if (!c) return Infinity;
       const values = statKeys.map((s) => c[s] ?? 0);
       const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
-      if (variance < bestVariance) {
-        bestVariance = variance;
-        bestKey = key;
-      }
+      return values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
     }
-    return bestKey;
+    const sorted = [...available].sort((a, b) => {
+      const hpA = CLASSES[a]?.hp ?? 0;
+      const hpB = CLASSES[b]?.hp ?? 0;
+      if (hpB !== hpA) return hpB - hpA;
+      return variance(a) - variance(b);
+    });
+    return sorted[0] ?? null;
   }
 
   function runDraftAI() {
@@ -1757,6 +2064,8 @@ function main() {
   }
 
   function performMove(unit, toGx, toGy, onDone) {
+    const fromGx = unit.x;
+    const fromGy = unit.y;
     const path = getPath(world, unit.x, unit.y, toGx, toGy, units, unit);
     if (!path || path.length <= 1) {
       if (onDone) onDone();
@@ -1778,6 +2087,7 @@ function main() {
         updateUnitTileBorders();
         reachable = new Map();
         hasMoved = true;
+        console.log('[MOVE]', `${unit.name} (${unit.class}, P${unit.player})`, `${fromGx},${fromGy} → ${unit.x},${unit.y}`, `(Lv.${unit.level})`);
         if (onDone) onDone();
         return;
       }
@@ -1803,12 +2113,12 @@ function main() {
   }
 
   function performAttack(unit, target) {
-    const evasionMax = target.agi * 0.7 + target.luk * 0.3;
-    const evasionRoll = Math.random() * evasionMax;
-    const isHit = evasionRoll <= unit.dex;
+    const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
+    const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
+    const isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
     let damage = 0;
     if (isHit) {
-      const rawDamage = (unit.str * 0.7 + unit.dex * 0.1 + unit.int * 0.07) - (target.vit * 0.3 + target.luk * 0.1);
+      const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.1 + getEffectiveStat(unit, 'int') * 0.07) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.1);
       damage = Math.max(1, Math.floor(rawDamage));
     }
     hasAttacked = true;
@@ -1816,11 +2126,14 @@ function main() {
     isAttackMode = false;
     clearHighlights();
 
+    console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, isHit ? `${damage} dmg` : 'MISS', `| ${target.name} HP ${target.hp} → ${Math.max(0, target.hp - damage)}/${target.maxHp}`);
+
     const mesh = unitMeshes.get(unit.id);
     if (!mesh || !mesh.userData.rightArm) {
       if (isHit) {
         target.hp = Math.max(0, target.hp - damage);
         showFloatingCombatText(target.x, target.y, String(damage), false);
+        updateUnitSlashVisibility(target);
         if (target.hp <= 0) handleUnitDeath(target);
       } else {
         showFloatingCombatText(target.x, target.y, 'MISS', true);
@@ -1880,6 +2193,7 @@ function main() {
               handleUnitDeath(target);
               targetDeathPending = false;
             }
+            updateUnitSlashVisibility(target);
           } else {
             showFloatingCombatText(target.x, target.y, 'MISS', true);
           }
@@ -1956,6 +2270,7 @@ function main() {
           target.hp = Math.max(0, target.hp - damage);
           showFloatingCombatText(target.x, target.y, String(damage), false);
           if (target.hp <= 0) targetDeathPending = true;
+          updateUnitSlashVisibility(target);
           const targetMesh = unitMeshes.get(target.id);
           if (targetMesh) {
             hitReactStartTime = now;
@@ -2012,6 +2327,206 @@ function main() {
     requestAnimationFrame(attackTick);
   }
 
+  function showSpellExplosion(gx, gy) {
+    const pos = worldPos(gx, gy);
+    pos.y += 0.4;
+    const geo = new THREE.SphereGeometry(0.1, 12, 12);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x8844ff,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(pos);
+    scene.add(mesh);
+    const startTime = performance.now();
+    function tick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / SPELL_EXPLOSION_MS);
+      const scale = t * (2 - t);
+      mesh.scale.setScalar(scale * 4.5);
+      mat.opacity = 0.9 * (1 - t);
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        scene.remove(mesh);
+        geo.dispose();
+        mat.dispose();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function executeSkillWithProjectile(unit, target, skill, ctx, onDone) {
+    if (skill.target === 'enemy' && target == null) {
+      if (ctx.updateTurnUI) ctx.updateTurnUI();
+      if (onDone) onDone();
+      return;
+    }
+    const range = skill.range ?? 0;
+    const useProjectile = range > 2 && target != null && (target.x !== unit.x || target.y !== unit.y);
+    const useMeleeAnimation = !useProjectile && target != null && (target.x !== unit.x || target.y !== unit.y);
+    if (!useProjectile && !useMeleeAnimation) {
+      applySkillEffect(skill.effectKey, unit, target, ctx);
+      if (ctx.updateTurnUI) ctx.updateTurnUI();
+      if (onDone) onDone();
+      return;
+    }
+    if (useMeleeAnimation) {
+      const mesh = unitMeshes.get(unit.id);
+      if (!mesh || !mesh.userData.rightArm) {
+        applySkillEffect(skill.effectKey, unit, target, ctx);
+        if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
+        if (ctx.updateTurnUI) ctx.updateTurnUI();
+        if (onDone) onDone();
+        return;
+      }
+      const startPos = worldPos(unit.x, unit.y).clone();
+      const endPos = worldPos(target.x, target.y).clone();
+      const lungePos = startPos.clone().lerp(endPos, 0.35);
+      const dx = endPos.x - startPos.x;
+      const dz = endPos.z - startPos.z;
+      if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
+      const targetBasePos = worldPos(target.x, target.y).clone();
+      const knockbackDir = endPos.clone().sub(startPos).normalize();
+      const knockbackAmount = 0.4;
+      const rightArm = mesh.userData.rightArm;
+      let hitApplied = false;
+      let hitReactStartTime = null;
+      let targetDeathPending = false;
+      const startTime = performance.now();
+      function meleeSkillTick(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
+        const lungeOut = t <= 0.4 ? t / 0.4 : 1;
+        const lungeBack = t > 0.4 ? (t - 0.4) / 0.6 : 0;
+        if (t <= 0.4) {
+          mesh.position.lerpVectors(startPos, lungePos, lungeOut);
+        } else {
+          mesh.position.lerpVectors(lungePos, startPos, lungeBack);
+        }
+        const armSwing = t <= 0.35 ? t / 0.35 : t <= 0.7 ? (0.7 - t) / 0.35 : 0;
+        rightArm.rotation.y = -armSwing * 1.1;
+        if (!hitApplied && t >= ATTACK_HIT_AT_T) {
+          hitApplied = true;
+          applySkillEffect(skill.effectKey, unit, target, ctx);
+          if (target.hp <= 0) targetDeathPending = true;
+          if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
+          const targetMesh = unitMeshes.get(target.id);
+          if (targetMesh) hitReactStartTime = now;
+          else if (targetDeathPending) {
+            handleUnitDeath(target);
+            targetDeathPending = false;
+          }
+        }
+        if (hitReactStartTime != null) {
+          const targetMesh = unitMeshes.get(target.id);
+          if (targetMesh) {
+            const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
+            const easeOut = 1 - tReact;
+            targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+            if (tReact >= 1) {
+              targetMesh.position.copy(targetBasePos);
+              hitReactStartTime = null;
+              if (targetDeathPending) {
+                handleUnitDeath(target);
+                targetDeathPending = false;
+              }
+            }
+          } else {
+            hitReactStartTime = null;
+            if (targetDeathPending) {
+              handleUnitDeath(target);
+              targetDeathPending = false;
+            }
+          }
+        }
+        if (t < 1) {
+          requestAnimationFrame(meleeSkillTick);
+        } else {
+          mesh.position.copy(startPos);
+          rightArm.rotation.y = 0;
+          if (hitReactStartTime == null && targetDeathPending) {
+            handleUnitDeath(target);
+            targetDeathPending = false;
+          }
+          if (hitReactStartTime == null) {
+            if (ctx.updateTurnUI) ctx.updateTurnUI();
+            if (onDone) onDone();
+          } else {
+            requestAnimationFrame(meleeSkillTick);
+          }
+        }
+      }
+      requestAnimationFrame(meleeSkillTick);
+      return;
+    }
+    const startPos = worldPos(unit.x, unit.y).clone();
+    const endPos = worldPos(target.x, target.y).clone();
+    const shaftGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.4, 6);
+    const projectileMat = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
+    const projectile = new THREE.Mesh(shaftGeo, projectileMat);
+    projectile.position.copy(startPos);
+    projectile.position.y += 0.6;
+    const dir = endPos.clone().sub(startPos).normalize();
+    projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    scene.add(projectile);
+    const projStart = projectile.position.clone();
+    const projEnd = endPos.clone();
+    projEnd.y += 0.6;
+    const startTime = performance.now();
+    const targetBasePos = worldPos(target.x, target.y).clone();
+    const knockbackDir = endPos.clone().sub(startPos).normalize();
+    const knockbackAmount = 0.4;
+    let hitApplied = false;
+    let hitReactStartTime = null;
+
+    function projectileTick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / PROJECTILE_MS);
+      projectile.position.lerpVectors(projStart, projEnd, t);
+
+      if (!hitApplied && t >= 1) {
+        hitApplied = true;
+        scene.remove(projectile);
+        shaftGeo.dispose();
+        projectileMat.dispose();
+        if (skill.type === 'spell') showSpellExplosion(target.x, target.y);
+        applySkillEffect(skill.effectKey, unit, target, ctx);
+        const targetMesh = unitMeshes.get(target.id);
+        if (targetMesh && target.hp > 0) hitReactStartTime = now;
+        if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
+      }
+
+      if (hitReactStartTime != null) {
+        const targetMesh = unitMeshes.get(target.id);
+        if (targetMesh) {
+          const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
+          const easeOut = 1 - tReact;
+          targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+          if (tReact >= 1) {
+            targetMesh.position.copy(targetBasePos);
+            hitReactStartTime = null;
+          }
+        } else {
+          hitReactStartTime = null;
+        }
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(projectileTick);
+      } else {
+        if (hitReactStartTime == null) {
+          if (ctx.updateTurnUI) ctx.updateTurnUI();
+          if (onDone) onDone();
+        } else {
+          requestAnimationFrame(projectileTick);
+        }
+      }
+    }
+    requestAnimationFrame(projectileTick);
+  }
+
   function runPlayingAI() {
     if (phase !== 'playing' || !isCPUPlayer(currentPlayer) || isUnitMoving || initiativeOrder.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
@@ -2032,12 +2547,19 @@ function main() {
     const centerTiles = getCenterTiles();
     const enemyBaseTiles = getEnemyBaseTiles(unit.player);
     const lowHpThreshold = 0.35;
+    const SURVIVAL_ONLY_HP_RATIO = 0.03;
     const isLowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < lowHpThreshold;
+    const isCriticalHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < SURVIVAL_ONLY_HP_RATIO;
     /** Level 2 only: go to enemy base to level up. Level 3 units prioritize fighting/surviving. */
     const prioritizeEnemyBase = unit.level === 2;
     const occupiedByOther = (t) => units.some((u) => u.hp > 0 && u.x === t.gx && u.y === t.gy && u.id !== unit.id);
     const unoccupiedCenterTiles = centerTiles.filter((t) => !occupiedByOther(t));
     const unoccupiedEnemyBaseTiles = enemyBaseTiles.filter((t) => !occupiedByOther(t));
+
+    /** Max range for movement: attack range or best usable enemy-targeting skill range (if enough MP). */
+    const availableForMove = getAvailableSkills(unit).filter((s) => unit.mp >= s.cost && s.target === 'enemy');
+    const maxSkillRange = availableForMove.length > 0 ? Math.max(...availableForMove.map((s) => s.range || 0)) : 0;
+    const effectiveRange = Math.max(unit.range != null ? unit.range : 1, maxSkillRange);
 
     function closestTileToTargets(tiles, targets) {
       if (targets.length === 0) return null;
@@ -2063,9 +2585,9 @@ function main() {
       return best;
     }
 
-    /** Enemies in attack range from (fromGx, fromGy) for this unit (for move-then-attack planning). */
+    /** Enemies in attack/skill range from (fromGx, fromGy) for this unit (for move-then-attack planning). */
     function getEnemiesInRangeFrom(fromGx, fromGy) {
-      const range = unit.range != null ? unit.range : 1;
+      const range = effectiveRange;
       const list = [];
       for (const o of units) {
         if (o.hp <= 0 || o.player === unit.player) continue;
@@ -2162,7 +2684,7 @@ function main() {
 
     /** For ranged units: reachable tile that keeps at least one enemy in range but maximizes distance to nearest enemy. */
     function bestKiteTile() {
-      const range = unit.range != null ? unit.range : 1;
+      const range = effectiveRange;
       const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       if (enemies.length === 0) return null;
       let best = null;
@@ -2209,6 +2731,125 @@ function main() {
       }
       endTurn();
       return;
+    }
+
+    /** Only play for survival when HP is below 3% of max: just move to safest tile or end turn. */
+    if (isCriticalHp && !hasMoved && reachableTiles.length > 0) {
+      const safe = safestReachableTile();
+      if (safe && (safe.gx !== unit.x || safe.gy !== unit.y)) {
+        performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
+        return;
+      }
+      endTurn();
+      return;
+    }
+
+    /** CPU skill usage: prioritize killing (damage on low-HP enemy) > damage in range > heal at 50% HP > buff when available > debuff. */
+    if (!hasAttacked) {
+      const available = getAvailableSkills(unit);
+      const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
+      const lowHpEnemyThreshold = 0.35;
+
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'strike', 'bite']);
+      const HEAL_KEYS = new Set(['chakra']);
+      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl']);
+      const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
+      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind']);
+
+      function getEnemyTargets(skill) {
+        const targets = getSkillTargetTiles(unit, skill, units);
+        return targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
+      }
+
+      const skillCtx = {
+        showFloatingCombatText,
+        handleUnitDeath,
+        updateUnitSlashVisibility,
+        updateTurnUI,
+      };
+
+      let chosen = null;
+      let chosenTarget = null;
+
+      for (const skill of available) {
+        if (DAMAGE_KEYS.has(skill.effectKey)) {
+          if (unit.mp < skill.cost) continue;
+          if (skill.effectKey === 'berserk' && unit.hp < (unit.maxHp * 0.3)) continue;
+          if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
+          const enemyTargets = getEnemyTargets(skill);
+          if (enemyTargets.length === 0) continue;
+          const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
+          const toHit = lowHp.length > 0
+            ? lowHp.sort((a, b) => a.hp - b.hp)[0]
+            : enemyTargets.sort((a, b) => a.hp - b.hp)[0];
+          chosen = skill;
+          chosenTarget = toHit;
+          break;
+        }
+      }
+      if (!chosen && hpRatio <= 0.5) {
+        for (const skill of available) {
+          if (unit.mp < skill.cost) continue;
+          if (HEAL_KEYS.has(skill.effectKey)) {
+            const targets = getSkillTargetTiles(unit, skill, units);
+            if (targets.length > 0) {
+              chosen = skill;
+              chosenTarget = skill.target === 'self' ? unit : (targets[0].targetUnit || unit);
+              break;
+            }
+          }
+        }
+      }
+      if (!chosen) {
+        for (const skill of available) {
+          if (unit.mp < skill.cost) continue;
+          if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
+            const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
+            if (!hasActiveBuff) {
+              chosen = skill;
+              chosenTarget = unit;
+              break;
+            }
+          }
+        }
+      }
+      if (!chosen) {
+        for (const skill of available) {
+          if (unit.mp < skill.cost) continue;
+          if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
+            const enemyTargets = getEnemyTargets(skill);
+            const toHit = enemyTargets.sort((a, b) => a.hp - b.hp)[0];
+            chosen = skill;
+            chosenTarget = toHit;
+            break;
+          }
+        }
+      }
+      if (!chosen) {
+        for (const skill of available) {
+          if (unit.mp < skill.cost) continue;
+          if (DEBUFF_KEYS.has(skill.effectKey)) {
+            const enemyTargets = getEnemyTargets(skill);
+            const notAlreadyDebuffed = enemyTargets.filter((e) => !e.tempDebuff || e.tempDebuff.duration <= 0);
+            if (notAlreadyDebuffed.length > 0) {
+              const toHit = notAlreadyDebuffed.sort((a, b) => a.hp - b.hp)[0];
+              chosen = skill;
+              chosenTarget = toHit;
+              break;
+            }
+          }
+        }
+      }
+
+      if (chosen && chosen.target === 'enemy' && !chosenTarget) {
+        /* skip: no valid target for enemy skill */
+      } else {
+        unit.mp -= chosen.cost;
+        hasAttacked = true;
+        const skillTarget = chosen.target === 'self' ? unit : chosenTarget;
+        executeSkillWithProjectile(unit, skillTarget, chosen, skillCtx, () => setTimeout(runPlayingAI, 600));
+        return;
+      }
     }
 
     if (isAllyInDanger(unit) && enemiesInRange.length > 0) {
@@ -2368,7 +3009,7 @@ function main() {
     }
 
     const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
-    const isRangedUnit = unit.level >= 2 && (unit.range != null && unit.range >= 2);
+    const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
     if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const kite = bestKiteTile();
       if (kite && (kite.gx !== unit.x || kite.gy !== unit.y)) {
@@ -2378,7 +3019,7 @@ function main() {
     }
 
     if (enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
-      const attackRange = unit.range != null ? unit.range : 1;
+      const attackRange = effectiveRange;
       function pathToTileInAttackRangeOf(enemy, requireReachableInOneTurn) {
         let bestPath = null;
         for (let dy = -attackRange; dy <= attackRange; dy++) {
@@ -2471,6 +3112,63 @@ function main() {
       c.geometry.dispose();
       c.material.dispose();
     }
+  }
+
+  let skillTargetTiles = new Set();
+
+  function getAvailableSkills(unit) {
+    if (!unit || !unit.class) return [];
+    const list = CLASS_SKILLS[unit.class];
+    if (!list) return [];
+    return list.filter((s) => unit.level >= s.level);
+  }
+
+  function getSkillTargetTiles(unit, skill, unitsList) {
+    const out = [];
+    const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
+    const range = skill.range || 0;
+    if (skill.target === 'self') {
+      out.push({ gx: unit.x, gy: unit.y, targetUnit: null });
+      return out;
+    }
+    for (const o of unitsList) {
+      if (o.hp <= 0) continue;
+      const d = manhattan(unit.x, unit.y, o.x, o.y);
+      if (d > range) continue;
+      if (range > 2 && !hasLineOfSight(world, unit.x, unit.y, o.x, o.y)) continue;
+      if (skill.target === 'enemy' && o.player !== unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
+      if (skill.target === 'ally' && o.player === unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
+    }
+    return out;
+  }
+
+  function showSkillTargetTiles(unit, skill) {
+    const targets = getSkillTargetTiles(unit, skill, units);
+    skillTargetTiles = new Set(targets.map((t) => `${t.gx},${t.gy}`));
+    clearHighlights();
+    targets.forEach(({ gx, gy }) => {
+      const topY = BASE_HEIGHT + world.height[gy][gx] * 0.35;
+      const surfaceY = topY / 2 + BASE_HEIGHT / 2;
+      const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
+      const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
+      const y = surfaceY + 0.01;
+      const glowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x8833aa, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      glowMesh.rotation.x = -Math.PI / 2;
+      glowMesh.position.set(px, y, pz);
+      highlightGroup.add(glowMesh);
+      highlightMaterials.push(glowMat);
+      const squareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
+      const squareMat = new THREE.MeshBasicMaterial({ color: 0xaa66cc, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+      const squareMesh = new THREE.Mesh(squareGeo, squareMat);
+      squareMesh.rotation.x = -Math.PI / 2;
+      squareMesh.position.set(px, y + 0.01, pz);
+      squareMesh.userData.gx = gx;
+      squareMesh.userData.gy = gy;
+      highlightGroup.add(squareMesh);
+      highlightMaterials.push(squareMat);
+    });
   }
 
   const HIGHLIGHT_SQUARE_SIZE = 0.82;
@@ -2593,6 +3291,42 @@ function main() {
     if (phase !== 'playing') return;
     if (gameMode === 'cvcpu') return;
 
+    if (isSkillMode && selectedSkill) {
+      const key = `${gx},${gy}`;
+      if (!skillTargetTiles.has(key)) return;
+      const uid = initiativeOrder[currentTurnIndex];
+      const unit = units.find((u) => u.id === uid && u.hp > 0);
+      if (!unit || unit.mp < selectedSkill.cost) {
+        isSkillMode = false;
+        selectedSkill = null;
+        clearHighlights();
+        updateTurnUI();
+        return;
+      }
+      let targetUnit = units.find((u) => u.x === gx && u.y === gy && u.hp > 0);
+      if (selectedSkill.target === 'enemy' && (!targetUnit || targetUnit.player === unit.player)) return;
+      if (selectedSkill.target === 'ally' && targetUnit && targetUnit.player !== unit.player) return;
+      if (selectedSkill.target === 'self' && (gx !== unit.x || gy !== unit.y)) return;
+      if (selectedSkill.target === 'enemy' && !targetUnit) return;
+      unit.mp -= selectedSkill.cost;
+      hasAttacked = true;
+      const ctx = {
+        showFloatingCombatText,
+        handleUnitDeath,
+        updateUnitSlashVisibility,
+        updateTurnUI,
+      };
+      const skillTarget = selectedSkill.target === 'self' ? unit : (targetUnit || null);
+      executeSkillWithProjectile(unit, skillTarget, selectedSkill, ctx, () => {
+        clearHighlights();
+        isSkillMode = false;
+        selectedSkill = null;
+        skillTargetTiles = new Set();
+        updateTurnUI();
+      });
+      return;
+    }
+
     if (isChoosingFacing) {
       const uid = initiativeOrder[currentTurnIndex];
       const unit = units.find((u) => u.id === uid);
@@ -2629,15 +3363,16 @@ function main() {
       }
       if (!reachable.has(k) || reachable.get(k) === 0) return;
       if (target && target.player !== currentPlayer) {
-        const evasionMax = target.agi + target.luk * 0.3;
-        const evasionRoll = Math.random() * evasionMax;
-        const isHit = evasionRoll <= u.dex;
+        const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
+        const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
+        const isHit = evasionRoll <= getEffectiveStat(u, 'dex');
         if (isHit) {
-          const rawDamage = (u.str * 0.7 + u.dex * 0.1 + u.int * 0.07) - (target.vit * 0.3 + target.luk * 0.1);
+          const rawDamage = (getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'dex') * 0.1 + getEffectiveStat(u, 'int') * 0.07) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.1);
           const damage = Math.max(1, Math.floor(rawDamage));
           target.hp = Math.max(0, target.hp - damage);
           showFloatingCombatText(target.x, target.y, String(damage), false);
           if (target.hp <= 0) handleUnitDeath(target);
+          updateUnitSlashVisibility(target);
         } else {
           showFloatingCombatText(target.x, target.y, 'MISS', true);
         }
@@ -2959,6 +3694,7 @@ function main() {
   }
 
   function handleUnitDeath(unit) {
+    console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
     const mesh = unitMeshes.get(unit.id);
     if (!mesh) {
@@ -3047,12 +3783,12 @@ function main() {
             <div class="game-over-card-stats">
               <span class="stat-label">HP</span><span class="stat-val stat-val-hp">${c.hp}/${c.maxHp}</span>
               <span class="stat-label">MP</span><span class="stat-val">${c.mp}/${c.maxMp}</span>
-              <span class="stat-label">STR</span><span class="stat-val">${c.str}</span>
-              <span class="stat-label">AGI</span><span class="stat-val">${c.agi}</span>
-              <span class="stat-label">VIT</span><span class="stat-val">${c.vit}</span>
-              <span class="stat-label">DEX</span><span class="stat-val">${c.dex}</span>
-              <span class="stat-label">LUK</span><span class="stat-val">${c.luk}</span>
-              <span class="stat-label">INT</span><span class="stat-val">${c.int}</span>
+              <span class="stat-label">STR</span><span class="stat-val">${getEffectiveStat(c, 'str')}</span>
+              <span class="stat-label">AGI</span><span class="stat-val">${getEffectiveStat(c, 'agi')}</span>
+              <span class="stat-label">VIT</span><span class="stat-val">${getEffectiveStat(c, 'vit')}</span>
+              <span class="stat-label">DEX</span><span class="stat-val">${getEffectiveStat(c, 'dex')}</span>
+              <span class="stat-label">LUK</span><span class="stat-val">${getEffectiveStat(c, 'luk')}</span>
+              <span class="stat-label">INT</span><span class="stat-val">${getEffectiveStat(c, 'int')}</span>
               <span class="stat-label">Range</span><span class="stat-val">${c.range}</span>
             </div>
           </div>

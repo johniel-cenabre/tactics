@@ -32,8 +32,11 @@
     <div class="menu-actions">
       <span class="menu-label" id="menu-label">Player 1</span>
       <button type="button" id="btn-attack">Attack</button>
-      <button type="button" id="btn-skill">Skill</button>
-      <button type="button" id="btn-spell">Spell</button>
+      <div class="skill-wrap">
+        <button type="button" id="btn-skill">Skill</button>
+        <div id="skill-dropdown" class="skill-dropdown" style="display: none;"></div>
+      </div>
+      <button type="button" id="btn-spell" disabled>Spell</button>
       <button type="button" id="btn-end" class="end">End</button>
     </div>
   </div>
@@ -65,6 +68,7 @@
     <div class="rotate-overlay-icon">↻</div>
     <p class="rotate-overlay-text">Please rotate your device to landscape to play</p>
   </div>
+  <div id="skill-list-overlay" class="skill-list-overlay" style="display: none;" aria-hidden="true"></div>
   <script type="module" src="game.bundle.js"></script>
 </body>
 </html>
