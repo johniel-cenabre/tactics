@@ -5,12 +5,12 @@
 
 import * as THREE from 'three';
 
-const GRID_W = 27;
-const GRID_H = 17;
+const GRID_W = 35;
+const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
-const MAX_TURNS = 200;
+const MAX_TURNS = 120;
 const MOVE_DURATION_MS = 240;
 
 const TileType = {
@@ -148,7 +148,7 @@ function createWorld() {
   };
   const cx = Math.floor(w / 2);
   const cy = Math.floor(h / 2);
-  const radius = Math.min(w, h) * 0.28;
+  const radius = Math.min(w, h) * 0.29;
   const numSamples = Math.max(60, (h + w) * 2);
   for (let arc = 0; arc < 2; arc++) {
     const centerXArc = arc === 0 ? cx - radius : cx + radius;
@@ -288,6 +288,22 @@ function getBaseTiles(world, player, occupiedKeys) {
     }
   }
   return out;
+}
+
+function getCenterTilesForSort(world) {
+  const out = [];
+  for (let gy = 0; gy < world.h; gy++)
+    for (let gx = 0; gx < world.w; gx++)
+      if (world.type[gy][gx] === TileType.CENTER) out.push({ gx, gy });
+  return out;
+}
+
+/** Sort base/placement tiles by Manhattan distance to nearest center tile (closest first). */
+function sortTilesByDistanceToCenter(world, tiles) {
+  const centerTiles = getCenterTilesForSort(world);
+  if (centerTiles.length === 0) return tiles;
+  const dist = (t) => Math.min(...centerTiles.map((c) => Math.abs(t.gx - c.gx) + Math.abs(t.gy - c.gy)));
+  return [...tiles].sort((a, b) => dist(a) - dist(b));
 }
 
 function isWalkable(world, x, y) {
@@ -767,7 +783,7 @@ function main() {
   function updateUnitMeshLowHp(mesh, isLowHp) {
     if (!mesh) return;
     if (isLowHp) {
-      mesh.rotation.x = 0.14;
+      mesh.rotation.x = 0.35;
       mesh.scale.setScalar(0.96);
       const u = mesh.userData;
       if (u && u.leftArm && u.rightArm) {
@@ -821,7 +837,7 @@ function main() {
   function showLevelUpAnimation(unit) {
     const mesh = unitMeshes.get(unit.id);
     const levelClass = unit.level === 3 ? 'levelup level3' : unit.level === 2 ? 'levelup level2' : 'levelup';
-    showFloatingCombatText(unit.x, unit.y, 'LEVEL UP!', false, levelClass);
+    showLevelUpFloatingText(unit, levelClass);
     if (!mesh) return;
     const startTime = performance.now();
     function levelUpTick(now) {
@@ -1314,8 +1330,9 @@ function main() {
     const p = getCurrentDraftPlayer();
     const occupied = new Set(units.map((u) => u.y * world.w + u.x));
     const tiles = getBaseTiles(world, p, occupied);
-    placementTileKeys = new Set(tiles.map((t) => t.gy * world.w + t.gx));
-    showPlacementHighlights(tiles);
+    const tilesSorted = sortTilesByDistanceToCenter(world, tiles);
+    placementTileKeys = new Set(tilesSorted.map((t) => t.gy * world.w + t.gx));
+    showPlacementHighlights(tilesSorted);
     updateDraftUI();
   }
 
@@ -1602,19 +1619,44 @@ function main() {
   const btnPvP = document.getElementById('mode-pvp');
   const btnPvCPU = document.getElementById('mode-pvcpu');
   const btnCvCPU = document.getElementById('mode-cvcpu');
+
+  const bgMusic = new Audio();
+  bgMusic.loop = true;
+  bgMusic.volume = 0.30;
+  bgMusic.preload = 'auto';
+  const baseUrl = window.location.href.replace(/[^/]*$/, '');
+  const BACKGROUND_MUSIC_URL = typeof window.TACTICS_BGM_URL !== 'undefined'
+    ? window.TACTICS_BGM_URL
+    : baseUrl + (baseUrl.includes('/src/') ? '../assets/music/tavern.mp3' : 'assets/music/tavern.mp3');
+  bgMusic.src = BACKGROUND_MUSIC_URL;
+  bgMusic.addEventListener('error', () => {
+    const fallback = baseUrl + 'assets/music/tavern.mp3';
+    if (fallback !== BACKGROUND_MUSIC_URL) {
+      bgMusic.src = fallback;
+    }
+  });
+  function startBackgroundMusic() {
+    if (bgMusic.paused) {
+      bgMusic.play().catch(() => {});
+    }
+  }
+
   if (modeOverlay && btnPvP && btnPvCPU) {
     btnPvP.addEventListener('click', () => {
+      startBackgroundMusic();
       gameMode = 'pvp';
       modeOverlay.classList.add('hidden');
       startDraftPhase();
     });
     btnPvCPU.addEventListener('click', () => {
+      startBackgroundMusic();
       gameMode = 'pvcpu';
       modeOverlay.classList.add('hidden');
       startDraftPhase();
     });
     if (btnCvCPU) {
       btnCvCPU.addEventListener('click', () => {
+        startBackgroundMusic();
         gameMode = 'cvcpu';
         modeOverlay.classList.add('hidden');
         startDraftPhase();
@@ -1656,11 +1698,13 @@ function main() {
       setTimeout(runDraftAI, 500);
       return;
     }
-    const tiles = Array.from(placementTileKeys);
-    if (tiles.length > 0) {
-      const k = tiles[Math.floor(Math.random() * tiles.length)];
-      const gx = k % world.w;
-      const gy = Math.floor(k / world.w);
+    const tileCoords = Array.from(placementTileKeys).map((k) => ({
+      gx: k % world.w,
+      gy: Math.floor(k / world.w),
+    }));
+    const sorted = sortTilesByDistanceToCenter(world, tileCoords);
+    if (sorted.length > 0) {
+      const { gx, gy } = sorted[0];
       placeUnit(gx, gy);
     }
   }
@@ -2019,6 +2063,20 @@ function main() {
       return best;
     }
 
+    /** Enemies in attack range from (fromGx, fromGy) for this unit (for move-then-attack planning). */
+    function getEnemiesInRangeFrom(fromGx, fromGy) {
+      const range = unit.range != null ? unit.range : 1;
+      const list = [];
+      for (const o of units) {
+        if (o.hp <= 0 || o.player === unit.player) continue;
+        const d = manhattanDist(fromGx, fromGy, o.x, o.y);
+        if (d <= range && d > 0 && hasLineOfSight(world, fromGx, fromGy, o.x, o.y)) {
+          list.push({ target: o, dist: d });
+        }
+      }
+      return list;
+    }
+
     const reachableKeys = new Set(reachableTiles.map((t) => t.gy * world.w + t.gx));
 
     /** Return the farthest tile along the path that is reachable this turn (path[0] = current pos). */
@@ -2061,12 +2119,14 @@ function main() {
       return bestPath && bestTarget ? { path: bestPath, target: bestTarget } : null;
     }
 
-    function safestReachableTile() {
+    function safestReachableTile(tiles) {
+      const set = tiles != null ? tiles : reachableTiles;
+      if (set.length === 0) return null;
       const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
-      if (enemies.length === 0) return reachableTiles[0];
+      if (enemies.length === 0) return set[0];
       let best = null;
       let bestMinDist = -1;
-      for (const t of reachableTiles) {
+      for (const t of set) {
         const minDist = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
         if (minDist > bestMinDist) { bestMinDist = minDist; best = t; }
       }
@@ -2074,14 +2134,16 @@ function main() {
     }
 
     /** After attacking: retreat tile that is away from enemies. High-HP units stay in front of allies; low-HP prefer moving toward allies. */
-    function bestRetreatTowardAlliesTile() {
+    function bestRetreatTowardAlliesTile(tiles) {
+      const set = tiles != null ? tiles : reachableTiles;
+      if (set.length === 0) return null;
       const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
-      if (enemies.length === 0) return reachableTiles[0];
+      if (enemies.length === 0) return set[0];
       const isHighHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) >= 0.6;
       let best = null;
       let bestScore = -Infinity;
-      for (const t of reachableTiles) {
+      for (const t of set) {
         const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
         const minDistToAlly = allies.length > 0
           ? Math.min(...allies.map((a) => manhattanDist(t.gx, t.gy, a.x, a.y)))
@@ -2121,17 +2183,26 @@ function main() {
         endTurn();
         return;
       }
+      const turnsLeft = MAX_TURNS - turnCount;
+      const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
+      const reachableCenterTiles = turnsLeft <= 20 && centerTiles.length > 0
+        ? reachableTiles.filter((t) => centerKeys.has(t.gy * world.w + t.gx))
+        : null;
+      const retreatTileSet = (reachableCenterTiles != null && reachableCenterTiles.length > 0)
+        ? reachableCenterTiles
+        : reachableTiles;
+
       const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
       let retreat = null;
-      if (allies.length > 0) {
-        retreat = bestRetreatTowardAlliesTile();
+      if (retreatTileSet.length > 0 && allies.length > 0) {
+        retreat = bestRetreatTowardAlliesTile(retreatTileSet);
         if (retreat) {
           const path = getPath(world, unit.x, unit.y, retreat.gx, retreat.gy, units, unit);
           const steps = path ? path.length - 1 : Infinity;
-          if (!path || path.length <= 1 || steps > unit.agi) retreat = safestReachableTile();
+          if (!path || path.length <= 1 || steps > unit.agi) retreat = safestReachableTile(retreatTileSet);
         }
       }
-      if (!retreat) retreat = safestReachableTile();
+      if (!retreat && retreatTileSet.length > 0) retreat = safestReachableTile(retreatTileSet);
       if (retreat && (retreat.gx !== unit.x || retreat.gy !== unit.y)) {
         performMove(unit, retreat.gx, retreat.gy, () => setTimeout(endTurn, 400));
         return;
@@ -2160,6 +2231,34 @@ function main() {
       if (!onCenter) {
         const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
         const result = getPathToNearestTarget(centerTargets);
+        const pathToCenter = result ? result.path : null;
+        const minDistToCenter = (gx, gy) =>
+          Math.min(...centerTiles.map((c) => manhattanDist(gx, gy, c.gx, c.gy)));
+        const unitDistToCenter = minDistToCenter(unit.x, unit.y);
+
+        /** When rushing to center with ≤20 turns left, still move into range of a weak enemy if on the way. */
+        let moveTowardWeakOnPath = null;
+        let bestPathIndex = -1;
+        const weakEnemyThreshold = lowHpThreshold;
+        for (const t of reachableTiles) {
+          if (minDistToCenter(t.gx, t.gy) > unitDistToCenter) continue;
+          const fromHere = getEnemiesInRangeFrom(t.gx, t.gy);
+          const weak = fromHere.filter(
+            (e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < weakEnemyThreshold
+          );
+          if (weak.length === 0) continue;
+          const pathIndexRaw = pathToCenter ? pathToCenter.findIndex((p) => p.x === t.gx && p.y === t.gy) : -1;
+          const pathIndex = pathIndexRaw >= 0 ? pathIndexRaw : 0;
+          if (pathIndex > bestPathIndex) {
+            bestPathIndex = pathIndex;
+            moveTowardWeakOnPath = t;
+          }
+        }
+        if (moveTowardWeakOnPath && (moveTowardWeakOnPath.gx !== unit.x || moveTowardWeakOnPath.gy !== unit.y)) {
+          performMove(unit, moveTowardWeakOnPath.gx, moveTowardWeakOnPath.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+
         const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
@@ -2803,21 +2902,60 @@ function main() {
   container.appendChild(combatTextLayer);
 
   const _projVec = new THREE.Vector3();
+  const COMBAT_TEXT_DURATION_MS = 1400;
   function showFloatingCombatText(gx, gy, text, isMiss, extraClass) {
-    _projVec.copy(worldPos(gx, gy));
-    _projVec.y += 1.2;
-    _projVec.project(camera);
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    const x = (_projVec.x * 0.5 + 0.5) * w;
-    const y = (1 - (_projVec.y * 0.5 + 0.5)) * h;
     const el = document.createElement('div');
     el.className = 'combat-text-float ' + (isMiss ? 'miss' : 'damage') + (extraClass ? ' ' + extraClass : '');
     el.textContent = text;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
+    el.style.position = 'absolute';
     combatTextLayer.appendChild(el);
-    setTimeout(() => el.remove(), 1400);
+    const startTime = performance.now();
+    function updatePosition() {
+      _projVec.copy(worldPos(gx, gy));
+      _projVec.y += 1.2;
+      _projVec.project(camera);
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      el.style.left = (_projVec.x * 0.5 + 0.5) * w + 'px';
+      el.style.top = (1 - (_projVec.y * 0.5 + 0.5)) * h + 'px';
+    }
+    function tick() {
+      updatePosition();
+      if (performance.now() - startTime < COMBAT_TEXT_DURATION_MS) {
+        requestAnimationFrame(tick);
+      } else {
+        el.remove();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const LEVEL_UP_TEXT_DURATION_MS = 1500;
+  function showLevelUpFloatingText(unit, levelClass) {
+    const el = document.createElement('div');
+    el.className = 'combat-text-float ' + (levelClass || 'levelup');
+    el.textContent = 'LEVEL UP!';
+    el.style.position = 'absolute';
+    combatTextLayer.appendChild(el);
+    const startTime = performance.now();
+    function updatePosition() {
+      _projVec.copy(worldPos(unit.x, unit.y));
+      _projVec.y += 1.2;
+      _projVec.project(camera);
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      el.style.left = (_projVec.x * 0.5 + 0.5) * w + 'px';
+      el.style.top = (1 - (_projVec.y * 0.5 + 0.5)) * h + 'px';
+    }
+    function tick() {
+      updatePosition();
+      if (performance.now() - startTime < LEVEL_UP_TEXT_DURATION_MS) {
+        requestAnimationFrame(tick);
+      } else {
+        el.remove();
+      }
+    }
+    requestAnimationFrame(tick);
   }
 
   function handleUnitDeath(unit) {

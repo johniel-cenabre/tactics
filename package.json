@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "esbuild src/game.js --bundle --format=esm --minify --outfile=game.js && esbuild src/style.css --minify --outfile=style.css && node -e \"let h=require('fs').readFileSync('src/index.html','utf8'); require('fs').writeFileSync('index.html', h.replace('game.bundle.js','game.js'))\"",
-    "dev": "esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js && concurrently \"esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js --watch\" \"npx live-server src --port=3000\"",
+    "dev": "esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js && concurrently \"esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js --watch\" \"npx live-server . --port=3000 --open=/src/index.html\"",
     "preview": "npm run build && npx serve . -p 3000"
   },
   "dependencies": {
