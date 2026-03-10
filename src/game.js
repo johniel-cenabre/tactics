@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 6;
+const DRAFT_PICKS_PER_PLAYER = 1;
 const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -1274,6 +1274,7 @@ function main() {
     if (!mesh) return;
     const startTime = performance.now();
     function levelUpTick(now) {
+      requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / LEVEL_UP_ANIMATION_MS);
       const s = t < 0.5 ? 1 + 0.35 * (t / 0.5) : 1 + 0.35 * (1 - (t - 0.5) / 0.5);
@@ -1317,6 +1318,7 @@ function main() {
       cameraTarget.copy(_endTarget);
       camera.position.copy(_endPosition);
       camera.lookAt(cameraTarget);
+      requestRender();
       return;
     }
 
@@ -1326,6 +1328,7 @@ function main() {
     const startTime = performance.now();
 
     function tick(now) {
+      requestRender();
       const t = Math.min(1, (now - startTime) / CAMERA_TWEEN_MS);
       const eased = t * (2 - t);
       cameraTarget.lerpVectors(_startTarget, _endTarget, eased);
@@ -1400,6 +1403,14 @@ function main() {
   scene.add(highlightGroup);
   const highlightMaterials = [];
 
+  let needsRender = true;
+  let lastInteractionTime = 0;
+  let lastIdleFrameTime = 0;
+  function requestRender() {
+    needsRender = true;
+    lastInteractionTime = performance.now();
+  }
+
   const unitBordersGroup = new THREE.Group();
   scene.add(unitBordersGroup);
   const unitBorderMaterials = [];
@@ -1453,6 +1464,7 @@ function main() {
       unitBordersGroup.add(borderMesh);
       unitBorderMaterials.push(borderMat);
     });
+    requestRender();
   }
 
   const turnPointerHeight = 1.15;
@@ -1959,6 +1971,7 @@ function main() {
   }
 
   function endTurn() {
+    requestRender();
     hideUnitPreviewCard();
     isAttackMode = false;
     isSkillMode = false;
@@ -2065,8 +2078,7 @@ function main() {
       overlay.innerHTML = '<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>';
     } else {
       overlay.innerHTML = available.map((skill, i) => {
-        console.log({skill})
-        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost || unit.hp < skill.hpCost || unit.level < skill.level ? 'disabled' : ''}>
+        return `<button type="button" class="skill-option" data-skill-index="${i}" ${skill.disabled ? 'disabled' : ''}>
           <span class="skill-name">${skill.name}</span> <span class="skill-meta">${skill.cost} MP · Lv.${skill.level}</span><br/>
           <span class="skill-meta">${skill.description}</span>
         </button>`;
@@ -2307,6 +2319,7 @@ function main() {
     clearHighlights();
     isUnitMoving = true;
     updateUnitTileBorders(unit.id);
+    requestRender();
     const mesh = unitMeshes.get(unit.id);
     let stepIndex = 1;
 
@@ -2331,6 +2344,7 @@ function main() {
       if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
       const startTime = performance.now();
       function tick(now) {
+        requestRender();
         const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
         const smoothstep = (x) => x * x * (3 - 2 * x);
         const eased = smoothstep(t);
@@ -2406,6 +2420,7 @@ function main() {
       const startTime = performance.now();
 
       function projectileTick(now) {
+        requestRender();
         const elapsed = now - startTime;
         const t = Math.min(1, elapsed / PROJECTILE_MS);
         projectile.position.lerpVectors(projStart, projEnd, t);
@@ -2484,6 +2499,7 @@ function main() {
     const knockbackAmount = 0.4;
 
     function attackTick(now) {
+      requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
       const lungeOut = t <= 0.4 ? t / 0.4 : 1;
@@ -2573,6 +2589,7 @@ function main() {
     scene.add(mesh);
     const startTime = performance.now();
     function tick(now) {
+      requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / SPELL_EXPLOSION_MS);
       const scale = t * (2 - t);
@@ -2628,6 +2645,7 @@ function main() {
       let targetDeathPending = false;
       const startTime = performance.now();
       function meleeSkillTick(now) {
+        requestRender();
         const elapsed = now - startTime;
         const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
         const lungeOut = t <= 0.4 ? t / 0.4 : 1;
@@ -2714,6 +2732,7 @@ function main() {
     let hitReactStartTime = null;
 
     function projectileTick(now) {
+      requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / PROJECTILE_MS);
       projectile.position.lerpVectors(projStart, projEnd, t);
@@ -2789,7 +2808,7 @@ function main() {
     const unoccupiedEnemyBaseTiles = enemyBaseTiles.filter((t) => !occupiedByOther(t));
 
     /** Max range for movement: attack range or best usable enemy-targeting skill range (if enough MP). */
-    const availableForMove = getAvailableSkills(unit).filter((s) => unit.mp >= s.cost && s.target === 'enemy');
+    const availableForMove = getAvailableSkills(unit).filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
     const maxSkillRange = availableForMove.length > 0 ? Math.max(...availableForMove.map((s) => s.range || 0)) : 0;
     const effectiveRange = Math.max(unit.range != null ? unit.range : 1, maxSkillRange);
 
@@ -3062,8 +3081,8 @@ function main() {
       let chosenTarget = null;
 
       for (const skill of available) {
+        if (skill.disabled) continue;
         if (DAMAGE_KEYS.has(skill.effectKey)) {
-          if (unit.mp < skill.cost) continue;
           if (skill.effectKey === 'berserk' && unit.hp < (unit.maxHp * 0.2)) continue;
           if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
           const enemyTargets = getEnemyTargets(skill);
@@ -3081,7 +3100,7 @@ function main() {
       }
       if (!chosen && hpRatio <= 0.4) {
         for (const skill of available) {
-          if (unit.mp < skill.cost) continue;
+          if (skill.disabled) continue;
           if (HEAL_KEYS.has(skill.effectKey)) {
             const targets = getSkillTargetTiles(unit, skill, units);
             if (targets.length > 0) {
@@ -3094,7 +3113,7 @@ function main() {
       }
       if (!chosen) {
         for (const skill of available) {
-          if (unit.mp < skill.cost) continue;
+          if (skill.disabled) continue;
           if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
             const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
             if (!hasActiveBuff) {
@@ -3108,7 +3127,7 @@ function main() {
       const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
       if (!chosen && !hasLowHpEnemyInRange) {
         for (const skill of available) {
-          if (unit.mp < skill.cost) continue;
+          if (skill.disabled) continue;
           if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
             const toHit = enemyTargets.sort((a, b) => a.hp - b.hp)[0];
@@ -3120,7 +3139,7 @@ function main() {
       }
       if (!chosen && !hasLowHpEnemyInRange) {
         for (const skill of available) {
-          if (unit.mp < skill.cost) continue;
+          if (skill.disabled) continue;
           if (DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
             const notAlreadyDebuffed = enemyTargets.filter((e) => !e.tempDebuff || e.tempDebuff.duration <= 0);
@@ -3417,13 +3436,18 @@ function main() {
       c.geometry.dispose();
       c.material.dispose();
     }
+    requestRender();
   }
 
   let skillTargetTiles = new Set();
 
   function getAvailableSkills(unit) {
     if (!unit || !unit.class) return [];
-    return CLASS_SKILLS[unit.class] || [];
+    if (!CLASS_SKILLS[unit.class]) return [];
+    return CLASS_SKILLS[unit.class].map((s) => ({
+      ...s,
+      disabled: s.disabled === true || unit.level < s.level || (s.hpCost && unit.hp < s.hpCost) || (s.cost && unit.mp < s.cost)
+    }));
   }
 
   function getSkillTargetTiles(unit, skill, unitsList) {
@@ -3518,6 +3542,7 @@ function main() {
       highlightGroup.add(squareMesh);
       highlightMaterials.push(squareMat);
     });
+    requestRender();
   }
 
   function showReachable(distMap) {
@@ -3546,6 +3571,7 @@ function main() {
       highlightGroup.add(squareMesh);
       highlightMaterials.push(squareMat);
     });
+    requestRender();
   }
 
   function showAttackRange(distMap) {
@@ -3574,6 +3600,7 @@ function main() {
       highlightGroup.add(squareMesh);
       highlightMaterials.push(squareMat);
     });
+    requestRender();
   }
 
   const raycaster = new THREE.Raycaster();
@@ -3792,6 +3819,7 @@ function main() {
         const startTime = performance.now();
 
         function tick(now) {
+          requestRender();
           const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
           const smoothstep = (x) => x * x * (3 - 2 * x);
           const eased = smoothstep(t);
@@ -3901,6 +3929,7 @@ function main() {
       camera.lookAt(cameraTarget);
       pointerDownPixel.x = e.clientX;
       pointerDownPixel.y = e.clientY;
+      requestRender();
     } else if (isPanning) {
       const currNdc = pointerToNdc(e.clientX, e.clientY);
       panPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, cameraTarget.y, 0));
@@ -3914,6 +3943,7 @@ function main() {
       camera.position.add(delta);
       camera.lookAt(cameraTarget);
       prevPointerNdc = { x: currNdc.x, y: currNdc.y };
+      requestRender();
     }
   }
 
@@ -3936,6 +3966,7 @@ function main() {
     zoomDir.copy(cameraTarget).sub(camera.position).normalize();
     camera.position.copy(cameraTarget).sub(zoomDir.multiplyScalar(newDist));
     camera.lookAt(cameraTarget);
+    requestRender();
   }
 
   container.style.cursor = 'grab';
@@ -4039,6 +4070,7 @@ function main() {
     }
     const startTime = performance.now();
     function deathTick(now) {
+      requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / DEATH_ANIMATION_MS);
       const easeIn = t * t;
@@ -4135,21 +4167,34 @@ function main() {
 
   function animate(now = 0) {
     requestAnimationFrame(animate);
-    const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
-    for (let i = 0; i < highlightMaterials.length; i++) {
-      const base = i % 2 === 0 ? 0.4 : 0.7;
-      highlightMaterials[i].opacity = base * pulse;
-    }
-    const treeGroups = tilesGroup.userData.treeGroups;
-    if (treeGroups && treeGroups.length > 0) {
-      for (let i = 0; i < treeGroups.length; i++) {
-        const g = treeGroups[i];
-        const phase = g.userData.swayPhase != null ? g.userData.swayPhase : 0;
-        g.rotation.x = Math.sin(now * 0.0009 + phase) * 0.018;
-        g.rotation.z = Math.sin(now * 0.0007 + phase * 1.4) * 0.018;
+    if (lastInteractionTime === 0) lastInteractionTime = now;
+    const isIdle = (now - lastInteractionTime > 2000);
+    const doUpdateAndRender = () => {
+      const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
+      for (let i = 0; i < highlightMaterials.length; i++) {
+        const base = i % 2 === 0 ? 0.4 : 0.7;
+        highlightMaterials[i].opacity = base * pulse;
       }
+      const treeGroups = tilesGroup.userData.treeGroups;
+      if (treeGroups && treeGroups.length > 0) {
+        for (let i = 0; i < treeGroups.length; i++) {
+          const g = treeGroups[i];
+          const phase = g.userData.swayPhase != null ? g.userData.swayPhase : 0;
+          g.rotation.x = Math.sin(now * 0.0009 + phase) * 0.018;
+          g.rotation.z = Math.sin(now * 0.0007 + phase * 1.4) * 0.018;
+        }
+      }
+      renderer.render(scene, camera);
+      needsRender = false;
+    };
+    if (isIdle) {
+      if (now - lastIdleFrameTime >= 100) {
+        lastIdleFrameTime = now;
+        doUpdateAndRender();
+      }
+    } else {
+      doUpdateAndRender();
     }
-    renderer.render(scene, camera);
   }
   animate();
 }
