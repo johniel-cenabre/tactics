@@ -127,7 +127,7 @@ const CLASS_SKILLS = {
   ],
   samurai: [
     { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
-    { name: 'Strike', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'strike' },
+    { name: 'Chokuto', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'chokuto' },
   ],
   werewolf: [
     { name: 'Bite', description: 'Deal STR+AGI-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'bite' },
@@ -236,7 +236,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(u.x, u.y, '+2 DEX', true); break;
     case 'snipe': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
@@ -282,7 +282,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'iaido':
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = 1; u.tempBuff.dex = 1; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, '+1 STR, +1 DEX', true); break;
-    case 'strike': {
+    case 'chokuto': {
       if (!t) break;
       const d = Math.max(1, Math.floor((u.str || 0) + (u.dex || 0) * 0.3));
       applyDamage(t, d, false);
