@@ -517,6 +517,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 }
 .combat-text-float.miss { color: #ffffff; }
 .combat-text-float.damage { color: #f85149; }
+.combat-text-float.heal { color: #3fb950; }
 .combat-text-float.buff { color: #3fb950; }
 .combat-text-float.debuff { color: #d29922; }
 .combat-text-float.skill-name { color: #ffffff; }

@@ -109,7 +109,7 @@ const CLASS_SKILLS = {
     { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'freeze' },
   ],
   monk: [
-    { name: 'Mantra Fist', description: 'Deal STR+LUK-based damage to one enemy.', cost: 3, hpCost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'mantraFist' },
+    { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 3, hpCost: 2, target: 'ally', range: 4, level: 2, effectKey: 'mantra' },
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
@@ -169,7 +169,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
   const applyDamage = (victim, d, isHeal, isSpell) => {
     if (isHeal) {
       victim.hp = Math.min(victim.maxHp, victim.hp + d);
-      if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, `+${d}`, false);
+      if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, `+${d}`, false, 'heal');
     } else {
       const isSelfDamage = victim === u;
       let isHit = true;
@@ -213,15 +213,18 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 1;
       showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
-    case 'mantraFist': if (t) {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.8) + (getEffectiveStat(u, 'luk') * 0.4) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
-      applyDamage(u, 2, false)
+    case 'mantra': if (t) {
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4));
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.luk = d; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${d} LUK`, true);
+      if (!t) break;
+      t.tempBuff = t.tempBuff || {}; t.tempBuff.luk = d; t.tempBuff.duration = 3;
+      showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
     case 'chakra':
+      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.5) + getEffectiveStat(u, 'luk') * 0.2), true);
       if (!t) break;
-      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4)), true);
-      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(t, 'int') * 0.4)), true);
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.5) + getEffectiveStat(t, 'luk') * 0.2), true);
       break;
     case 'weaken': if (t) {
       t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
@@ -3601,6 +3604,8 @@ function main() {
       if (skill.target === 'enemy' && o.player !== unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
       if (skill.target === 'ally' && o.player === unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
     }
+    if (skill.target === 'ally' && out.length === 0)
+      out.push({ gx: unit.x, gy: unit.y, targetUnit: unit });
     return out;
   }
 
