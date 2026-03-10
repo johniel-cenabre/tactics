@@ -113,8 +113,8 @@ const CLASS_SKILLS = {
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
-    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
-    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
+    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
+    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 4, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
   ],
   lancer: [
     { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 3 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
@@ -1020,14 +1020,25 @@ function main() {
     );
   }
 
+  const UNIT_COLOR_DARKEN = 0.62;
+  function darkenColor(color, factor) {
+    factor = factor != null ? factor : UNIT_COLOR_DARKEN;
+    const c = color instanceof THREE.Color ? color : new THREE.Color(color);
+    return new THREE.Color(
+      Math.max(0, c.r * factor),
+      Math.max(0, c.g * factor),
+      Math.max(0, c.b * factor)
+    );
+  }
+
   function createHumanFigure(player, classKey, hairColor) {
     const look = CLASS_LOOK[classKey] || CLASS_LOOK.knight;
-    const primary = nudgeColor(look.primary, 0.08);
-    const secondary = nudgeColor(look.secondary, 0.08);
+    const primary = darkenColor(nudgeColor(look.primary, 0.08));
+    const secondary = darkenColor(nudgeColor(look.secondary, 0.08));
     const gender = (CLASSES[classKey] && CLASSES[classKey].gender) || 'male';
     const hairHex = hairColor != null ? hairColor : 0x3d2314;
-    const skinColor = nudgeColor(look.skin != null ? look.skin : 0xe8b4a0, 0.06);
-    const hairColorNudged = nudgeColor(hairHex, 0.08);
+    const skinColor = darkenColor(nudgeColor(look.skin != null ? look.skin : 0xe8b4a0, 0.06));
+    const hairColorNudged = darkenColor(nudgeColor(hairHex, 0.08));
     const roughnessVar = () => (Math.random() - 0.5) * 0.08;
     const metalVar = () => (Math.random() - 0.5) * 0.04;
 
@@ -1113,7 +1124,7 @@ function main() {
       const capeH = legH + torsoH * 0.15;
       const capeGeo = new THREE.PlaneGeometry(capeW, capeH);
       const capeMat = new THREE.MeshStandardMaterial({
-        color: nudgeColor(look.cape, 0.08),
+        color: darkenColor(nudgeColor(look.cape, 0.08)),
         metalness: 0.15,
         roughness: Math.max(0.5, Math.min(1, 0.8 + roughnessVar())),
         side: THREE.DoubleSide,
@@ -1329,7 +1340,7 @@ function main() {
     requestAnimationFrame(levelUpTick);
   }
 
-  const CAMERA_TWEEN_MS = 430;
+  const CAMERA_TWEEN_MS = 300;
   const ATTACK_ANIMATION_MS = 280;
   const ATTACK_HIT_AT_T = 0.45;
   const HIT_REACT_MS = 160;
