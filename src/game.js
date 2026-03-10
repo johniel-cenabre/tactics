@@ -103,11 +103,11 @@ const CLASS_SKILLS = {
   ],
   assassin: [
     { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
-    { name: 'Poison', description: 'Reduce target\'s VIT by 3 for 3 turns.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'poison' },
+    { name: 'Execute', description: 'Deal AGI-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'execute' },
   ],
   berserker: [
-    { name: 'Berserk', description: 'Deal STR-based damage for -2 HP.', cost: 0, target: 'enemy', range: 1, level: 2, effectKey: 'berserk' },
-    { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 2 turns.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
+    { name: 'Berserk', description: 'Deal STR-based damage for -3 HP.', cost: 0, hpCost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'berserk' },
+    { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 1 turn.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
   ],
   witch: [
     { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 3, level: 1, effectKey: 'hex' },
@@ -137,7 +137,7 @@ function getEffectiveStat(unit, key) {
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
-  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', poison: 'Poison', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', strike: 'Strike', bite: 'Bite', howl: 'Howl' };
+  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', strike: 'Strike', bite: 'Bite', howl: 'Howl' };
   const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
   const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
@@ -230,22 +230,22 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(t, d, false);
       break;
     }
-    case 'poison': if (t) {
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.vit = 3; t.tempDebuff.duration = 4;
-      showStatChange(t.x, t.y, '-3 VIT', false);
+    case 'execute': if (t) {
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
     } break;
     case 'cripple': if (t) {
       t.agi = Math.max(1, (t.agi || 0) - 1); u.agi = (u.agi || 0) + 1;
       showStatChange(t.x, t.y, '-1 AGI', false); showStatChange(u.x, u.y, '+1 AGI', true);
     } break;
-    case 'berserk':
-      u.hp = Math.max(0, u.hp - 2);
+    case 'berserk': if (t) {
       applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)), false);
-      applyDamage(u, 2, false);
+      applyDamage(u, 3, false);
       break;
+    }
     case 'bloodlust': {
       const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.5));
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 2;
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true); break;
     }
     case 'hex': if (t) {
@@ -2021,7 +2021,7 @@ function main() {
       overlay.innerHTML = '<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>';
     } else {
       overlay.innerHTML = available.map((skill, i) => {
-        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost ? 'disabled' : ''}>
+        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost || unit.hp < skill.hpCost ? 'disabled' : ''}>
           <span class="skill-name">${skill.name}</span> <span class="skill-meta">${skill.cost} MP · Lv.${skill.level}</span><br/>
           <span class="skill-meta">${skill.description}</span>
         </button>`;
@@ -2974,10 +2974,10 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'strike', 'bite']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'strike', 'bite', 'execute']);
       const HEAL_KEYS = new Set(['chakra']);
       const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl']);
-      const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
+      const DEBUFF_KEYS = new Set(['freeze', 'impale']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'mantra', 'weaken', 'cripple', 'hex', 'blind']);
 
       function getEnemyTargets(skill) {
