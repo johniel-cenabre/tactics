@@ -83,7 +83,7 @@ const CLASS_SKILLS = {
   ],
   mage: [
     { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 4, target: 'enemy', range: 4, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'freeze', type: 'spell' },
+    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'freeze' },
   ],
   monk: [
     { name: 'Mantra', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'mantra' },
@@ -110,7 +110,7 @@ const CLASS_SKILLS = {
     { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 2 turns.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
   ],
   witch: [
-    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 3, level: 1, effectKey: 'hex', type: 'spell' },
+    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 3, level: 1, effectKey: 'hex' },
     { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
@@ -181,7 +181,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       } break;
     case 'arcaneBolt': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 1.5) - (getEffectiveStat(t, 'int') * 1.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int')) - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       break;
     }
@@ -203,7 +203,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'feast': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       const isHit = applyDamage(t, d, false);
       if (isHit) {
         applyDamage(u, d, true);
@@ -225,7 +225,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(u.x, u.y, '+2 DEX', true); break;
     case 'snipe': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
@@ -239,7 +239,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'berserk':
       u.hp = Math.max(0, u.hp - 2);
-      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)), false);
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)), false);
       applyDamage(u, 2, false);
       break;
     case 'bloodlust': {
@@ -253,14 +253,14 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
       break;
     }
     case 'shuriken': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.5) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.5) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
@@ -279,7 +279,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     }
     case 'bite': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.4 + getEffectiveStat(u, 'agi') * 0.3) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'agi') * 0.2) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
@@ -2129,7 +2129,7 @@ function main() {
     const isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
     let damage = 0;
     if (isHit) {
-      const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.1 + getEffectiveStat(unit, 'int') * 0.07) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.1);
+      const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.2 + getEffectiveStat(unit, 'int') * 0.1) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.2);
       damage = Math.max(1, Math.floor(rawDamage));
     }
     hasAttacked = true;
@@ -2794,9 +2794,11 @@ function main() {
           const enemyTargets = getEnemyTargets(skill);
           if (enemyTargets.length === 0) continue;
           const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
+          const sortBySpell = (a, b) => getEffectiveStat(a, 'int') - getEffectiveStat(b, 'int') || a.hp - b.hp;
+          const sortByHp = (a, b) => a.hp - b.hp;
           const toHit = lowHp.length > 0
-            ? lowHp.sort((a, b) => a.hp - b.hp)[0]
-            : enemyTargets.sort((a, b) => a.hp - b.hp)[0];
+            ? (skill.type === 'spell' ? lowHp.sort(sortBySpell)[0] : lowHp.sort(sortByHp)[0])
+            : (skill.type === 'spell' ? enemyTargets.sort(sortBySpell)[0] : enemyTargets.sort(sortByHp)[0]);
           chosen = skill;
           chosenTarget = toHit;
           break;
