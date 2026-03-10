@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 1;
+const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -254,7 +254,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       break;
     }
     case 'bloodlust': {
-      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.5));
+      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.1));
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 2;
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true); break;
     }
@@ -3112,14 +3112,18 @@ function main() {
         }
       }
       if (!chosen) {
-        for (const skill of available) {
-          if (skill.disabled) continue;
-          if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
-            const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
-            if (!hasActiveBuff) {
-              chosen = skill;
-              chosenTarget = unit;
-              break;
+        const hasEnemyReachableOrNearby = enemiesInRange.length > 0 || reachableTiles.some((t) => getEnemiesInRangeFrom(t.gx, t.gy).length > 0);
+        if (hasEnemyReachableOrNearby) {
+          for (const skill of available) {
+            if (skill.disabled) continue;
+            if (skill.effectKey === 'bloodLust' && (unit.hp / unit.maxHp) > 0.8) continue;
+            if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
+              const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
+              if (!hasActiveBuff) {
+                chosen = skill;
+                chosenTarget = unit;
+                break;
+              }
             }
           }
         }
