@@ -568,7 +568,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 2em;
 }
 #mode-select-overlay .mode-select-ai-draft {
   display: flex;

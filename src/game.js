@@ -222,9 +222,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
     case 'chakra':
-      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.5) + getEffectiveStat(u, 'luk') * 0.2), true);
+      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(u, 'luk') * 0.2), true);
       if (!t) break;
-      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.5) + getEffectiveStat(t, 'luk') * 0.2), true);
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(t, 'luk') * 0.2), true);
       break;
     case 'weaken': if (t) {
       t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
@@ -816,7 +816,7 @@ function buildTileMesh(world) {
         const treeGroup = new THREE.Group();
         treeGroup.position.set(px, surfaceY, pz);
         treeGroup.userData.swayPhase = Math.random() * Math.PI * 2;
-        treeGroup.userData.sway = Math.random() < 1 / 4;
+        treeGroup.userData.sway = (x === 0 || x === world.w - 1) && (y === 0 || y === world.h - 1);
 
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
         const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
