@@ -42,8 +42,8 @@ function shuffleArray(arr) {
 const CLASSES = {
   knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
   mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
-  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 9,  int: 10, range: 1 },
-  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 11, int: 5,  range: 1 },
+  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11,  int: 10, range: 1 },
+  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 9, int: 5,  range: 1 },
   lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
   hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
   assassin:{ name: 'Assassin', gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
@@ -94,8 +94,8 @@ const CLASS_SKILLS = {
     { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'freeze' },
   ],
   monk: [
-    { name: 'Mantra', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'mantra' },
-    { name: 'Chakra', description: 'Restore INT-based HP to self.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'chakra' },
+    { name: 'Mantra Fist', description: 'Deal STR+LUK-based damage to one enemy.', cost: 3, hpCost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'mantraFist' },
+    { name: 'Chakra', description: 'Restore INT-based HP to self or ally.', cost: 7, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
     { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
@@ -198,13 +198,15 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 1;
       showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
-    case 'mantra': if (t) {
-      t.luk = Math.max(1, (t.luk || 0) - 2); u.luk = (u.luk || 0) + 2;
-      showStatChange(t.x, t.y, '-2 LUK', false); showStatChange(u.x, u.y, '+2 LUK', true);
+    case 'mantraFist': if (t) {
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) + (getEffectiveStat(u, 'luk') * 0.4) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+      applyDamage(u, 2, false)
     } break;
     case 'chakra':
-      u.hp = Math.min(u.maxHp, u.hp + getEffectiveStat(u, 'int'));
-      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.6)), true);
+      if (!t) break;
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.6)), true);
+      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4)), true);
       break;
     case 'weaken': if (t) {
       t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
