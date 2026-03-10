@@ -3202,7 +3202,8 @@ function main() {
       for (const skill of available) {
         if (skill.disabled) continue;
         if (DAMAGE_KEYS.has(skill.effectKey)) {
-          if (skill.effectKey === 'berserk' && unit.hp < (unit.maxHp * 0.2)) continue;
+          if (skill.effectKey === 'feast' && unit.hp > (unit.hp / unit.maxHp) * 0.7) continue;
+          if (skill.effectKey === 'berserk' && unit.hp < (unit.hp / unit.maxHp) * 0.3) continue;
           if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
           const enemyTargets = getEnemyTargets(skill);
           if (enemyTargets.length === 0) continue;
