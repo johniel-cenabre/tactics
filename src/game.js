@@ -56,14 +56,14 @@ function shuffleArray(arr) {
 
 const CLASSES = {
   knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
+  mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 6 },
   monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11,  int: 10, range: 1 },
   ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9, int: 5,  range: 1 },
   lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
-  hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
+  hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 7 },
   assassin:{ name: 'Assassin', gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
   berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
-  witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
+  witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 5 },
   ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
   samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
@@ -105,8 +105,8 @@ const CLASS_SKILLS = {
     { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 4, target: 'enemy', range: 4, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'freeze' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 4, target: 'enemy', range: 7, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'freeze' },
   ],
   monk: [
     { name: 'Mantra Fist', description: 'Deal STR+LUK-based damage to one enemy.', cost: 3, hpCost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'mantraFist' },
@@ -133,8 +133,8 @@ const CLASS_SKILLS = {
     { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 1 turn.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
   ],
   witch: [
-    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 3, level: 1, effectKey: 'hex' },
-    { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'drain', type: 'spell' },
+    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'hex' },
+    { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 6, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
     { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'shuriken' },
