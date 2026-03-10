@@ -18,6 +18,21 @@ const DEV_MODE = typeof window !== 'undefined' && (
   window.location.search.includes('dev=1')
 );
 
+/** AI draft preference: 'balanced' (default), 'random', 'tanky', 'aggressive', 'scout', 'caster', or 'custom'.
+ *  When 'custom', use AI_DRAFT_CUSTOM_ORDER. Change at runtime via UI or set here. */
+const AI_DRAFT_PREFERENCE_OPTIONS = [
+  { value: 'balanced', label: 'Balanced (HP + even stats)' },
+  { value: 'tanky', label: 'Tanky (HP + VIT)' },
+  { value: 'scout', label: 'Quick and Fast (AGI)' },
+  { value: 'aggressive', label: 'Aggressive (STR + AGI)' },
+  { value: 'scout', label: 'Scout (high AGI)' },
+  { value: 'caster', label: 'Caster (INT + MP)' },
+  { value: 'random', label: 'Random' },
+  { value: 'custom', label: 'Custom order' },
+];
+/** When preference is 'custom', AI picks first available from this order (class keys). */
+const AI_DRAFT_CUSTOM_ORDER = ['berserker', 'knight', 'lancer', 'werewolf', 'samurai', 'ninja', 'assassin', 'ghoul', 'monk', 'hunter', 'mage', 'witch'];
+
 const TileType = {
   PATH: 0,
   GRASS: 1,
@@ -254,7 +269,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       break;
     }
     case 'bloodlust': {
-      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.1));
+      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.2));
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 2;
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true); break;
     }
@@ -1344,6 +1359,7 @@ function main() {
   let currentPlayer = 1;
   let phase = 'draft';
   let gameMode = 'pvp';
+  let aiDraftPreference = 'balanced';
   let availableClasses = new Set(CLASS_KEYS);
   let draftPickIndex = 0;
   let pendingClassKey = null;
@@ -2166,6 +2182,21 @@ function main() {
   const btnPvP = document.getElementById('mode-pvp');
   const btnPvCPU = document.getElementById('mode-pvcpu');
   const btnCvCPU = document.getElementById('mode-cvcpu');
+  const aiDraftSelect = document.getElementById('ai-draft-preference');
+
+  const aiDraftRow = document.getElementById('mode-select-ai-draft');
+  if (aiDraftRow) aiDraftRow.style.display = DEV_MODE ? '' : 'none';
+
+  if (aiDraftSelect) {
+    AI_DRAFT_PREFERENCE_OPTIONS.forEach((opt) => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      aiDraftSelect.appendChild(o);
+    });
+    aiDraftSelect.value = aiDraftPreference;
+    aiDraftSelect.addEventListener('change', () => { aiDraftPreference = aiDraftSelect.value; });
+  }
 
   const bgMusic = new Audio();
   bgMusic.loop = true;
@@ -2224,6 +2255,16 @@ function main() {
   function pickBalancedClass() {
     const available = CLASS_KEYS.filter((k) => availableClasses.has(k));
     if (available.length === 0) return null;
+    const preference = aiDraftPreference || 'balanced';
+
+    if (preference === 'random') {
+      return available[Math.floor(Math.random() * available.length)];
+    }
+    if (preference === 'custom') {
+      const ordered = AI_DRAFT_CUSTOM_ORDER.filter((k) => availableClasses.has(k));
+      return ordered[0] ?? available[0] ?? null;
+    }
+
     const statKeys = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
     function variance(key) {
       const c = CLASSES[key];
@@ -2232,6 +2273,45 @@ function main() {
       const mean = values.reduce((a, b) => a + b, 0) / values.length;
       return values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
     }
+
+    if (preference === 'tanky') {
+      const sorted = [...available].sort((a, b) => {
+        const hpA = CLASSES[a]?.hp ?? 0;
+        const hpB = CLASSES[b]?.hp ?? 0;
+        if (hpB !== hpA) return hpB - hpA;
+        return (CLASSES[b]?.vit ?? 0) - (CLASSES[a]?.vit ?? 0);
+      });
+      return sorted[0] ?? null;
+    }
+    if (preference === 'aggressive') {
+      const sorted = [...available].sort((a, b) => {
+        const strA = CLASSES[a]?.str ?? 0;
+        const strB = CLASSES[b]?.str ?? 0;
+        if (strB !== strA) return strB - strA;
+        return (CLASSES[b]?.agi ?? 0) - (CLASSES[a]?.agi ?? 0);
+      });
+      return sorted[0] ?? null;
+    }
+    if (preference === 'scout') {
+      const sorted = [...available].sort((a, b) => {
+        const agiA = CLASSES[a]?.agi ?? 0;
+        const agiB = CLASSES[b]?.agi ?? 0;
+        if (agiB !== agiA) return agiB - agiA;
+        return (CLASSES[b]?.dex ?? 0) - (CLASSES[a]?.dex ?? 0);
+      });
+      return sorted[0] ?? null;
+    }
+    if (preference === 'caster') {
+      const sorted = [...available].sort((a, b) => {
+        const intA = CLASSES[a]?.int ?? 0;
+        const intB = CLASSES[b]?.int ?? 0;
+        if (intB !== intA) return intB - intA;
+        return (CLASSES[b]?.mp ?? 0) - (CLASSES[a]?.mp ?? 0);
+      });
+      return sorted[0] ?? null;
+    }
+
+    // balanced (default): prefer high HP, then lower variance
     const sorted = [...available].sort((a, b) => {
       const hpA = CLASSES[a]?.hp ?? 0;
       const hpB = CLASSES[b]?.hp ?? 0;
@@ -3116,7 +3196,7 @@ function main() {
         if (hasEnemyReachableOrNearby) {
           for (const skill of available) {
             if (skill.disabled) continue;
-            if (skill.effectKey === 'bloodLust' && (unit.hp / unit.maxHp) > 0.8) continue;
+            if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
             if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
               const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
               if (!hasActiveBuff) {
