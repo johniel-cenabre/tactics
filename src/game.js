@@ -142,7 +142,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
   const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   const targetDesc = t ? `${t.name} (${t.class}, P${t.player})` : 'self';
-  console.log('[SKILL]', `${u.name} (${u.class}, P${u.player})`, 'uses', skillName, '→', targetDesc, `| MP ${u.mp}`);
+  let skillDamage = null;
   const applyDamage = (victim, d, isHeal, isSpell) => {
     if (isHeal) {
       victim.hp = Math.min(victim.maxHp, victim.hp + d);
@@ -157,6 +157,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       }
       if (isHit) {
         victim.hp = Math.max(0, victim.hp - d);
+        if (victim !== u) skillDamage = d;
         if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, String(d), false);
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(victim);
         if (victim.hp <= 0 && ctx.handleUnitDeath) ctx.handleUnitDeath(victim);
@@ -181,7 +182,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       } break;
     case 'arcaneBolt': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int')) - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       break;
     }
@@ -279,7 +280,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     }
     case 'bite': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'agi') * 0.2) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'agi') * 0.1) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
@@ -288,6 +289,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(u.x, u.y, '+2 STR, +2 AGI', true); break;
     default: break;
   }
+  console.log('[SKILL]', `${u.name} (${u.class}, P${u.player})`, 'uses', skillName, '→', targetDesc, `| MP ${u.mp}`, skillDamage != null ? `| ${skillDamage} dmg` : '');
   if (ctx.updateTurnUI) ctx.updateTurnUI();
 }
 
