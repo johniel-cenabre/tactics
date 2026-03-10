@@ -685,6 +685,30 @@ function buildTileMesh(world) {
   const noiseBumpMap = createTilingNoiseTexture(64);
   const baseRoughness = 0.88;
   const baseMetalness = 0.02;
+  const treeGroups = [];
+
+  function addGrassTufts(baseX, baseZ, surfaceY, numTufts, maxHeight) {
+    const grassMat = new THREE.MeshStandardMaterial({ color: 0x3a6a2a, roughness: 0.9 });
+    grassMat.bumpMap = noiseBumpMap;
+    grassMat.bumpScale = 0.12;
+    for (let i = 0; i < numTufts; i++) {
+      const h = 0.08 + Math.random() * maxHeight;
+      const w = 0.03 + Math.random() * 0.03;
+      const tuft = new THREE.Mesh(
+        new THREE.CylinderGeometry(w * 0.5, w, h, 6),
+        grassMat
+      );
+      tuft.position.set(
+        baseX + (Math.random() - 0.5) * 0.5,
+        surfaceY + h / 2,
+        baseZ + (Math.random() - 0.5) * 0.5
+      );
+      tuft.rotation.x = (Math.random() - 0.5) * 0.2;
+      tuft.rotation.z = (Math.random() - 0.5) * 0.2;
+      tuft.castShadow = true;
+      group.add(tuft);
+    }
+  }
 
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
@@ -731,6 +755,10 @@ function buildTileMesh(world) {
       const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
 
       if (t === TileType.TREE) {
+        const treeGroup = new THREE.Group();
+        treeGroup.position.set(px, surfaceY, pz);
+        treeGroup.userData.swayPhase = Math.random() * Math.PI * 2;
+
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
         const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.95 });
@@ -740,9 +768,9 @@ function buildTileMesh(world) {
           new THREE.CylinderGeometry(0.12, 0.14, trunkH, 8),
           trunkMat
         );
-        trunk.position.set(px, surfaceY + trunkH / 2, pz);
+        trunk.position.set(0, trunkH / 2, 0);
         trunk.castShadow = true;
-        group.add(trunk);
+        treeGroup.add(trunk);
 
         const leafBumpMap = noiseBumpMap.clone();
         leafBumpMap.repeat.set(3, 3);
@@ -762,25 +790,25 @@ function buildTileMesh(world) {
             new THREE.ConeGeometry(coneRad, bottomH, 8),
             foliageMat
           );
-          bottomCone.position.set(px, surfaceY + trunkH + bottomH / 2, pz);
+          bottomCone.position.set(0, trunkH + bottomH / 2, 0);
           bottomCone.castShadow = true;
-          group.add(bottomCone);
+          treeGroup.add(bottomCone);
           const middleCone = new THREE.Mesh(
             new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
             foliageMat
           );
-          middleCone.position.set(px, surfaceY + trunkH + bottomH - overlap + middleH / 2, pz);
+          middleCone.position.set(0, trunkH + bottomH - overlap + middleH / 2, 0);
           middleCone.castShadow = true;
-          group.add(middleCone);
+          treeGroup.add(middleCone);
           const topCone = new THREE.Mesh(
             new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
             foliageMat
           );
-          topCone.position.set(px, surfaceY + trunkH + bottomH - overlap + middleH - overlap + topH / 2, pz);
+          topCone.position.set(0, trunkH + bottomH - overlap + middleH - overlap + topH / 2, 0);
           topCone.castShadow = true;
-          group.add(topCone);
+          treeGroup.add(topCone);
         } else {
-          const cloudBaseY = surfaceY + trunkH - 0.25;
+          const cloudBaseY = trunkH - 0.25;
           const numClumps = 6 + Math.floor(Math.random() * 3);
           for (let i = 0; i < numClumps; i++) {
             const r = 0.14 + Math.random() * 0.22;
@@ -791,11 +819,15 @@ function buildTileMesh(world) {
               new THREE.SphereGeometry(r, 8, 6),
               foliageMat
             );
-            clump.position.set(px + offX, cloudBaseY + offY + r * 0.5, pz + offZ);
+            clump.position.set(offX, cloudBaseY + offY + r * 0.5, offZ);
             clump.castShadow = true;
-            group.add(clump);
+            treeGroup.add(clump);
           }
         }
+
+        group.add(treeGroup);
+        treeGroups.push(treeGroup);
+        addGrassTufts(px, pz, surfaceY, 4, 0.14);
       } else if (t === TileType.WATER) {
         const wc = colors[TileType.WATER];
         const wr = ((wc >> 16) & 0xff) / 255;
@@ -847,9 +879,11 @@ function buildTileMesh(world) {
         addRock(s1, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15);
         addRock(s2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.25);
         addRock(s3, (Math.random() - 0.5) * 0.28, (Math.random() - 0.5) * 0.28);
+        addGrassTufts(px, pz, surfaceY, 4, 0.14);
       }
     }
   }
+  group.userData.treeGroups = treeGroups;
   return group;
 }
 
@@ -1050,13 +1084,13 @@ function main() {
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
     const leftEye = new THREE.Mesh(
-      new THREE.SphereGeometry(0.018, 8, 6),
+      new THREE.BoxGeometry(0.032, 0.004, 0.004),
       eyeMat
     );
     leftEye.position.set(-0.032, 0.028, headRadius * 0.92);
     head.add(leftEye);
     const rightEye = new THREE.Mesh(
-      new THREE.SphereGeometry(0.018, 8, 6),
+      new THREE.BoxGeometry(0.032, 0.004, 0.004),
       eyeMat
     );
     rightEye.position.set(0.032, 0.028, headRadius * 0.92);
@@ -4075,6 +4109,15 @@ function main() {
     for (let i = 0; i < highlightMaterials.length; i++) {
       const base = i % 2 === 0 ? 0.4 : 0.7;
       highlightMaterials[i].opacity = base * pulse;
+    }
+    const treeGroups = tilesGroup.userData.treeGroups;
+    if (treeGroups && treeGroups.length > 0) {
+      for (let i = 0; i < treeGroups.length; i++) {
+        const g = treeGroups[i];
+        const phase = g.userData.swayPhase != null ? g.userData.swayPhase : 0;
+        g.rotation.x = Math.sin(now * 0.0009 + phase) * 0.018;
+        g.rotation.z = Math.sin(now * 0.0007 + phase * 1.4) * 0.018;
+      }
     }
     renderer.render(scene, camera);
   }
