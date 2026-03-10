@@ -925,7 +925,7 @@ function main() {
   const cx = (world.w * TILE_SIZE) / 2;
   const cz = (world.h * TILE_SIZE) / 2;
   const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 200);
-  const INITIAL_ZOOM = 20;
+  const INITIAL_ZOOM = 17;
   const cameraOffset = new THREE.Vector3(12, 38, 16).normalize().multiplyScalar(INITIAL_ZOOM);
   const cameraTarget = new THREE.Vector3();
   const _zoomDir = new THREE.Vector3();
