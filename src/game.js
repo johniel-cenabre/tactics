@@ -2844,7 +2844,7 @@ function main() {
       for (const skill of available) {
         if (DAMAGE_KEYS.has(skill.effectKey)) {
           if (unit.mp < skill.cost) continue;
-          if (skill.effectKey === 'berserk' && unit.hp < (unit.maxHp * 0.3)) continue;
+          if (skill.effectKey === 'berserk' && unit.hp < (unit.maxHp * 0.2)) continue;
           if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
           const enemyTargets = getEnemyTargets(skill);
           if (enemyTargets.length === 0) continue;
@@ -2885,7 +2885,8 @@ function main() {
           }
         }
       }
-      if (!chosen) {
+      const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+      if (!chosen && !hasLowHpEnemyInRange) {
         for (const skill of available) {
           if (unit.mp < skill.cost) continue;
           if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
@@ -2897,7 +2898,7 @@ function main() {
           }
         }
       }
-      if (!chosen) {
+      if (!chosen && !hasLowHpEnemyInRange) {
         for (const skill of available) {
           if (unit.mp < skill.cost) continue;
           if (DEBUFF_KEYS.has(skill.effectKey)) {
