@@ -279,7 +279,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.8) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
       break;
@@ -813,7 +813,7 @@ function buildTileMesh(world) {
         const treeGroup = new THREE.Group();
         treeGroup.position.set(px, surfaceY, pz);
         treeGroup.userData.swayPhase = Math.random() * Math.PI * 2;
-        treeGroup.userData.sway = Math.random() < 1 / 3;
+        treeGroup.userData.sway = Math.random() < 1 / 4;
 
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
         const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
