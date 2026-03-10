@@ -10,7 +10,7 @@ const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
-const MAX_TURNS = 120;
+const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
@@ -30,6 +30,14 @@ const TileType = {
 };
 
 const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf'];
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 const CLASSES = {
   knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
@@ -1718,7 +1726,7 @@ function main() {
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: Player ${p} — pick a class`;
-      CLASS_KEYS.forEach((key) => {
+      shuffleArray([...CLASS_KEYS]).forEach((key) => {
         const isAvailable = availableClasses.has(key);
         const c = CLASSES[key];
         const card = document.createElement('button');
