@@ -286,7 +286,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     }
     case 'shuriken': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.5) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       break;
     }
