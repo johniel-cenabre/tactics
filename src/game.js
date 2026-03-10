@@ -1340,7 +1340,7 @@ function main() {
     requestAnimationFrame(levelUpTick);
   }
 
-  const CAMERA_TWEEN_MS = 300;
+  const CAMERA_TWEEN_MS = 400;
   const ATTACK_ANIMATION_MS = 280;
   const ATTACK_HIT_AT_T = 0.45;
   const HIT_REACT_MS = 160;
@@ -1382,6 +1382,7 @@ function main() {
     _startPosition.copy(camera.position);
     const startTime = performance.now();
     let cameraTickCount = 0;
+    renderer.shadowMap.enabled = false;
 
     function tick(now) {
       cameraTickCount++;
@@ -1392,7 +1393,10 @@ function main() {
       camera.position.lerpVectors(_startPosition, _endPosition, eased);
       camera.lookAt(cameraTarget);
       if (t < 1) requestAnimationFrame(tick);
-      else cameraTweenActive = false;
+      else {
+        renderer.shadowMap.enabled = true;
+        cameraTweenActive = false;
+      }
     }
     requestAnimationFrame(tick);
   }
@@ -1706,6 +1710,24 @@ function main() {
   }
 
   function endDraftPhase() {
+    document.getElementById('draft-panel').style.display = 'none';
+    const placementCardEl = document.getElementById('draft-placement-card');
+    if (placementCardEl) {
+      placementCardEl.style.display = 'none';
+      placementCardEl.innerHTML = '';
+    }
+    clearHighlights();
+    const battleStartEl = document.getElementById('battle-start-overlay');
+    if (battleStartEl) {
+      battleStartEl.classList.add('visible');
+      battleStartEl.setAttribute('aria-hidden', 'false');
+    }
+    document.getElementById('draft-panel').style.display = 'none';
+    const placementCardEl2 = document.getElementById('draft-placement-card');
+    if (placementCardEl2) {
+      placementCardEl2.style.display = 'none';
+      placementCardEl2.innerHTML = '';
+    }
     phase = 'playing';
     turnCount = 0;
     initiativeOrder = units.slice().sort((a, b) => {
@@ -1722,18 +1744,18 @@ function main() {
     hasMoved = false;
     hasAttacked = false;
     selectedUnitId = initiativeOrder[currentTurnIndex];
-    document.getElementById('draft-panel').style.display = 'none';
-    document.getElementById('turn-menu').style.display = 'flex';
-    const placementCardEl = document.getElementById('draft-placement-card');
-    if (placementCardEl) {
-      placementCardEl.style.display = 'none';
-      placementCardEl.innerHTML = '';
-    }
-    clearHighlights();
-    updateUnitTileBorders();
-    updateTurnUI();
-    updateActiveUnitPointer();
-    centerCameraOnCurrentPlayer(true);
+    const BATTLE_START_DELAY_MS = 4000;
+    setTimeout(() => {
+      if (battleStartEl) {
+        battleStartEl.classList.remove('visible');
+        battleStartEl.setAttribute('aria-hidden', 'true');
+      }
+      document.getElementById('turn-menu').style.display = 'flex';
+      updateUnitTileBorders();
+      updateTurnUI();
+      updateActiveUnitPointer();
+      centerCameraOnCurrentPlayer(true);
+    }, BATTLE_START_DELAY_MS);
   }
 
   function updateDraftUI() {

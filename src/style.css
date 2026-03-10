@@ -543,6 +543,27 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 #game-over-overlay.visible {
   display: flex;
 }
+#battle-start-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#battle-start-overlay.visible {
+  display: flex;
+}
+#battle-start-overlay .battle-start-message {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 700;
+  color: #e6edf3;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.08em;
+}
 #mode-select-overlay {
   position: fixed;
   inset: 0;
