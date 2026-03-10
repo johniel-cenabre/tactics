@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 6;
+const DRAFT_PICKS_PER_PLAYER = 1;
 const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -199,7 +199,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
     case 'mantraFist': if (t) {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) + (getEffectiveStat(u, 'luk') * 0.4) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.8) + (getEffectiveStat(u, 'luk') * 0.4) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
       applyDamage(u, 2, false)
     } break;
@@ -2065,7 +2065,7 @@ function main() {
       overlay.innerHTML = '<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>';
     } else {
       overlay.innerHTML = available.map((skill, i) => {
-        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost || unit.hp < skill.hpCost ? 'disabled' : ''}>
+        return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost || unit.hp < skill.hpCost || unit.level < skill.level ? 'disabled' : ''}>
           <span class="skill-name">${skill.name}</span> <span class="skill-meta">${skill.cost} MP · Lv.${skill.level}</span><br/>
           <span class="skill-meta">${skill.description}</span>
         </button>`;
@@ -3423,8 +3423,7 @@ function main() {
   function getAvailableSkills(unit) {
     if (!unit || !unit.class) return [];
     const list = CLASS_SKILLS[unit.class];
-    if (!list) return [];
-    return list.filter((s) => unit.level >= s.level);
+    if (!list) return [];;
   }
 
   function getSkillTargetTiles(unit, skill, unitsList) {
