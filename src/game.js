@@ -848,72 +848,36 @@ function buildTileMesh(world) {
         foliageMat.bumpMap = leafBumpMap;
         foliageMat.bumpScale = 0.16 + Math.random() * 0.14;
 
-        const isPine = Math.random() < 0.5;
-        if (isPine) {
-          const coneRad = atEdge ? 0.52 : 0.45;
-          const coneH = atEdge ? 1.05 : 0.9;
-          const overlap = 0.12;
-          const bottomH = coneH * 0.5;
-          const middleH = coneH * 0.45;
-          const topH = coneH * 0.4;
-          const bottomCone = new THREE.Mesh(
-            new THREE.ConeGeometry(coneRad, bottomH, 8),
-            foliageMat
-          );
-          bottomCone.position.set(0, trunkH + bottomH / 2, 0);
-          bottomCone.castShadow = true;
-          bottomCone.raycast = function () {};
-          treeGroup.add(bottomCone);
-          const middleCone = new THREE.Mesh(
-            new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
-            foliageMat
-          );
-          middleCone.position.set(0, trunkH + bottomH - overlap + middleH / 2, 0);
-          middleCone.castShadow = true;
-          middleCone.raycast = function () {};
-          treeGroup.add(middleCone);
-          const topCone = new THREE.Mesh(
-            new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
-            foliageMat
-          );
-          topCone.position.set(0, trunkH + bottomH - overlap + middleH - overlap + topH / 2, 0);
-          topCone.castShadow = true;
-          topCone.raycast = function () {};
-          treeGroup.add(topCone);
-        } else {
-          const cloudBaseY = trunkH - 0.25;
-          const cn = () => 1 + (Math.random() - 0.5) * 0.32;
-          const clumpColorA = foliageColor.clone();
-          clumpColorA.r = Math.min(1, Math.max(0, clumpColorA.r * cn()));
-          clumpColorA.g = Math.min(1, Math.max(0, clumpColorA.g * cn()));
-          clumpColorA.b = Math.min(1, Math.max(0, clumpColorA.b * cn()));
-          const clumpColorB = foliageColor.clone();
-          clumpColorB.r = Math.min(1, Math.max(0, clumpColorB.r * cn()));
-          clumpColorB.g = Math.min(1, Math.max(0, clumpColorB.g * cn()));
-          clumpColorB.b = Math.min(1, Math.max(0, clumpColorB.b * cn()));
-          const clumpMatA = new THREE.MeshStandardMaterial({ color: clumpColorA, roughness: foliageRough + (Math.random() - 0.5) * 0.12 });
-          clumpMatA.bumpMap = leafBumpMap;
-          clumpMatA.bumpScale = foliageMat.bumpScale;
-          const clumpMatB = new THREE.MeshStandardMaterial({ color: clumpColorB, roughness: foliageRough + (Math.random() - 0.5) * 0.12 });
-          clumpMatB.bumpMap = leafBumpMap;
-          clumpMatB.bumpScale = foliageMat.bumpScale;
-          const numClumps = 6 + Math.floor(Math.random() * 3);
-          for (let i = 0; i < numClumps; i++) {
-            const r = 0.14 + Math.random() * 0.22;
-            const offX = (Math.random() - 0.5) * 0.5;
-            const offZ = (Math.random() - 0.5) * 0.5;
-            const offY = Math.random() * 0.4;
-            const clumpMat = i % 2 === 0 ? clumpMatA : clumpMatB;
-            const clump = new THREE.Mesh(
-              new THREE.SphereGeometry(r, 8, 6),
-              clumpMat
-            );
-            clump.position.set(offX, cloudBaseY + offY + r * 0.5, offZ);
-            clump.castShadow = true;
-            clump.raycast = function () {};
-            treeGroup.add(clump);
-          }
-        }
+        const coneRad = atEdge ? 0.52 : 0.45;
+        const coneH = atEdge ? 1.05 : 0.9;
+        const overlap = 0.12;
+        const bottomH = coneH * 0.5;
+        const middleH = coneH * 0.45;
+        const topH = coneH * 0.4;
+        const bottomCone = new THREE.Mesh(
+          new THREE.ConeGeometry(coneRad, bottomH, 8),
+          foliageMat
+        );
+        bottomCone.position.set(0, trunkH + bottomH / 2, 0);
+        bottomCone.castShadow = true;
+        bottomCone.raycast = function () {};
+        treeGroup.add(bottomCone);
+        const middleCone = new THREE.Mesh(
+          new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
+          foliageMat
+        );
+        middleCone.position.set(0, trunkH + bottomH - overlap + middleH / 2, 0);
+        middleCone.castShadow = true;
+        middleCone.raycast = function () {};
+        treeGroup.add(middleCone);
+        const topCone = new THREE.Mesh(
+          new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
+          foliageMat
+        );
+        topCone.position.set(0, trunkH + bottomH - overlap + middleH - overlap + topH / 2, 0);
+        topCone.castShadow = true;
+        topCone.raycast = function () {};
+        treeGroup.add(topCone);
 
         group.add(treeGroup);
         treeGroups.push(treeGroup);
@@ -1362,8 +1326,10 @@ function main() {
     showLevelUpFloatingText(unit, levelClass);
     if (!mesh) return;
     const startTime = performance.now();
+    let levelTickCount = 0;
     function levelUpTick(now) {
-      requestRender();
+      levelTickCount++;
+      if (levelTickCount % 2 === 0) requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / LEVEL_UP_ANIMATION_MS);
       const s = t < 0.5 ? 1 + 0.35 * (t / 0.5) : 1 + 0.35 * (1 - (t - 0.5) / 0.5);
@@ -1415,9 +1381,11 @@ function main() {
     _startTarget.copy(cameraTarget);
     _startPosition.copy(camera.position);
     const startTime = performance.now();
+    let cameraTickCount = 0;
 
     function tick(now) {
-      requestRender();
+      cameraTickCount++;
+      if (cameraTickCount % 2 === 0) requestRender();
       const t = Math.min(1, (now - startTime) / CAMERA_TWEEN_MS);
       const eased = t * (2 - t);
       cameraTarget.lerpVectors(_startTarget, _endTarget, eased);
@@ -2556,9 +2524,11 @@ function main() {
       const dx = endPos.x - startPos.x;
       const dz = endPos.z - startPos.z;
       if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
-      const startTime = performance.now();
+        const startTime = performance.now();
+      let tickCount = 0;
       function tick(now) {
-        requestRender();
+        tickCount++;
+        if (tickCount % 2 === 0) requestRender();
         const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
         const smoothstep = (x) => x * x * (3 - 2 * x);
         const eased = smoothstep(t);
@@ -2632,9 +2602,11 @@ function main() {
       const projEnd = endPos.clone();
       projEnd.y += 0.6;
       const startTime = performance.now();
+      let projTickCount = 0;
 
       function projectileTick(now) {
-        requestRender();
+        projTickCount++;
+        if (projTickCount % 2 === 0) requestRender();
         const elapsed = now - startTime;
         const t = Math.min(1, elapsed / PROJECTILE_MS);
         projectile.position.lerpVectors(projStart, projEnd, t);
@@ -2665,7 +2637,8 @@ function main() {
           if (targetMesh) {
             const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
             const easeOut = 1 - tReact;
-            targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+            _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
+            targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
             if (tReact >= 1) {
               targetMesh.position.copy(targetBasePos);
               hitReactStartTime = null;
@@ -2692,6 +2665,7 @@ function main() {
             targetDeathPending = false;
           }
           if (hitReactDone) {
+            renderer.shadowMap.enabled = true;
             if (hasMoved) setTimeout(() => endTurn(), 400);
             else setTimeout(() => updateTurnUI(), 400);
           } else {
@@ -2699,6 +2673,7 @@ function main() {
           }
         }
       }
+      renderer.shadowMap.enabled = false;
       requestAnimationFrame(projectileTick);
       return;
     }
@@ -2711,9 +2686,11 @@ function main() {
     const targetBasePos = worldPos(target.x, target.y).clone();
     const knockbackDir = endPos.clone().sub(startPos).normalize();
     const knockbackAmount = 0.4;
+    let attackTickCount = 0;
 
     function attackTick(now) {
-      requestRender();
+      attackTickCount++;
+      if (attackTickCount % 2 === 0) requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
       const lungeOut = t <= 0.4 ? t / 0.4 : 1;
@@ -2750,7 +2727,8 @@ function main() {
         if (targetMesh) {
           const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
           const easeOut = 1 - tReact;
-          targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+          _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
+          targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
           if (tReact >= 1) {
             targetMesh.position.copy(targetBasePos);
             hitReactStartTime = null;
@@ -2779,6 +2757,7 @@ function main() {
           targetDeathPending = false;
         }
         if (hitReactDone) {
+          renderer.shadowMap.enabled = true;
           if (hasMoved) setTimeout(() => endTurn(), 400);
           else setTimeout(() => updateTurnUI(), 400);
         } else {
@@ -2786,6 +2765,7 @@ function main() {
         }
       }
     }
+    renderer.shadowMap.enabled = false;
     requestAnimationFrame(attackTick);
   }
 
@@ -2802,8 +2782,10 @@ function main() {
     mesh.position.copy(pos);
     scene.add(mesh);
     const startTime = performance.now();
+    let spellTickCount = 0;
     function tick(now) {
-      requestRender();
+      spellTickCount++;
+      if (spellTickCount % 2 === 0) requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / SPELL_EXPLOSION_MS);
       const scale = t * (2 - t);
@@ -2858,8 +2840,10 @@ function main() {
       let hitReactStartTime = null;
       let targetDeathPending = false;
       const startTime = performance.now();
+      let skillTickCount = 0;
       function meleeSkillTick(now) {
-        requestRender();
+        skillTickCount++;
+        if (skillTickCount % 2 === 0) requestRender();
         const elapsed = now - startTime;
         const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
         const lungeOut = t <= 0.4 ? t / 0.4 : 1;
@@ -2888,7 +2872,8 @@ function main() {
           if (targetMesh) {
             const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
             const easeOut = 1 - tReact;
-            targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+            _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
+            targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
             if (tReact >= 1) {
               targetMesh.position.copy(targetBasePos);
               hitReactStartTime = null;
@@ -2915,6 +2900,7 @@ function main() {
             targetDeathPending = false;
           }
           if (hitReactStartTime == null) {
+            renderer.shadowMap.enabled = true;
             if (ctx.updateTurnUI) ctx.updateTurnUI();
             if (onDone) onDone();
           } else {
@@ -2922,6 +2908,7 @@ function main() {
           }
         }
       }
+      renderer.shadowMap.enabled = false;
       requestAnimationFrame(meleeSkillTick);
       return;
     }
@@ -2944,9 +2931,11 @@ function main() {
     const knockbackAmount = 0.4;
     let hitApplied = false;
     let hitReactStartTime = null;
+    let projTickCount = 0;
 
     function projectileTick(now) {
-      requestRender();
+      projTickCount++;
+      if (projTickCount % 2 === 0) requestRender();
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / PROJECTILE_MS);
       projectile.position.lerpVectors(projStart, projEnd, t);
@@ -2968,7 +2957,8 @@ function main() {
         if (targetMesh) {
           const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
           const easeOut = 1 - tReact;
-          targetMesh.position.copy(targetBasePos).add(knockbackDir.clone().multiplyScalar(knockbackAmount * easeOut));
+          _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
+          targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
           if (tReact >= 1) {
             targetMesh.position.copy(targetBasePos);
             hitReactStartTime = null;
@@ -2982,6 +2972,7 @@ function main() {
         requestAnimationFrame(projectileTick);
       } else {
         if (hitReactStartTime == null) {
+          renderer.shadowMap.enabled = true;
           if (ctx.updateTurnUI) ctx.updateTurnUI();
           if (onDone) onDone();
         } else {
@@ -2989,6 +2980,7 @@ function main() {
         }
       }
     }
+    renderer.shadowMap.enabled = false;
     requestAnimationFrame(projectileTick);
   }
 
@@ -3313,14 +3305,18 @@ function main() {
           break;
         }
       }
-      if (!chosen && hpRatio <= 0.4) {
+      if (!chosen) {
+        const HEAL_HP_RATIO_THRESHOLD = 0.5;
         for (const skill of available) {
           if (skill.disabled) continue;
           if (HEAL_KEYS.has(skill.effectKey)) {
             const targets = getSkillTargetTiles(unit, skill, units);
-            if (targets.length > 0) {
+            const lowHpTargets = targets
+              .filter((t) => t.targetUnit && t.targetUnit.maxHp > 0 && (t.targetUnit.hp / t.targetUnit.maxHp) < HEAL_HP_RATIO_THRESHOLD);
+            if (lowHpTargets.length > 0) {
+              const toHeal = lowHpTargets.sort((a, b) => a.targetUnit.hp - b.targetUnit.hp)[0].targetUnit;
               chosen = skill;
-              chosenTarget = skill.target === 'self' ? unit : (targets[0].targetUnit || unit);
+              chosenTarget = toHeal;
               break;
             }
           }
@@ -3332,7 +3328,7 @@ function main() {
           for (const skill of available) {
             if (skill.disabled) continue;
             if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
-            if (BUFF_KEYS.has(skill.effectKey) && skill.target === 'self') {
+            if (BUFF_KEYS.has(skill.effectKey)) {
               const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
               if (!hasActiveBuff) {
                 chosen = skill;
@@ -4037,9 +4033,11 @@ function main() {
           mesh.rotation.y = Math.atan2(dx, dz);
         }
         const startTime = performance.now();
+        let tickCount = 0;
 
         function tick(now) {
-          requestRender();
+          tickCount++;
+          if (tickCount % 2 === 0) requestRender();
           const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
           const smoothstep = (x) => x * x * (3 - 2 * x);
           const eased = smoothstep(t);
@@ -4102,6 +4100,7 @@ function main() {
         zoomDir.copy(cameraTarget).sub(camera.position).normalize();
         camera.position.copy(cameraTarget).sub(zoomDir.multiplyScalar(newDist));
         camera.lookAt(cameraTarget);
+        lastInteractionTime = performance.now();
       }
       pinchLastDistance = d;
       return;
@@ -4149,7 +4148,7 @@ function main() {
       camera.lookAt(cameraTarget);
       pointerDownPixel.x = e.clientX;
       pointerDownPixel.y = e.clientY;
-      requestRender();
+      lastInteractionTime = performance.now();
     } else if (isPanning) {
       const currNdc = pointerToNdc(e.clientX, e.clientY);
       panPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, cameraTarget.y, 0));
@@ -4163,7 +4162,7 @@ function main() {
       camera.position.add(delta);
       camera.lookAt(cameraTarget);
       prevPointerNdc = { x: currNdc.x, y: currNdc.y };
-      requestRender();
+      lastInteractionTime = performance.now();
     }
   }
 
@@ -4186,7 +4185,7 @@ function main() {
     zoomDir.copy(cameraTarget).sub(camera.position).normalize();
     camera.position.copy(cameraTarget).sub(zoomDir.multiplyScalar(newDist));
     camera.lookAt(cameraTarget);
-    requestRender();
+    lastInteractionTime = performance.now();
   }
 
   container.style.cursor = 'grab';
@@ -4222,6 +4221,7 @@ function main() {
   container.appendChild(combatTextLayer);
 
   const _projVec = new THREE.Vector3();
+  const _knockbackOffset = new THREE.Vector3();
   const COMBAT_TEXT_DURATION_MS = 1400;
   function showFloatingCombatText(gx, gy, text, isMiss, extraClass) {
     const el = document.createElement('div');
