@@ -195,20 +195,22 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(gx, gy, text, false, isBuff ? 'buff' : 'debuff');
   };
   switch (effectKey) {
-    case 'shieldWall':
+    case 'shieldWall': {
+      const bVal = 3;
       u.tempBuff = u.tempBuff || {}; u.tempBuff.vit = 2; u.tempBuff.duration = 3;
-      showStatChange(u.x, u.y, '+2 VIT', true); break;
-    case 'dominate':
-      if (t) {
-        t.str = Math.max(1, (t.str || 0) - 1); u.str = (u.str || 0) + 1;
-        showStatChange(t.x, t.y, '-1 STR', false); showStatChange(u.x, u.y, '+1 STR', true);
-      } break;
+      showStatChange(u.x, u.y, `+${bVal} VIT`, true);
+    } break;
+    case 'dominate': {
+      if (!t) break;
+      const dVal = 2;
+      t.str = Math.max(1, (t.str || 0) - dVal); u.str = (u.str || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} STR`, false); showStatChange(u.x, u.y, `+${dVal} STR`, true);
+    } break;
     case 'arcaneBolt': {
       if (!t) break;
       const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
-      break;
-    }
+    } break;
     case 'freeze': if (t) {
       t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 1;
       showStatChange(t.x, t.y, '-10 AGI', false);
@@ -221,14 +223,16 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.tempBuff = t.tempBuff || {}; t.tempBuff.luk = d; t.tempBuff.duration = 3;
       showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
-    case 'chakra':
+    case 'chakra': {
       applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(u, 'luk') * 0.2), true);
       if (!t) break;
       applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(t, 'luk') * 0.2), true);
-      break;
-    case 'weaken': if (t) {
-      t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
-      showStatChange(t.x, t.y, '-1 VIT', false); showStatChange(u.x, u.y, '+1 VIT', true);
+    } break;
+    case 'weaken': {
+      if (!t) break;
+      const dVal = 1;
+      t.vit = Math.max(1, (t.vit || 0) - dVal); u.vit = (u.vit || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} VIT`, false); showStatChange(u.x, u.y, `+${dVal} VIT`, true);
     } break;
     case 'feast': {
       if (!t) break;
@@ -237,84 +241,90 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       if (isHit) {
         applyDamage(u, d, true);
       }
-      break;
-    }
-    case 'impale': if (t) {
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 2; t.tempDebuff.duration = 4;
-      showStatChange(t.x, t.y, '-2 AGI', false);
+    } break;
+    case 'impale': {
+      if (!t) break;
+      const dVal = 2;
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = dVal; t.tempDebuff.duration = 4;
+      showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'pierce': {
       if (!t) break;
       const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.6));
       applyDamage(t, d, false);
-      break;
-    }
-    case 'focus':
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = 3; u.tempBuff.duration = 3;
-      showStatChange(u.x, u.y, '+2 DEX', true); break;
+    } break;
+    case 'focus': {
+      const bVal = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${bVal} DEX`, true);
+    } break;
     case 'snipe': {
       if (!t) break;
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
-      break;
-    }
+    } break;
     case 'execute': if (t) {
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
-    case 'cripple': if (t) {
-      t.agi = Math.max(1, (t.agi || 0) - 1); u.agi = (u.agi || 0) + 1;
-      showStatChange(t.x, t.y, '-1 AGI', false); showStatChange(u.x, u.y, '+1 AGI', true);
+    case 'cripple': {
+      if (!t) break;
+      const dVal = 1;
+      t.agi = Math.max(1, (t.agi || 0) - dVal); u.agi = (u.agi || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} AGI`, false); showStatChange(u.x, u.y, `+${dVal} AGI`, true);
     } break;
     case 'berserk': if (t) {
       applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)), false);
       applyDamage(u, 3, false);
-      break;
-    }
+    } break;
     case 'bloodlust': {
       const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.2));
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 2;
-      showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true); break;
-    }
-    case 'hex': if (t) {
-      t.int = Math.max(1, (t.int || 0) - 1); u.int = (u.int || 0) + 1;
-      showStatChange(t.x, t.y, '-1 INT', false); showStatChange(u.x, u.y, '+1 INT', true);
+      showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true);
+    } break;
+    case 'hex': {
+      if (!t) break;
+      const dVal = 1;
+      t.int = Math.max(1, (t.int || 0) - dVal); u.int = (u.int || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} INT`, false); showStatChange(u.x, u.y, `+${dVal} INT`, true);
     } break;
     case 'drain': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.7) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
-      break;
-    }
+    } break;
     case 'shuriken': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
-      break;
-    }
-    case 'blind': if (t) {
-      t.dex = Math.max(1, (t.dex || 0) - 2); u.dex = (u.dex || 0) + 2;
-      showStatChange(t.x, t.y, '-2 DEX', false); showStatChange(u.x, u.y, '+2 DEX', true);
     } break;
-    case 'iaido':
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = 1; u.tempBuff.dex = 1; u.tempBuff.duration = 3;
-      showStatChange(u.x, u.y, '+1 STR, +1 DEX', true); break;
+    case 'blind': {
+      if (!t) break;
+      const dVal = 2;
+      t.dex = Math.max(1, (t.dex || 0) - dVal); u.dex = (u.dex || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} DEX`, false); showStatChange(u.x, u.y, `+${dVal} DEX`, true);
+    } break;
+    case 'iaido': {
+      const bVal = 1;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} DEX`, true);
+    } break;
     case 'chokuto': {
       if (!t) break;
       const d = Math.max(1, Math.floor((u.str || 0) + (u.dex || 0) * 0.3));
       applyDamage(t, d, false);
-      break;
-    }
+    } break;
     case 'bite': {
       if (!t) break;
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'agi') * 0.1) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
-      break;
-    }
-    case 'howl':
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = 2; u.tempBuff.agi = 2; u.tempBuff.duration = 2;
-      showStatChange(u.x, u.y, '+2 STR, +2 AGI', true); break;
+    } break;
+    case 'howl': {
+      const bVal = 2;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 2;
+      showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
+    } break;
     default: break;
   }
   console.log('[SKILL]', `${u.name} (${u.class}, P${u.player})`, 'uses', skillName, '→', targetDesc, `| MP ${u.mp}`, skillDamage != null ? `| ${skillDamage} dmg` : '');
