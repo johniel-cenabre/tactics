@@ -11,7 +11,7 @@ const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 120;
-const MOVE_DURATION_MS = 240;
+const MOVE_DURATION_MS = 320;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
@@ -465,11 +465,14 @@ function createWorld() {
     for (let x = 0; x < w; x++) {
       if (path[y][x]) continue;
       if (type[y][x] === TileType.BASE_TOP || type[y][x] === TileType.BASE_BOTTOM || type[y][x] === TileType.CENTER) continue;
+      const nearTopBase = Math.abs(x - topBaseX) <= 4 && Math.abs(y - topBaseY) <= 3;
+      const nearBotBase = Math.abs(x - botBaseX) <= 4 && Math.abs(y - botBaseY) <= 3;
+      const nearAnyBase = nearTopBase || nearBotBase;
       const r = Math.random();
-      if (r < 0.35) {
+      if (r < 0.55 && !nearAnyBase) {
         type[y][x] = TileType.TREE;
         height[y][x] = 1 + Math.floor(Math.random() * 2);
-      } else if (r < 0.55) {
+      } else if (r < 0.75 || (nearAnyBase && r < 0.5)) {
         type[y][x] = TileType.WATER;
         height[y][x] = 0;
       } else {
@@ -636,11 +639,11 @@ function getPath(world, startX, startY, endX, endY, units, movingUnit) {
 }
 
 const colors = {
-  [TileType.PATH]: 0x5a7a5a,
+  [TileType.PATH]: 0x2d6b2d,
   [TileType.GRASS]: 0x2d4a2d,
-  [TileType.TREE]: 0x1e3d1e,
+  [TileType.TREE]: 0x1a3d1a,
   [TileType.WATER]: 0x1a4a6a,
-  [TileType.ROCK]: 0x5a5a5a,
+  [TileType.ROCK]: 0x4a5a4a,
   [TileType.BASE_TOP]: 0x7a4a4a,
   [TileType.BASE_BOTTOM]: 0x4a5a7a,
   [TileType.CENTER]: 0xd4b84a,
@@ -653,22 +656,66 @@ function halfH(world) {
   return (world.h * TILE_SIZE) / 2;
 }
 
+/** Creates a small tiling canvas texture with subtle noise for tile surface detail (used as bumpMap). */
+function createTilingNoiseTexture(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(size, size);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const v = Math.floor(128 + (Math.random() - 0.5) * 80);
+    data[i] = data[i + 1] = data[i + 2] = v;
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function buildTileMesh(world) {
   const group = new THREE.Group();
   const hw = halfW(world);
   const hh = halfH(world);
   const groundGeo = new THREE.BoxGeometry(TILE_SIZE, BASE_HEIGHT, TILE_SIZE);
-  const sharedMat = new THREE.MeshStandardMaterial({ roughness: 0.88, metalness: 0.02 });
+  const noiseBumpMap = createTilingNoiseTexture(64);
+  const baseRoughness = 0.88;
+  const baseMetalness = 0.02;
 
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
       const t = world.type[y][x];
       const elev = world.height[y][x];
-      const color = colors[t];
+      let color = colors[t];
       const topY = BASE_HEIGHT + elev * 0.35;
       const surfaceY = topY / 2 + BASE_HEIGHT / 2;
-      const mat = sharedMat.clone();
-      mat.color.setHex(color);
+      const mat = new THREE.MeshStandardMaterial({
+        roughness: Math.max(0.7, Math.min(1, baseRoughness + (Math.random() - 0.5) * 0.18)),
+        metalness: Math.max(0, Math.min(0.1, baseMetalness + (Math.random() - 0.5) * 0.04)),
+      });
+      const r = ((color >> 16) & 0xff) / 255;
+      const g = ((color >> 8) & 0xff) / 255;
+      const b = (color & 0xff) / 255;
+      let fr = r, fg = g, fb = b;
+      if (t === TileType.PATH || t === TileType.TREE || t === TileType.ROCK) {
+        const dirtR = 0.42, dirtG = 0.26, dirtB = 0.14;
+        const mix = Math.random() * 0.45;
+        fr = r * (1 - mix) + dirtR * mix;
+        fg = g * (1 - mix) + dirtG * mix;
+        fb = b * (1 - mix) + dirtB * mix;
+      }
+      const variation = 1 + (Math.random() - 0.5) * 0.12;
+      mat.color.setRGB(
+        Math.min(1, fr * variation),
+        Math.min(1, fg * variation),
+        Math.min(1, fb * variation)
+      );
+      mat.bumpMap = noiseBumpMap;
+      mat.bumpScale = 0.12;
       const mesh = new THREE.Mesh(groundGeo, mat);
       mesh.position.set(
         x * TILE_SIZE - hw + TILE_SIZE / 2,
@@ -684,46 +731,122 @@ function buildTileMesh(world) {
       const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
 
       if (t === TileType.TREE) {
-        const trunkH = 0.5 + Math.random() * 0.2;
+        const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
+        const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.95 });
+        trunkMat.bumpMap = noiseBumpMap;
+        trunkMat.bumpScale = 0.15;
         const trunk = new THREE.Mesh(
           new THREE.CylinderGeometry(0.12, 0.14, trunkH, 8),
-          new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.95 })
+          trunkMat
         );
         trunk.position.set(px, surfaceY + trunkH / 2, pz);
         trunk.castShadow = true;
         group.add(trunk);
-        const foliage = new THREE.Mesh(
-          new THREE.ConeGeometry(0.45, 0.9, 8),
-          new THREE.MeshStandardMaterial({ color: 0x2d5a2d, roughness: 0.9 })
-        );
-        foliage.position.set(px, surfaceY + trunkH + 0.35, pz);
-        foliage.castShadow = true;
-        group.add(foliage);
+
+        const leafBumpMap = noiseBumpMap.clone();
+        leafBumpMap.repeat.set(3, 3);
+        const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d5a2d, roughness: 0.9 });
+        foliageMat.bumpMap = leafBumpMap;
+        foliageMat.bumpScale = 0.22;
+
+        const isPine = Math.random() < 0.5;
+        if (isPine) {
+          const coneRad = atEdge ? 0.52 : 0.45;
+          const coneH = atEdge ? 1.05 : 0.9;
+          const overlap = 0.12;
+          const bottomH = coneH * 0.5;
+          const middleH = coneH * 0.45;
+          const topH = coneH * 0.4;
+          const bottomCone = new THREE.Mesh(
+            new THREE.ConeGeometry(coneRad, bottomH, 8),
+            foliageMat
+          );
+          bottomCone.position.set(px, surfaceY + trunkH + bottomH / 2, pz);
+          bottomCone.castShadow = true;
+          group.add(bottomCone);
+          const middleCone = new THREE.Mesh(
+            new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
+            foliageMat
+          );
+          middleCone.position.set(px, surfaceY + trunkH + bottomH - overlap + middleH / 2, pz);
+          middleCone.castShadow = true;
+          group.add(middleCone);
+          const topCone = new THREE.Mesh(
+            new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
+            foliageMat
+          );
+          topCone.position.set(px, surfaceY + trunkH + bottomH - overlap + middleH - overlap + topH / 2, pz);
+          topCone.castShadow = true;
+          group.add(topCone);
+        } else {
+          const cloudBaseY = surfaceY + trunkH - 0.25;
+          const numClumps = 6 + Math.floor(Math.random() * 3);
+          for (let i = 0; i < numClumps; i++) {
+            const r = 0.14 + Math.random() * 0.22;
+            const offX = (Math.random() - 0.5) * 0.5;
+            const offZ = (Math.random() - 0.5) * 0.5;
+            const offY = Math.random() * 0.4;
+            const clump = new THREE.Mesh(
+              new THREE.SphereGeometry(r, 8, 6),
+              foliageMat
+            );
+            clump.position.set(px + offX, cloudBaseY + offY + r * 0.5, pz + offZ);
+            clump.castShadow = true;
+            group.add(clump);
+          }
+        }
       } else if (t === TileType.WATER) {
+        const wc = colors[TileType.WATER];
+        const wr = ((wc >> 16) & 0xff) / 255;
+        const wg = ((wc >> 8) & 0xff) / 255;
+        const wb = (wc & 0xff) / 255;
+        const wVariation = 1 + (Math.random() - 0.5) * 0.18;
+        const waterMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color().setRGB(
+            Math.min(1, wr * wVariation),
+            Math.min(1, wg * wVariation),
+            Math.min(1, wb * wVariation)
+          ),
+          roughness: 0.2,
+          metalness: 0.3,
+          transparent: true,
+          opacity: 0.92,
+          bumpMap: noiseBumpMap,
+          bumpScale: 0.06,
+        });
         const water = new THREE.Mesh(
-          new THREE.PlaneGeometry(TILE_SIZE * 0.9, TILE_SIZE * 0.9),
-          new THREE.MeshStandardMaterial({
-            color: 0x2a6a9a,
-            roughness: 0.2,
-            metalness: 0.3,
-            transparent: true,
-            opacity: 0.92,
-          })
+          new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE),
+          waterMat
         );
         water.rotation.x = -Math.PI / 2;
         water.position.set(px, surfaceY + 0.02, pz);
         water.receiveShadow = true;
         group.add(water);
       } else if (t === TileType.ROCK) {
-        const s = 0.25 + Math.random() * 0.15;
-        const rock = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(s, 0),
-          new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.9 })
-        );
-        rock.position.set(px + (Math.random() - 0.5) * 0.2, surfaceY + s - 0.2, pz + (Math.random() - 0.5) * 0.2);
-        rock.rotation.set(Math.random(), Math.random(), Math.random());
-        rock.castShadow = true;
-        group.add(rock);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.9 });
+        rockMat.bumpMap = noiseBumpMap;
+        rockMat.bumpScale = 0.2;
+        const addRock = (size, offX, offZ) => {
+          const rock = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(size, 0),
+            rockMat
+          );
+          rock.position.set(
+            px + offX,
+            surfaceY + size - 0.2,
+            pz + offZ
+          );
+          rock.rotation.set(Math.random(), Math.random(), Math.random());
+          rock.castShadow = true;
+          group.add(rock);
+        };
+        const s1 = 0.32 + Math.random() * 0.14;
+        const s2 = 0.2 + Math.random() * 0.12;
+        const s3 = 0.12 + Math.random() * 0.12;
+        addRock(s1, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15);
+        addRock(s2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.25);
+        addRock(s3, (Math.random() - 0.5) * 0.28, (Math.random() - 0.5) * 0.28);
       }
     }
   }
@@ -784,6 +907,7 @@ function main() {
   const units = [];
   let nextUnitId = 1;
   const unitMeshes = new Map();
+  const unitNoiseBumpMap = createTilingNoiseTexture(64);
   const hw = halfW(world);
   const hh = halfH(world);
   function worldPos(gx, gy) {
@@ -796,32 +920,57 @@ function main() {
     );
   }
 
+  function nudgeColor(hex, amount) {
+    const r = ((hex >> 16) & 0xff) / 255;
+    const g = ((hex >> 8) & 0xff) / 255;
+    const b = (hex & 0xff) / 255;
+    const v = 1 + (Math.random() - 0.5) * amount;
+    return new THREE.Color(
+      Math.min(1, r * v),
+      Math.min(1, g * v),
+      Math.min(1, b * v)
+    );
+  }
+
   function createHumanFigure(player, classKey, hairColor) {
     const look = CLASS_LOOK[classKey] || CLASS_LOOK.knight;
-    const primary = look.primary;
-    const secondary = look.secondary;
+    const primary = nudgeColor(look.primary, 0.08);
+    const secondary = nudgeColor(look.secondary, 0.08);
     const gender = (CLASSES[classKey] && CLASSES[classKey].gender) || 'male';
     const hairHex = hairColor != null ? hairColor : 0x3d2314;
+    const skinColor = nudgeColor(look.skin != null ? look.skin : 0xe8b4a0, 0.06);
+    const hairColorNudged = nudgeColor(hairHex, 0.08);
+    const roughnessVar = () => (Math.random() - 0.5) * 0.08;
+    const metalVar = () => (Math.random() - 0.5) * 0.04;
+
     const torsoMat = new THREE.MeshStandardMaterial({
       color: primary,
-      metalness: 0.25,
-      roughness: 0.5,
+      metalness: Math.max(0, 0.25 + metalVar()),
+      roughness: Math.max(0.3, Math.min(1, 0.5 + roughnessVar())),
     });
+    torsoMat.bumpMap = unitNoiseBumpMap;
+    torsoMat.bumpScale = 0.1;
     const legMat = new THREE.MeshStandardMaterial({
       color: secondary,
-      metalness: 0.2,
-      roughness: 0.55,
+      metalness: Math.max(0, 0.2 + metalVar()),
+      roughness: Math.max(0.3, Math.min(1, 0.55 + roughnessVar())),
     });
+    legMat.bumpMap = unitNoiseBumpMap;
+    legMat.bumpScale = 0.1;
     const armMat = new THREE.MeshStandardMaterial({
       color: primary,
-      metalness: 0.25,
-      roughness: 0.5,
+      metalness: Math.max(0, 0.25 + metalVar()),
+      roughness: Math.max(0.3, Math.min(1, 0.5 + roughnessVar())),
     });
+    armMat.bumpMap = unitNoiseBumpMap;
+    armMat.bumpScale = 0.1;
     const skin = new THREE.MeshStandardMaterial({
-      color: look.skin != null ? look.skin : 0xe8b4a0,
+      color: skinColor,
       metalness: 0.1,
-      roughness: 0.7,
+      roughness: Math.max(0.5, Math.min(1, 0.7 + roughnessVar())),
     });
+    skin.bumpMap = unitNoiseBumpMap;
+    skin.bumpScale = 0.05;
     const group = new THREE.Group();
 
     const legH = 0.28;
@@ -876,11 +1025,13 @@ function main() {
       const capeH = legH + torsoH * 0.15;
       const capeGeo = new THREE.PlaneGeometry(capeW, capeH);
       const capeMat = new THREE.MeshStandardMaterial({
-        color: look.cape,
+        color: nudgeColor(look.cape, 0.08),
         metalness: 0.15,
-        roughness: 0.8,
+        roughness: Math.max(0.5, Math.min(1, 0.8 + roughnessVar())),
         side: THREE.DoubleSide,
       });
+      capeMat.bumpMap = unitNoiseBumpMap;
+      capeMat.bumpScale = 0.12;
       const cape = new THREE.Mesh(capeGeo, capeMat);
       cape.position.set(0, legH + capeH / 2 - 0.02, -torsoD / 2 - 0.02);
       cape.rotation.y = Math.PI;
@@ -920,10 +1071,12 @@ function main() {
     head.add(mouth);
 
     const hairMat = new THREE.MeshStandardMaterial({
-      color: hairHex,
+      color: hairColorNudged,
       metalness: 0.05,
-      roughness: 0.85,
+      roughness: Math.max(0.6, Math.min(1, 0.85 + roughnessVar())),
     });
+    hairMat.bumpMap = unitNoiseBumpMap;
+    hairMat.bumpScale = 0.15;
     if (gender === 'female') {
       const hairTop = new THREE.Mesh(
         new THREE.SphereGeometry(headRadius * 0.85, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.45),
@@ -960,8 +1113,8 @@ function main() {
     const u = mesh.userData;
     if (!u.leftLeg) return;
     const phase = t * Math.PI * 2;
-    const legSwing = 0.4;
-    const armSwing = 0.35;
+    const legSwing = 0.35;
+    const armSwing = 0.28;
     u.leftLeg.rotation.x = Math.sin(phase) * legSwing;
     u.rightLeg.rotation.x = Math.sin(phase + Math.PI) * legSwing;
     u.leftArm.rotation.y = Math.sin(phase + Math.PI) * armSwing;
@@ -2113,9 +2266,10 @@ function main() {
       const startTime = performance.now();
       function tick(now) {
         const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
-        const eased = t * (2 - t);
+        const smoothstep = (x) => x * x * (3 - 2 * x);
+        const eased = smoothstep(t);
         mesh.position.lerpVectors(startPos, endPos, eased);
-        setWalkPose(mesh, t);
+        setWalkPose(mesh, eased);
         if (t < 1) requestAnimationFrame(tick);
         else { stepIndex++; animateStep(); }
       }
@@ -3575,9 +3729,10 @@ function main() {
 
         function tick(now) {
           const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
-          const eased = t * (2 - t);
+          const smoothstep = (x) => x * x * (3 - 2 * x);
+          const eased = smoothstep(t);
           mesh.position.lerpVectors(startPos, endPos, eased);
-          setWalkPose(mesh, t);
+          setWalkPose(mesh, eased);
           if (t < 1) requestAnimationFrame(tick);
           else {
             stepIndex++;
