@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 6;
+const DRAFT_PICKS_PER_PLAYER = 1;
 const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -214,8 +214,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
     case 'mantra': if (t) {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4));
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.luk = d; u.tempBuff.duration = 3;
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3));
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.int = d; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${d} LUK`, true);
       if (!t) break;
       t.tempBuff = t.tempBuff || {}; t.tempBuff.luk = d; t.tempBuff.duration = 3;
@@ -2172,6 +2172,30 @@ function main() {
             updateTurnUI();
             return;
           }
+          if (skill.target === 'ally') {
+            const allyTargets = getSkillTargetTiles(unit, skill, units);
+            const otherAllies = allyTargets.filter((t) => t.targetUnit && t.targetUnit.id !== unit.id);
+            if (otherAllies.length === 0 && unit.mp >= skill.cost) {
+              unit.mp -= skill.cost;
+              hasAttacked = true;
+              const ctx = {
+                showFloatingCombatText,
+                handleUnitDeath,
+                updateUnitSlashVisibility,
+                updateTurnUI,
+              };
+              executeSkillWithProjectile(unit, unit, skill, ctx, () => {
+                clearHighlights();
+                isSkillMode = false;
+                selectedSkill = null;
+                skillTargetTiles = new Set();
+                if (hasMoved) endTurn();
+                else updateTurnUI();
+              });
+              updateTurnUI();
+              return;
+            }
+          }
           isSkillMode = true;
           isAttackMode = false;
           showSkillTargetTiles(unit, skill);
@@ -3194,9 +3218,9 @@ function main() {
 
       const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute']);
       const HEAL_KEYS = new Set(['chakra']);
-      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl']);
+      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra']);
       const DEBUFF_KEYS = new Set(['freeze', 'impale']);
-      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'mantra', 'weaken', 'cripple', 'hex', 'blind']);
+      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind']);
 
       function getEnemyTargets(skill) {
         const targets = getSkillTargetTiles(unit, skill, units);
@@ -3604,8 +3628,6 @@ function main() {
       if (skill.target === 'enemy' && o.player !== unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
       if (skill.target === 'ally' && o.player === unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
     }
-    if (skill.target === 'ally' && out.length === 0)
-      out.push({ gx: unit.x, gy: unit.y, targetUnit: unit });
     return out;
   }
 
