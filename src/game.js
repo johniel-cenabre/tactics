@@ -11,7 +11,7 @@ const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 120;
-const MOVE_DURATION_MS = 320;
+const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
