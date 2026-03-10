@@ -3079,7 +3079,7 @@ function main() {
           break;
         }
       }
-      if (!chosen && hpRatio <= 0.5) {
+      if (!chosen && hpRatio <= 0.4) {
         for (const skill of available) {
           if (unit.mp < skill.cost) continue;
           if (HEAL_KEYS.has(skill.effectKey)) {
