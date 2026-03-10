@@ -43,14 +43,14 @@ const CLASSES = {
   knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
   mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
   monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11,  int: 10, range: 1 },
-  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 11, agi: 9,  vit: 9,  dex: 11, luk: 9, int: 5,  range: 1 },
+  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9, int: 5,  range: 1 },
   lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
   hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
   assassin:{ name: 'Assassin', gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
   berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
   witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
   ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
-  samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 12, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
+  samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
 };
 
@@ -95,7 +95,7 @@ const CLASS_SKILLS = {
   ],
   monk: [
     { name: 'Mantra Fist', description: 'Deal STR+LUK-based damage to one enemy.', cost: 3, hpCost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'mantraFist' },
-    { name: 'Chakra', description: 'Restore INT-based HP to self or ally.', cost: 7, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
+    { name: 'Chakra', description: 'Gain +1 LUK and INT-based healing to self.', cost: 8, target: 'self', range: 0, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
     { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
@@ -106,7 +106,7 @@ const CLASS_SKILLS = {
     { name: 'Pierce', description: 'Deal STR-based damage through the defense.', cost: 6, target: 'enemy', range: 2, level: 3, effectKey: 'pierce' },
   ],
   hunter: [
-    { name: 'Focus', description: 'Gain +2 DEX for 2 turns.', cost: 4, target: 'self', range: 6, level: 2, effectKey: 'focus' },
+    { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 2, effectKey: 'focus' },
     { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 3, effectKey: 'snipe' },
   ],
   assassin: [
@@ -205,8 +205,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'chakra':
       if (!t) break;
-      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.6)), true);
       applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4)), true);
+      showStatChange(u.x, u.y, '+1 LUK', true);
       break;
     case 'weaken': if (t) {
       t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
@@ -232,7 +232,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       break;
     }
     case 'focus':
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = 2; u.tempBuff.duration = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = 3; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, '+2 DEX', true); break;
     case 'snipe': {
       if (!t) break;
@@ -2078,6 +2078,27 @@ function main() {
           selectedSkill = skill;
           overlay.style.display = 'none';
           overlay.setAttribute('aria-hidden', 'true');
+          if (skill.target === 'self') {
+            if (unit.mp < skill.cost) return;
+            unit.mp -= skill.cost;
+            hasAttacked = true;
+            const ctx = {
+              showFloatingCombatText,
+              handleUnitDeath,
+              updateUnitSlashVisibility,
+              updateTurnUI,
+            };
+            executeSkillWithProjectile(unit, unit, skill, ctx, () => {
+              clearHighlights();
+              isSkillMode = false;
+              selectedSkill = null;
+              skillTargetTiles = new Set();
+              if (hasMoved) endTurn();
+              else updateTurnUI();
+            });
+            updateTurnUI();
+            return;
+          }
           isSkillMode = true;
           isAttackMode = false;
           showSkillTargetTiles(unit, skill);
