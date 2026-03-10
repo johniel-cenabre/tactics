@@ -18,14 +18,14 @@ const DEV_MODE = typeof window !== 'undefined' && (
   window.location.search.includes('dev=1')
 );
 
-/** AI draft preference: 'balanced' (default), 'random', 'tanky', 'aggressive', 'scout', 'caster', or 'custom'.
+/** AI draft preference: 'balanced' (default), 'random', 'tanky', 'aggressive', 'scout', 'ranged', 'caster', or 'custom'.
  *  When 'custom', use AI_DRAFT_CUSTOM_ORDER. Change at runtime via UI or set here. */
 const AI_DRAFT_PREFERENCE_OPTIONS = [
   { value: 'balanced', label: 'Balanced (HP + even stats)' },
   { value: 'tanky', label: 'Tanky (HP + VIT)' },
-  { value: 'scout', label: 'Quick and Fast (AGI)' },
   { value: 'aggressive', label: 'Aggressive (STR + AGI)' },
   { value: 'scout', label: 'Scout (high AGI)' },
+  { value: 'ranged', label: 'Ranged (DEX + range)' },
   { value: 'caster', label: 'Caster (INT + MP)' },
   { value: 'random', label: 'Random' },
   { value: 'custom', label: 'Custom order' },
@@ -229,7 +229,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'feast': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       const isHit = applyDamage(t, d, false);
       if (isHit) {
         applyDamage(u, d, true);
@@ -667,7 +667,7 @@ const colors = {
   [TileType.PATH]: 0x2d6b2d,
   [TileType.GRASS]: 0x2d4a2d,
   [TileType.TREE]: 0x1a3d1a,
-  [TileType.WATER]: 0x1a4a6a,
+  [TileType.WATER]: 0x1e5a9e,
   [TileType.ROCK]: 0x4a5a4a,
   [TileType.BASE_TOP]: 0x7a4a4a,
   [TileType.BASE_BOTTOM]: 0x4a5a7a,
@@ -735,6 +735,29 @@ function buildTileMesh(world) {
     }
   }
 
+  const rootRadius = 0.12;
+  function addCrisscrossLines(px, pz, surfaceY, parentGroup) {
+    const y = surfaceY + 0.02;
+    const points = [
+      [px - rootRadius, y, pz - rootRadius], [px + rootRadius, y, pz + rootRadius],
+      [px - rootRadius, y, pz + rootRadius], [px + rootRadius, y, pz - rootRadius],
+      [px - rootRadius + 0.06, y, pz - rootRadius + 0.06], [px + rootRadius - 0.06, y, pz + rootRadius - 0.06],
+      [px - rootRadius + 0.06, y, pz + rootRadius - 0.06], [px + rootRadius - 0.06, y, pz - rootRadius + 0.06],
+    ];
+    const vertices = new Float32Array(points.length * 3);
+    points.forEach((p, i) => {
+      vertices[i * 3] = p[0];
+      vertices[i * 3 + 1] = p[1];
+      vertices[i * 3 + 2] = p[2];
+    });
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    lineGeo.computeBoundingSphere();
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x0d0d0d, linewidth: 1 });
+    const lines = new THREE.LineSegments(lineGeo, lineMat);
+    parentGroup.add(lines);
+  }
+
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
       const t = world.type[y][x];
@@ -756,6 +779,11 @@ function buildTileMesh(world) {
         fr = r * (1 - mix) + dirtR * mix;
         fg = g * (1 - mix) + dirtG * mix;
         fb = b * (1 - mix) + dirtB * mix;
+      }
+      if (t === TileType.TREE || t === TileType.ROCK) {
+        fr *= 0.5;
+        fg *= 0.5;
+        fb *= 0.5;
       }
       const variation = 1 + (Math.random() - 0.5) * 0.12;
       mat.color.setRGB(
@@ -779,10 +807,13 @@ function buildTileMesh(world) {
       const px = x * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
 
+      if (t === TileType.TREE) addCrisscrossLines(px, pz, surfaceY, group);
+
       if (t === TileType.TREE) {
         const treeGroup = new THREE.Group();
         treeGroup.position.set(px, surfaceY, pz);
         treeGroup.userData.swayPhase = Math.random() * Math.PI * 2;
+        treeGroup.userData.sway = Math.random() < 1 / 3;
 
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
         const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
@@ -852,25 +883,24 @@ function buildTileMesh(world) {
 
         group.add(treeGroup);
         treeGroups.push(treeGroup);
-        addGrassTufts(px, pz, surfaceY, 4, 0.14);
       } else if (t === TileType.WATER) {
         const wc = colors[TileType.WATER];
         const wr = ((wc >> 16) & 0xff) / 255;
         const wg = ((wc >> 8) & 0xff) / 255;
         const wb = (wc & 0xff) / 255;
-        const wVariation = 1 + (Math.random() - 0.5) * 0.18;
+        const wVariation = 1 + (Math.random() - 0.5) * 0.12;
         const waterMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color().setRGB(
             Math.min(1, wr * wVariation),
             Math.min(1, wg * wVariation),
             Math.min(1, wb * wVariation)
           ),
-          roughness: 0.2,
-          metalness: 0.3,
+          roughness: 0.08,
+          metalness: 0.45,
           transparent: true,
-          opacity: 0.92,
+          opacity: 0.94,
           bumpMap: noiseBumpMap,
-          bumpScale: 0.06,
+          bumpScale: 0.03,
         });
         const water = new THREE.Mesh(
           new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE),
@@ -904,7 +934,6 @@ function buildTileMesh(world) {
         addRock(s1, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15);
         addRock(s2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.25);
         addRock(s3, (Math.random() - 0.5) * 0.28, (Math.random() - 0.5) * 0.28);
-        addGrassTufts(px, pz, surfaceY, 4, 0.14);
       }
     }
   }
@@ -1865,6 +1894,16 @@ function main() {
   }
 
   function updateTurnUI() {
+    const cache = updateTurnUI._cache || (updateTurnUI._cache = {});
+    const turnEl = cache.turnEl || (cache.turnEl = document.getElementById('turn-player'));
+    const menuLabel = cache.menuLabel || (cache.menuLabel = document.getElementById('menu-label'));
+    const turnMenu = cache.turnMenu || (cache.turnMenu = document.getElementById('turn-menu'));
+    const unitInfo = cache.unitInfo || (cache.unitInfo = document.getElementById('unit-info'));
+    const unitNameEl = cache.unitNameEl || (cache.unitNameEl = document.getElementById('unit-name'));
+    const unitLevelClassEl = cache.unitLevelClassEl || (cache.unitLevelClassEl = document.getElementById('unit-level-class'));
+    const unitStatsEl = cache.unitStatsEl || (cache.unitStatsEl = document.getElementById('unit-stats'));
+    const unitClassImageEl = cache.unitClassImageEl || (cache.unitClassImageEl = document.getElementById('unit-class-image'));
+
     if (phase === 'playing') {
       units.forEach((u) => {
         if (u.hp <= 0) return;
@@ -1872,15 +1911,6 @@ function main() {
         if (mesh) updateUnitMeshLowHp(mesh, u.maxHp > 0 && (u.hp / u.maxHp) < LOW_HP_VISUAL_THRESHOLD);
       });
     }
-    const turnEl = document.getElementById('turn-player');
-    const menuLabel = document.getElementById('menu-label');
-    const turnMenu = document.getElementById('turn-menu');
-    const unitInfo = document.getElementById('unit-info');
-    const unitNameEl = document.getElementById('unit-name');
-    const unitLevelClassEl = document.getElementById('unit-level-class');
-    const unitStatsEl = document.getElementById('unit-stats');
-    const unitClassImageEl = document.getElementById('unit-class-image');
-
     turnMenu.classList.remove('player-1', 'player-2');
     turnMenu.classList.add(currentPlayer === 1 ? 'player-1' : 'player-2');
     turnMenu.classList.toggle('level-2', false);
@@ -1943,10 +1973,10 @@ function main() {
     }
     menuLabel.textContent = `Player ${currentPlayer}`;
 
-    const btnAttack = document.getElementById('btn-attack');
-    const btnSkill = document.getElementById('btn-skill');
-    const btnSpell = document.getElementById('btn-spell');
-    const btnEnd = document.getElementById('btn-end');
+    const btnAttack = cache.btnAttack || (cache.btnAttack = document.getElementById('btn-attack'));
+    const btnSkill = cache.btnSkill || (cache.btnSkill = document.getElementById('btn-skill'));
+    const btnSpell = cache.btnSpell || (cache.btnSpell = document.getElementById('btn-spell'));
+    const btnEnd = cache.btnEnd || (cache.btnEnd = document.getElementById('btn-end'));
     if (gameMode === 'cvcpu' && phase === 'playing') {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
@@ -1971,8 +2001,8 @@ function main() {
     if (phase === 'playing') {
       const turnNum = Math.min(turnCount + 1, MAX_TURNS);
       turnEl.textContent = (turnEl.textContent || '') + ` — Turn ${turnNum}/${MAX_TURNS}`;
-      const turnsLeftEl = document.getElementById('turns-left');
-      const turnsLeftValueEl = document.getElementById('turns-left-value');
+      const turnsLeftEl = cache.turnsLeftEl || (cache.turnsLeftEl = document.getElementById('turns-left'));
+      const turnsLeftValueEl = cache.turnsLeftValueEl || (cache.turnsLeftValueEl = document.getElementById('turns-left-value'));
       if (turnsLeftEl && turnsLeftValueEl) {
         turnsLeftEl.style.display = '';
         const turnsLeft = Math.max(0, MAX_TURNS - turnCount);
@@ -1980,7 +2010,7 @@ function main() {
         turnsLeftEl.classList.toggle('turns-left-low', turnsLeft <= 10);
       }
     } else {
-      const turnsLeftEl = document.getElementById('turns-left');
+      const turnsLeftEl = cache.turnsLeftEl || (cache.turnsLeftEl = document.getElementById('turns-left'));
       if (turnsLeftEl) turnsLeftEl.style.display = 'none';
     }
     if (phase === 'playing' && isCPUPlayer(currentPlayer) && !isUnitMoving) setTimeout(runPlayingAI, 700);
@@ -2297,6 +2327,15 @@ function main() {
         const agiA = CLASSES[a]?.agi ?? 0;
         const agiB = CLASSES[b]?.agi ?? 0;
         if (agiB !== agiA) return agiB - agiA;
+        return (CLASSES[b]?.dex ?? 0) - (CLASSES[a]?.dex ?? 0);
+      });
+      return sorted[0] ?? null;
+    }
+    if (preference === 'ranged') {
+      const sorted = [...available].sort((a, b) => {
+        const rangeA = CLASSES[a]?.range ?? 0;
+        const rangeB = CLASSES[b]?.range ?? 0;
+        if (rangeB !== rangeA) return rangeB - rangeA;
         return (CLASSES[b]?.dex ?? 0) - (CLASSES[a]?.dex ?? 0);
       });
       return sorted[0] ?? null;
@@ -3517,7 +3556,7 @@ function main() {
     while (highlightGroup.children.length) {
       const c = highlightGroup.children[0];
       highlightGroup.remove(c);
-      c.geometry.dispose();
+      if (c.geometry !== sharedHighlightGlowGeo && c.geometry !== sharedHighlightSquareGeo) c.geometry.dispose();
       c.material.dispose();
     }
     requestRender();
@@ -3579,16 +3618,14 @@ function main() {
       const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
       const y = surfaceY + 0.01;
-      const glowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
       const glowMat = new THREE.MeshBasicMaterial({ color: 0x8833aa, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      const glowMesh = new THREE.Mesh(sharedHighlightGlowGeo, glowMat);
       glowMesh.rotation.x = -Math.PI / 2;
       glowMesh.position.set(px, y, pz);
       highlightGroup.add(glowMesh);
       highlightMaterials.push(glowMat);
-      const squareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
       const squareMat = new THREE.MeshBasicMaterial({ color: 0xaa66cc, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
-      const squareMesh = new THREE.Mesh(squareGeo, squareMat);
+      const squareMesh = new THREE.Mesh(sharedHighlightSquareGeo, squareMat);
       squareMesh.rotation.x = -Math.PI / 2;
       squareMesh.position.set(px, y + 0.01, pz);
       squareMesh.userData.gx = gx;
@@ -3600,6 +3637,8 @@ function main() {
 
   const HIGHLIGHT_SQUARE_SIZE = 0.82;
   const HIGHLIGHT_GLOW_SIZE = 1.02;
+  const sharedHighlightGlowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
+  const sharedHighlightSquareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
 
   function showPlacementHighlights(tileList) {
     clearHighlights();
@@ -3609,16 +3648,14 @@ function main() {
       const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
       const y = surfaceY + 0.01;
-      const glowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
       const glowMat = new THREE.MeshBasicMaterial({ color: 0x22aa44, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      const glowMesh = new THREE.Mesh(sharedHighlightGlowGeo, glowMat);
       glowMesh.rotation.x = -Math.PI / 2;
       glowMesh.position.set(px, y, pz);
       highlightGroup.add(glowMesh);
       highlightMaterials.push(glowMat);
-      const squareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
       const squareMat = new THREE.MeshBasicMaterial({ color: 0x44cc66, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
-      const squareMesh = new THREE.Mesh(squareGeo, squareMat);
+      const squareMesh = new THREE.Mesh(sharedHighlightSquareGeo, squareMat);
       squareMesh.rotation.x = -Math.PI / 2;
       squareMesh.position.set(px, y + 0.01, pz);
       squareMesh.userData.gx = gx;
@@ -3640,16 +3677,14 @@ function main() {
       const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
       const y = surfaceY + 0.01;
-      const glowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
       const glowMat = new THREE.MeshBasicMaterial({ color: 0x3399ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
-      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      const glowMesh = new THREE.Mesh(sharedHighlightGlowGeo, glowMat);
       glowMesh.rotation.x = -Math.PI / 2;
       glowMesh.position.set(px, y, pz);
       highlightGroup.add(glowMesh);
       highlightMaterials.push(glowMat);
-      const squareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
       const squareMat = new THREE.MeshBasicMaterial({ color: 0x66b3ff, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
-      const squareMesh = new THREE.Mesh(squareGeo, squareMat);
+      const squareMesh = new THREE.Mesh(sharedHighlightSquareGeo, squareMat);
       squareMesh.rotation.x = -Math.PI / 2;
       squareMesh.position.set(px, y + 0.01, pz);
       highlightGroup.add(squareMesh);
@@ -3669,16 +3704,14 @@ function main() {
       const px = gx * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = gy * TILE_SIZE - hh + TILE_SIZE / 2;
       const y = surfaceY + 0.01;
-      const glowGeo = new THREE.PlaneGeometry(HIGHLIGHT_GLOW_SIZE, HIGHLIGHT_GLOW_SIZE);
       const glowMat = new THREE.MeshBasicMaterial({ color: 0x992222, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-      const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+      const glowMesh = new THREE.Mesh(sharedHighlightGlowGeo, glowMat);
       glowMesh.rotation.x = -Math.PI / 2;
       glowMesh.position.set(px, y, pz);
       highlightGroup.add(glowMesh);
       highlightMaterials.push(glowMat);
-      const squareGeo = new THREE.PlaneGeometry(HIGHLIGHT_SQUARE_SIZE, HIGHLIGHT_SQUARE_SIZE);
       const squareMat = new THREE.MeshBasicMaterial({ color: 0xcc4444, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
-      const squareMesh = new THREE.Mesh(squareGeo, squareMat);
+      const squareMesh = new THREE.Mesh(sharedHighlightSquareGeo, squareMat);
       squareMesh.rotation.x = -Math.PI / 2;
       squareMesh.position.set(px, y + 0.01, pz);
       highlightGroup.add(squareMesh);
@@ -4104,8 +4137,10 @@ function main() {
       el.style.left = (_projVec.x * 0.5 + 0.5) * w + 'px';
       el.style.top = (1 - (_projVec.y * 0.5 + 0.5)) * h + 'px';
     }
+    let frameCount = 0;
     function tick() {
-      updatePosition();
+      if (frameCount % 2 === 0) updatePosition();
+      frameCount++;
       if (performance.now() - startTime < COMBAT_TEXT_DURATION_MS) {
         requestAnimationFrame(tick);
       } else {
@@ -4123,6 +4158,7 @@ function main() {
     el.style.position = 'absolute';
     combatTextLayer.appendChild(el);
     const startTime = performance.now();
+    let frameCount = 0;
     function updatePosition() {
       _projVec.copy(worldPos(unit.x, unit.y));
       _projVec.y += 1.2;
@@ -4133,7 +4169,8 @@ function main() {
       el.style.top = (1 - (_projVec.y * 0.5 + 0.5)) * h + 'px';
     }
     function tick() {
-      updatePosition();
+      if (frameCount % 2 === 0) updatePosition();
+      frameCount++;
       if (performance.now() - startTime < LEVEL_UP_TEXT_DURATION_MS) {
         requestAnimationFrame(tick);
       } else {
@@ -4252,7 +4289,10 @@ function main() {
   function animate(now = 0) {
     requestAnimationFrame(animate);
     if (lastInteractionTime === 0) lastInteractionTime = now;
-    const isIdle = (now - lastInteractionTime > 2000);
+    const isIdle = (now - lastInteractionTime > 1000);
+    let animateFrameCount = 0;
+    if (typeof animate.frameCount === 'number') animateFrameCount = animate.frameCount;
+    animate.frameCount = animateFrameCount + 1;
     const doUpdateAndRender = () => {
       const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
       for (let i = 0; i < highlightMaterials.length; i++) {
@@ -4260,9 +4300,10 @@ function main() {
         highlightMaterials[i].opacity = base * pulse;
       }
       const treeGroups = tilesGroup.userData.treeGroups;
-      if (treeGroups && treeGroups.length > 0) {
+      if (treeGroups && treeGroups.length > 0 && animate.frameCount % 3 === 0) {
         for (let i = 0; i < treeGroups.length; i++) {
           const g = treeGroups[i];
+          if (!g.userData.sway) continue;
           const phase = g.userData.swayPhase != null ? g.userData.swayPhase : 0;
           g.rotation.x = Math.sin(now * 0.0009 + phase) * 0.018;
           g.rotation.z = Math.sin(now * 0.0007 + phase * 1.4) * 0.018;
