@@ -2065,6 +2065,7 @@ function main() {
       overlay.innerHTML = '<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>';
     } else {
       overlay.innerHTML = available.map((skill, i) => {
+        console.log({skill})
         return `<button type="button" class="skill-option" data-skill-index="${i}" ${unit.mp < skill.cost || unit.hp < skill.hpCost || unit.level < skill.level ? 'disabled' : ''}>
           <span class="skill-name">${skill.name}</span> <span class="skill-meta">${skill.cost} MP · Lv.${skill.level}</span><br/>
           <span class="skill-meta">${skill.description}</span>
@@ -3422,8 +3423,7 @@ function main() {
 
   function getAvailableSkills(unit) {
     if (!unit || !unit.class) return [];
-    const list = CLASS_SKILLS[unit.class];
-    if (!list) return [];;
+    return CLASS_SKILLS[unit.class] || [];
   }
 
   function getSkillTargetTiles(unit, skill, unitsList) {
