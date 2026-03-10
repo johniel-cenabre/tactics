@@ -829,6 +829,7 @@ function buildTileMesh(world) {
         );
         trunk.position.set(0, trunkH / 2, 0);
         trunk.castShadow = true;
+        trunk.raycast = function () {};
         treeGroup.add(trunk);
 
         const leafBumpMap = noiseBumpMap.clone();
@@ -851,6 +852,7 @@ function buildTileMesh(world) {
           );
           bottomCone.position.set(0, trunkH + bottomH / 2, 0);
           bottomCone.castShadow = true;
+          bottomCone.raycast = function () {};
           treeGroup.add(bottomCone);
           const middleCone = new THREE.Mesh(
             new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
@@ -858,6 +860,7 @@ function buildTileMesh(world) {
           );
           middleCone.position.set(0, trunkH + bottomH - overlap + middleH / 2, 0);
           middleCone.castShadow = true;
+          middleCone.raycast = function () {};
           treeGroup.add(middleCone);
           const topCone = new THREE.Mesh(
             new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
@@ -865,6 +868,7 @@ function buildTileMesh(world) {
           );
           topCone.position.set(0, trunkH + bottomH - overlap + middleH - overlap + topH / 2, 0);
           topCone.castShadow = true;
+          topCone.raycast = function () {};
           treeGroup.add(topCone);
         } else {
           const cloudBaseY = trunkH - 0.25;
@@ -880,6 +884,7 @@ function buildTileMesh(world) {
             );
             clump.position.set(offX, cloudBaseY + offY + r * 0.5, offZ);
             clump.castShadow = true;
+            clump.raycast = function () {};
             treeGroup.add(clump);
           }
         }
@@ -1621,8 +1626,17 @@ function main() {
     raycaster.setFromCamera(pointer, camera);
     const intersects = raycaster.intersectObjects(tilesGroup.children, true);
     if (intersects.length === 0) return;
+    let point = null;
+    for (const hit of intersects) {
+      let o = hit.object;
+      while (o && (o.userData.gx == null || o.userData.gy == null)) o = o.parent;
+      if (o && o.userData.gx != null) {
+        point = hit.point;
+        break;
+      }
+    }
+    if (!point) return;
     const unitWorld = worldPos(unit.x, unit.y);
-    const point = intersects[0].point;
     const dx = point.x - unitWorld.x;
     const dz = point.z - unitWorld.z;
     if (dx * dx + dz * dz < 1e-6) return;
@@ -3240,8 +3254,8 @@ function main() {
       for (const skill of available) {
         if (skill.disabled) continue;
         if (DAMAGE_KEYS.has(skill.effectKey)) {
-          if (skill.effectKey === 'feast' && unit.hp > (unit.hp / unit.maxHp) * 0.7) continue;
-          if (skill.effectKey === 'berserk' && unit.hp < (unit.hp / unit.maxHp) * 0.3) continue;
+          if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
+          if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
           if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
           const enemyTargets = getEnemyTargets(skill);
           if (enemyTargets.length === 0) continue;
@@ -3776,8 +3790,15 @@ function main() {
     raycaster.setFromCamera(pointer, camera);
     const intersects = raycaster.intersectObjects(tilesGroup.children, true);
     if (intersects.length === 0) return;
-    let obj = intersects[0].object;
-    while (obj && (obj.userData.gx == null || obj.userData.gy == null)) obj = obj.parent;
+    let obj = null;
+    for (const hit of intersects) {
+      let o = hit.object;
+      while (o && (o.userData.gx == null || o.userData.gy == null)) o = o.parent;
+      if (o && o.userData.gx != null) {
+        obj = o;
+        break;
+      }
+    }
     if (!obj || obj.userData.gx == null) return;
     const gx = obj.userData.gx;
     const gy = obj.userData.gy;
