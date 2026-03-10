@@ -95,7 +95,7 @@ const CLASS_SKILLS = {
   ],
   monk: [
     { name: 'Mantra Fist', description: 'Deal STR+LUK-based damage to one enemy.', cost: 3, hpCost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'mantraFist' },
-    { name: 'Chakra', description: 'Gain +1 LUK and INT-based healing to self.', cost: 8, target: 'self', range: 0, level: 3, effectKey: 'chakra' },
+    { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
     { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
@@ -145,7 +145,7 @@ function getEffectiveStat(unit, key) {
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
-  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', strike: 'Strike', bite: 'Bite', howl: 'Howl' };
+  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
   const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
   const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
@@ -206,7 +206,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'chakra':
       if (!t) break;
       applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4)), true);
-      showStatChange(u.x, u.y, '+1 LUK', true);
+      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(t, 'int') * 0.4)), true);
       break;
     case 'weaken': if (t) {
       t.vit = Math.max(1, (t.vit || 0) - 1); u.vit = (u.vit || 0) + 1;
@@ -3040,7 +3040,7 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'strike', 'bite', 'execute']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute']);
       const HEAL_KEYS = new Set(['chakra']);
       const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl']);
       const DEBUFF_KEYS = new Set(['freeze', 'impale']);
