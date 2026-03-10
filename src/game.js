@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 1;
+const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 120;
 const MOVE_DURATION_MS = 240;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -1088,7 +1088,6 @@ function main() {
   }
 
   const CAMERA_TWEEN_MS = 430;
-  const MOVE_DURATION_MS = 320;
   const ATTACK_ANIMATION_MS = 280;
   const ATTACK_HIT_AT_T = 0.45;
   const HIT_REACT_MS = 160;
@@ -3546,7 +3545,6 @@ function main() {
       clearHighlights();
       isUnitMoving = true;
       updateUnitTileBorders(u.id);
-      const MOVE_DURATION_MS = 220;
       const mesh = unitMeshes.get(u.id);
       let stepIndex = 1;
 
