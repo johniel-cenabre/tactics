@@ -815,14 +815,18 @@ function buildTileMesh(world) {
       if (t === TileType.TREE) {
         const treeGroup = new THREE.Group();
         treeGroup.position.set(px, surfaceY, pz);
-        treeGroup.userData.swayPhase = Math.random() * Math.PI * 2;
-        treeGroup.userData.sway = (x === 0 || x === world.w - 1) && (y === 0 || y === world.h - 1);
 
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
         const trunkH = atEdge ? 0.75 + Math.random() * 0.35 : 0.5 + Math.random() * 0.2;
-        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.95 });
+        const trunkColor = new THREE.Color(0x3d2817);
+        const tn = () => 1 + (Math.random() - 0.5) * 0.4;
+        trunkColor.r = Math.min(1, Math.max(0, trunkColor.r * tn()));
+        trunkColor.g = Math.min(1, Math.max(0, trunkColor.g * tn()));
+        trunkColor.b = Math.min(1, Math.max(0, trunkColor.b * tn()));
+        const trunkRough = 0.85 + Math.random() * 0.2;
+        const trunkMat = new THREE.MeshStandardMaterial({ color: trunkColor, roughness: trunkRough });
         trunkMat.bumpMap = noiseBumpMap;
-        trunkMat.bumpScale = 0.15;
+        trunkMat.bumpScale = 0.1 + Math.random() * 0.12;
         const trunk = new THREE.Mesh(
           new THREE.CylinderGeometry(0.12, 0.14, trunkH, 8),
           trunkMat
@@ -834,9 +838,15 @@ function buildTileMesh(world) {
 
         const leafBumpMap = noiseBumpMap.clone();
         leafBumpMap.repeat.set(3, 3);
-        const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d5a2d, roughness: 0.9 });
+        const foliageColor = new THREE.Color(0x2d5a2d);
+        const fn = () => 1 + (Math.random() - 0.5) * 0.44;
+        foliageColor.r = Math.min(1, Math.max(0, foliageColor.r * fn()));
+        foliageColor.g = Math.min(1, Math.max(0, foliageColor.g * fn()));
+        foliageColor.b = Math.min(1, Math.max(0, foliageColor.b * fn()));
+        const foliageRough = 0.78 + Math.random() * 0.24;
+        const foliageMat = new THREE.MeshStandardMaterial({ color: foliageColor, roughness: foliageRough });
         foliageMat.bumpMap = leafBumpMap;
-        foliageMat.bumpScale = 0.22;
+        foliageMat.bumpScale = 0.16 + Math.random() * 0.14;
 
         const isPine = Math.random() < 0.5;
         if (isPine) {
@@ -872,15 +882,31 @@ function buildTileMesh(world) {
           treeGroup.add(topCone);
         } else {
           const cloudBaseY = trunkH - 0.25;
+          const cn = () => 1 + (Math.random() - 0.5) * 0.32;
+          const clumpColorA = foliageColor.clone();
+          clumpColorA.r = Math.min(1, Math.max(0, clumpColorA.r * cn()));
+          clumpColorA.g = Math.min(1, Math.max(0, clumpColorA.g * cn()));
+          clumpColorA.b = Math.min(1, Math.max(0, clumpColorA.b * cn()));
+          const clumpColorB = foliageColor.clone();
+          clumpColorB.r = Math.min(1, Math.max(0, clumpColorB.r * cn()));
+          clumpColorB.g = Math.min(1, Math.max(0, clumpColorB.g * cn()));
+          clumpColorB.b = Math.min(1, Math.max(0, clumpColorB.b * cn()));
+          const clumpMatA = new THREE.MeshStandardMaterial({ color: clumpColorA, roughness: foliageRough + (Math.random() - 0.5) * 0.12 });
+          clumpMatA.bumpMap = leafBumpMap;
+          clumpMatA.bumpScale = foliageMat.bumpScale;
+          const clumpMatB = new THREE.MeshStandardMaterial({ color: clumpColorB, roughness: foliageRough + (Math.random() - 0.5) * 0.12 });
+          clumpMatB.bumpMap = leafBumpMap;
+          clumpMatB.bumpScale = foliageMat.bumpScale;
           const numClumps = 6 + Math.floor(Math.random() * 3);
           for (let i = 0; i < numClumps; i++) {
             const r = 0.14 + Math.random() * 0.22;
             const offX = (Math.random() - 0.5) * 0.5;
             const offZ = (Math.random() - 0.5) * 0.5;
             const offY = Math.random() * 0.4;
+            const clumpMat = i % 2 === 0 ? clumpMatA : clumpMatB;
             const clump = new THREE.Mesh(
               new THREE.SphereGeometry(r, 8, 6),
-              foliageMat
+              clumpMat
             );
             clump.position.set(offX, cloudBaseY + offY + r * 0.5, offZ);
             clump.castShadow = true;
@@ -1506,6 +1532,15 @@ function main() {
   const sharedBorderGeometry = createSquareBorderGeometry(TILE_BORDER_SIZE, TILE_BORDER_THICKNESS);
 
   function updateUnitTileBorders(excludeUnitId = null) {
+    const sig = units
+      .filter((u) => u.hp > 0 && u.id !== excludeUnitId)
+      .map((u) => `${u.id},${u.x},${u.y},${u.player}`)
+      .sort()
+      .join('|');
+    if (updateUnitTileBorders._lastSig === sig && updateUnitTileBorders._lastExclude === excludeUnitId) return;
+    updateUnitTileBorders._lastSig = sig;
+    updateUnitTileBorders._lastExclude = excludeUnitId;
+
     unitBorderMaterials.forEach((m) => m.dispose());
     unitBorderMaterials.length = 0;
     while (unitBordersGroup.children.length) {
@@ -1922,6 +1957,14 @@ function main() {
   }
 
   function updateTurnUI() {
+    if (updateTurnUI._pending) return;
+    updateTurnUI._pending = true;
+    requestAnimationFrame(() => {
+      updateTurnUI._pending = false;
+      updateTurnUIImpl();
+    });
+  }
+  function updateTurnUIImpl() {
     const cache = updateTurnUI._cache || (updateTurnUI._cache = {});
     const turnEl = cache.turnEl || (cache.turnEl = document.getElementById('turn-player'));
     const menuLabel = cache.menuLabel || (cache.menuLabel = document.getElementById('menu-label'));
@@ -4162,13 +4205,13 @@ function main() {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
   }
   window.addEventListener('resize', resize);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -4349,35 +4392,29 @@ function main() {
   function animate(now = 0) {
     requestAnimationFrame(animate);
     if (lastInteractionTime === 0) lastInteractionTime = now;
-    const isIdle = (now - lastInteractionTime > 1000);
+    const isIdle = (now - lastInteractionTime > 500);
     let animateFrameCount = 0;
     if (typeof animate.frameCount === 'number') animateFrameCount = animate.frameCount;
     animate.frameCount = animateFrameCount + 1;
     const doUpdateAndRender = () => {
-      const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
-      for (let i = 0; i < highlightMaterials.length; i++) {
-        const base = i % 2 === 0 ? 0.4 : 0.7;
-        highlightMaterials[i].opacity = base * pulse;
-      }
-      const treeGroups = tilesGroup.userData.treeGroups;
-      if (treeGroups && treeGroups.length > 0 && animate.frameCount % 3 === 0) {
-        for (let i = 0; i < treeGroups.length; i++) {
-          const g = treeGroups[i];
-          if (!g.userData.sway) continue;
-          const phase = g.userData.swayPhase != null ? g.userData.swayPhase : 0;
-          g.rotation.x = Math.sin(now * 0.0009 + phase) * 0.018;
-          g.rotation.z = Math.sin(now * 0.0007 + phase * 1.4) * 0.018;
+      if (needsRender) {
+        const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
+        for (let i = 0; i < highlightMaterials.length; i++) {
+          const base = i % 2 === 0 ? 0.4 : 0.7;
+          highlightMaterials[i].opacity = base * pulse;
         }
+        renderer.render(scene, camera);
+        needsRender = false;
       }
-      renderer.render(scene, camera);
-      needsRender = false;
     };
     if (isIdle) {
       if (now - lastIdleFrameTime >= 100) {
         lastIdleFrameTime = now;
+        needsRender = true;
         doUpdateAndRender();
       }
     } else {
+      if (animate.frameCount % 2 === 0) needsRender = true;
       doUpdateAndRender();
     }
   }
