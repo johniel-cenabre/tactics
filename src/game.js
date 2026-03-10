@@ -12,6 +12,11 @@ const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 120;
 const MOVE_DURATION_MS = 240;
+const DEV_MODE = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.search.includes('dev=1')
+);
 
 const TileType = {
   PATH: 0,
@@ -1962,12 +1967,16 @@ function main() {
       startDraftPhase();
     });
     if (btnCvCPU) {
-      btnCvCPU.addEventListener('click', () => {
-        startBackgroundMusic();
-        gameMode = 'cvcpu';
-        modeOverlay.classList.add('hidden');
-        startDraftPhase();
-      });
+      if (DEV_MODE) {
+        btnCvCPU.addEventListener('click', () => {
+          startBackgroundMusic();
+          gameMode = 'cvcpu';
+          modeOverlay.classList.add('hidden');
+          startDraftPhase();
+        });
+      } else {
+        btnCvCPU.style.display = 'none';
+      }
     }
   } else {
     startDraftPhase();
