@@ -655,7 +655,7 @@ function buildTileMesh(world) {
   const group = new THREE.Group();
   const hw = halfW(world);
   const hh = halfH(world);
-  const groundGeo = new THREE.BoxGeometry(TILE_SIZE * 0.98, BASE_HEIGHT, TILE_SIZE * 0.98);
+  const groundGeo = new THREE.BoxGeometry(TILE_SIZE, BASE_HEIGHT, TILE_SIZE);
   const sharedMat = new THREE.MeshStandardMaterial({ roughness: 0.88, metalness: 0.02 });
 
   for (let y = 0; y < world.h; y++) {
@@ -729,6 +729,9 @@ function buildTileMesh(world) {
 }
 
 function main() {
+  const instructionsEl = document.querySelector('#mode-select-overlay .mode-select-instructions');
+  if (instructionsEl) console.log(instructionsEl.textContent.trim());
+
   const world = createWorld();
   const container = document.getElementById('canvas-wrap');
   const scene = new THREE.Scene();
@@ -2096,7 +2099,6 @@ function main() {
         updateUnitTileBorders();
         reachable = new Map();
         hasMoved = true;
-        console.log('[MOVE]', `${unit.name} (${unit.class}, P${unit.player})`, `${fromGx},${fromGy} → ${unit.x},${unit.y}`, `(Lv.${unit.level})`);
         if (onDone) onDone();
         return;
       }
