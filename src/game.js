@@ -2903,7 +2903,7 @@ function main() {
     const unit = units.find((u) => u.id === uid);
     if (!unit || unit.hp <= 0) return;
 
-    const reachableDist = getReachable(world, unit.x, unit.y, unit.agi, units, unit);
+    const reachableDist = getReachable(world, unit.x, unit.y, getEffectiveStat(unit, 'agi'), units, unit);
     const reachableTiles = [];
     reachableDist.forEach((d, k) => {
       if (d === 0) return;
@@ -3099,7 +3099,7 @@ function main() {
         if (reachableTiles.length > 0) {
           const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
           const result = getPathToNearestTarget(centerTargets);
-          const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+          const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
             return;
@@ -3128,7 +3128,7 @@ function main() {
         if (retreat) {
           const path = getPath(world, unit.x, unit.y, retreat.gx, retreat.gy, units, unit);
           const steps = path ? path.length - 1 : Infinity;
-          if (!path || path.length <= 1 || steps > unit.agi) retreat = safestReachableTile(retreatTileSet);
+          if (!path || path.length <= 1 || steps > getEffectiveStat(unit, 'agi')) retreat = safestReachableTile(retreatTileSet);
         }
       }
       if (!retreat && retreatTileSet.length > 0) retreat = safestReachableTile(retreatTileSet);
@@ -3157,7 +3157,7 @@ function main() {
       }
       if (moveTowardLowHp) {
         const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-        const toward = path ? farthestReachableOnPath(path, unit.agi) : null;
+        const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3334,7 +3334,7 @@ function main() {
           return;
         }
 
-        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3363,7 +3363,7 @@ function main() {
       }
       if (moveTowardLowHp) {
         const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-        const toward = path ? farthestReachableOnPath(path, unit.agi) : null;
+        const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3376,7 +3376,7 @@ function main() {
           const result = getPathToNearestTarget(baseTargets);
           const veryCloseByForSurvival = result != null && result.path.length <= 5;
           if (veryCloseByForSurvival) {
-            const toward = farthestUnoccupiedOnPath(result.path, unit.agi);
+            const toward = farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi'));
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
               performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
               return;
@@ -3405,7 +3405,7 @@ function main() {
       if (!onCenter) {
         const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
         const result = getPathToNearestTarget(centerTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3423,7 +3423,7 @@ function main() {
       if (!onCenter && reachableTiles.length > 0) {
         const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
         const result = getPathToNearestTarget(centerTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3453,7 +3453,7 @@ function main() {
         }
         if (moveTowardLowHp) {
           const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-          const toward = path ? farthestReachableOnPath(path, unit.agi) : null;
+          const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
@@ -3461,7 +3461,7 @@ function main() {
         }
         const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
         const result = getPathToNearestTarget(baseTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, unit.agi) : null;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3501,7 +3501,7 @@ function main() {
             if (occupied) continue;
             const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
             const steps = path ? path.length - 1 : Infinity;
-            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unit.agi);
+            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= getEffectiveStat(unit, 'agi'));
             if (ok && (!bestPath || path.length < bestPath.length)) bestPath = path;
           }
         }
@@ -3523,7 +3523,7 @@ function main() {
           candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
         }
         const chosen = candidates[0];
-        const toward = farthestReachableOnPath(chosen.path, unit.agi);
+        const toward = farthestReachableOnPath(chosen.path, getEffectiveStat(unit, 'agi'));
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -3540,7 +3540,7 @@ function main() {
           }
         }
         if (bestPath) {
-          const toward = farthestReachableOnPath(bestPath, unit.agi);
+          const toward = farthestReachableOnPath(bestPath, getEffectiveStat(unit, 'agi'));
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
@@ -3764,7 +3764,7 @@ function main() {
         skillTargetTiles = new Set();
         clearHighlights();
         if (!hasMoved) {
-          reachable = getReachable(world, unit.x, unit.y, unit.agi, units, unit);
+          reachable = getReachable(world, unit.x, unit.y, getEffectiveStat(unit, 'agi'), units, unit);
           showReachable(reachable);
         } else {
           reachable = new Map();
@@ -3831,7 +3831,7 @@ function main() {
         isAttackMode = false;
         selectedUnitId = target.id;
         if (!hasMoved) {
-          reachable = getReachable(world, target.x, target.y, target.agi, units, target);
+          reachable = getReachable(world, target.x, target.y, getEffectiveStat(target, 'agi'), units, target);
           showReachable(reachable);
         } else {
           clearHighlights();
@@ -3872,7 +3872,7 @@ function main() {
         selectedUnitId = unitAt.id;
         isAttackMode = false;
         if (!hasMoved) {
-          reachable = getReachable(world, gx, gy, unitAt.agi, units, unitAt);
+          reachable = getReachable(world, gx, gy, getEffectiveStat(unitAt, 'agi'), units, unitAt);
           showReachable(reachable);
         } else {
           clearHighlights();
