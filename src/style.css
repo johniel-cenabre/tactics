@@ -556,6 +556,12 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 #battle-start-overlay.visible {
   display: flex;
 }
+#battle-start-overlay .battle-start-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
 #battle-start-overlay .battle-start-message {
   font-family: 'Outfit', sans-serif;
   font-size: clamp(1.8rem, 5vw, 3rem);
@@ -563,6 +569,25 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   color: #e6edf3;
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
   letter-spacing: 0.08em;
+}
+/* Sword-shaped loading bar: grip (left) + blade with pointed tip (right) */
+#battle-start-overlay .battle-start-sword-bar {
+  width: 200px;
+  height: 16px;
+  background: rgba(48, 54, 61, 0.9);
+  clip-path: polygon(0 25%, 0 75%, 6% 75%, 6% 85%, 94% 85%, 100% 50%, 94% 15%, 6% 15%, 6% 25%);
+  overflow: hidden;
+  border-radius: 1px;
+}
+#battle-start-overlay .battle-start-sword-bar-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #58a6ff 0%, #79c0ff 50%, #a5d6ff 100%);
+  clip-path: polygon(0 25%, 0 75%, 6% 75%, 6% 85%, 94% 85%, 100% 50%, 94% 15%, 6% 15%, 6% 25%);
+  animation: battle-start-sword-fill 4s linear forwards;
+}
+@keyframes battle-start-sword-fill {
+  to { width: 100%; }
 }
 #mode-select-overlay {
   position: fixed;

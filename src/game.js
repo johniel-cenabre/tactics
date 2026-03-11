@@ -11,7 +11,7 @@ const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 6;
 const MAX_TURNS = 130;
-const MOVE_DURATION_MS = 240;
+const MOVE_DURATION_MS = 300;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
@@ -312,7 +312,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'chokuto': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((u.str || 0) + (u.dex || 0) * 0.3));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.3 + getEffectiveStat(u, 'dex') * 0.3) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'bite': {
@@ -1719,6 +1719,20 @@ function main() {
     document.getElementById('draft-panel').style.display = 'flex';
   }
 
+  function buildInitiativeOrder() {
+    return units
+      .filter((u) => u.hp > 0)
+      .sort((a, b) => {
+        const agiA = getEffectiveStat(a, 'agi');
+        const agiB = getEffectiveStat(b, 'agi');
+        if (agiB !== agiA) return agiB - agiA;
+        const dexA = getEffectiveStat(a, 'dex');
+        const dexB = getEffectiveStat(b, 'dex');
+        return dexB - dexA;
+      })
+      .map((u) => u.id);
+  }
+
   function endDraftPhase() {
     document.getElementById('draft-panel').style.display = 'none';
     const placementCardEl = document.getElementById('draft-placement-card');
@@ -1740,10 +1754,7 @@ function main() {
     }
     phase = 'playing';
     turnCount = 0;
-    initiativeOrder = units.slice().sort((a, b) => {
-      if (b.agi !== a.agi) return b.agi - a.agi;
-      return b.dex - a.dex;
-    }).map((u) => u.id);
+    initiativeOrder = buildInitiativeOrder();
     currentTurnIndex = 0;
     while (currentTurnIndex < initiativeOrder.length && units.find((u) => u.id === initiativeOrder[currentTurnIndex]).hp <= 0) {
       currentTurnIndex++;
@@ -2136,6 +2147,12 @@ function main() {
     hasMoved = false;
     hasAttacked = false;
     selectedUnitId = initiativeOrder[currentTurnIndex];
+
+    const nextUnitId = initiativeOrder[currentTurnIndex];
+    initiativeOrder = buildInitiativeOrder();
+    const newIndex = initiativeOrder.indexOf(nextUnitId);
+    currentTurnIndex = newIndex >= 0 ? newIndex : 0;
+
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer();
