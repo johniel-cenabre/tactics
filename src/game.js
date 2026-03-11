@@ -123,8 +123,8 @@ const CLASS_SKILLS = {
     { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 2 turns.', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'freeze', type: 'spell' },
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 5, target: 'enemy', range: 6, level: 2, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 6, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'manaDrain' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -202,7 +202,7 @@ function getEffectiveStat(unit, key) {
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
-  const SKILL_DISPLAY_NAMES = { brave: 'Brave', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
+  const SKILL_DISPLAY_NAMES = { brave: 'Brave', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', manaDrain: 'Mana Drain', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
   const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
   const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
@@ -248,14 +248,16 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.str = Math.max(1, (t.str || 0) - dVal); u.str = (u.str || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} STR`, false); showStatChange(u.x, u.y, `+${dVal} STR`, true);
     } break;
-    case 'freeze': if (t) {
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 3;
-      showStatChange(t.x, t.y, '-10 AGI', false);
-    } break;
     case 'arcaneBolt': {
       if (!t) break;
       const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
+    } break;
+    case 'manaDrain': if (t) {
+      const dVal = Math.max(1, Math.floor(getEffectiveStat(t, 'int') * 0.3))
+      t.str = Math.max(1, (t.mp || 0) - dVal); u.mp = (u.mp || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} MP`, false);
+      showStatChange(u.x, u.y, `+${dVal} MP`, true);
     } break;
     case 'mantra': if (t) {
       const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3));
@@ -3499,7 +3501,7 @@ function main() {
       const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'assault', 'powerShot', 'concoct']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
       const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
-      const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
+      const DEBUFF_KEYS = new Set(['manaDrain', 'impale', 'poison']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
 
       function getEnemyTargets(skill) {
