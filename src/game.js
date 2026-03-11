@@ -380,8 +380,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'sanctuary': {
       const bVal = 1;
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 3;
+      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.dex = bVal; t.tempBuff.agi = bVal; t.tempBuff.int = bVal; t.tempBuff.luk = bVal; t.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
-      showStatChange(ally.x, ally.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
+      showStatChange(t.x, t.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
     } break;
     case 'exorcise': {
       if (!t) break;
