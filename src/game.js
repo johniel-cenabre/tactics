@@ -69,7 +69,7 @@ const CLASSES = {
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
   paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
   exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 20, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
-  bandit:     { name: 'Bandit',     gender: 'male',   hp: 22, maxHp: 22, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 18, maxHp: 18, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
@@ -171,20 +171,20 @@ const CLASS_SKILLS = {
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 7, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 6, target: 'enemy', range: 1, level: 1, effectKey: 'sanctuary' },
-    { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 7, target: 'enemy', range: 1, level: 2, effectKey: 'exorcise', type: 'spell' },
+    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 6, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
+    { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 7, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
     { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
     { name: 'Assault', description: 'Deal LUK-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'assault' },
   ],
   ranger: [
-    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'windWalk' },
+    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
     { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 6, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
-    { name: 'Forge', description: 'Gain +1 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'forge' },
-    { name: 'Fortify', description: 'Gain +2 STR and +2 VIT for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 1, level: 3, effectKey: 'fortify' },
+    { name: 'Forge', description: 'Gain +1 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 1, effectKey: 'forge' },
+    { name: 'Fortify', description: 'Gain +2 STR and +2 VIT for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 2, level: 3, effectKey: 'fortify' },
   ],
   alchemist: [
     { name: 'Poison', description: 'Poison enemy for 2 turns.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'poison' },
