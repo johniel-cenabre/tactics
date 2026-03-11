@@ -2910,7 +2910,7 @@ function main() {
           if (target.hp <= 0) targetDeathPending = true;
           if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
           const targetMesh = unitMeshes.get(target.id);
-          if (targetMesh) hitReactStartTime = now;
+          if (targetMesh && skill.target !== 'ally') hitReactStartTime = now;
           else if (targetDeathPending) {
             handleUnitDeath(target);
             targetDeathPending = false;
@@ -3377,9 +3377,10 @@ function main() {
           for (const skill of available) {
             if (skill.disabled) continue;
             if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
+            const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
+            if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
             if (BUFF_KEYS.has(skill.effectKey)) {
               if (skill.target === 'self') {
-                const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
                 if (!hasActiveBuff) {
                   chosen = skill;
                   chosenTarget = unit;
