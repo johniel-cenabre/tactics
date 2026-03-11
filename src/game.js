@@ -109,7 +109,7 @@ const CLASS_SKILLS = {
     { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'freeze' },
   ],
   monk: [
-    { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 3, hpCost: 2, target: 'ally', range: 4, level: 2, effectKey: 'mantra' },
+    { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 4, level: 2, effectKey: 'mantra' },
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
@@ -3378,11 +3378,24 @@ function main() {
             if (skill.disabled) continue;
             if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
             if (BUFF_KEYS.has(skill.effectKey)) {
-              const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
-              if (!hasActiveBuff) {
-                chosen = skill;
-                chosenTarget = unit;
-                break;
+              if (skill.target === 'self') {
+                const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
+                if (!hasActiveBuff) {
+                  chosen = skill;
+                  chosenTarget = unit;
+                  break;
+                }
+              }
+              if (skill.target === 'ally') {
+                const targets = getSkillTargetTiles(unit, skill, units);
+                const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
+                if (allyTargets.length > 0) {
+                  const withoutBuff = allyTargets.filter((a) => !a.tempBuff || a.tempBuff.duration <= 0);
+                  const toBuff = (withoutBuff.length > 0 ? withoutBuff : allyTargets).sort((a, b) => a.hp - b.hp)[0];
+                  chosen = skill;
+                  chosenTarget = toBuff;
+                  break;
+                }
               }
             }
           }
