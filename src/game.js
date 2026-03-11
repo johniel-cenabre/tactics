@@ -56,7 +56,7 @@ function shuffleArray(arr) {
 
 const CLASSES = {
   knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 1 },
+  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 16, range: 1 },
   monk:       { name: 'Monk',       gender: 'male',   hp: 23, maxHp: 23, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
   ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
   lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
@@ -67,12 +67,12 @@ const CLASSES = {
   ninja:      { name: 'Ninja',      gender: 'female', hp: 20, maxHp: 20, mp: 11, maxMp: 11, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
   samurai:    { name: 'Samurai',    gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
-  paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 6,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
-  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 20, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 6,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
-  bandit:     { name: 'Bandit',     gender: 'male',   hp: 22, maxHp: 22, mp: 5,  maxMp: 5,  str: 9,  agi: 17, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
+  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 20, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 22, maxHp: 22, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
-  blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 13, agi: 9,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
-  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 8,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
+  blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
+  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
 };
 
 const CLASS_LOOK = {
@@ -123,8 +123,8 @@ const CLASS_SKILLS = {
     { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'freeze' },
+    { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 2 turns.', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'freeze', type: 'spell' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 5, target: 'enemy', range: 6, level: 2, effectKey: 'arcaneBolt', type: 'spell' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -155,8 +155,8 @@ const CLASS_SKILLS = {
     { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
-    { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'shuriken' },
-    { name: 'Blind', description: 'Steal 2 DEX from an enemy.', cost: 8, target: 'enemy', range: 1, level: 3, effectKey: 'blind' },
+    { name: 'Blind', description: 'Steal 1 DEX from an enemy.', cost: 6, target: 'enemy', range: 1, level: 2, effectKey: 'blind' },
+    { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 7, target: 'enemy', range: 4, level: 3, effectKey: 'shuriken' },
   ],
   samurai: [
     { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 3 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
@@ -254,7 +254,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(t, d, false, true);
     } break;
     case 'freeze': if (t) {
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 1;
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 3;
       showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
     case 'mantra': if (t) {
@@ -336,25 +336,25 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
     } break;
-    case 'shuriken': {
-      if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
-    } break;
     case 'blind': {
       if (!t) break;
       const dVal = 2;
       t.dex = Math.max(1, (t.dex || 0) - dVal); u.dex = (u.dex || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} DEX`, false); showStatChange(u.x, u.y, `+${dVal} DEX`, true);
     } break;
+    case 'shuriken': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+    } break;
     case 'iaido': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 4;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} DEX`, true);
     } break;
     case 'chokuto': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.3 + getEffectiveStat(u, 'dex') * 0.3) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.4 + getEffectiveStat(u, 'dex') * 0.4) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'bite': {
@@ -364,7 +364,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'howl': {
       const bVal = 2;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 2;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 4;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
     } break;
     case 'sacrifice': {
@@ -379,7 +379,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'sanctuary': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 2;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
       showStatChange(ally.x, ally.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
     } break;
@@ -406,15 +406,17 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'powerShot': {
       if (!t) break;
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
-      if (ctx.world && ctx.units && ctx.updateUnitPosition) {
-        const tilesToPush = Math.max(1, Math.floor(d * 0.2));
-        const knock = getKnockbackResult(ctx.world, ctx.units, u, t, tilesToPush);
-        t.x = knock.newGx;
-        t.y = knock.newGy;
-        ctx.updateUnitPosition(t);
-        if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
-        if (knock.collisionDamage > 0) applyDamage(t, knock.collisionDamage, false);
+      const isHit = applyDamage(t, d, false);
+      if (isHit) {
+        if (ctx.world && ctx.units && ctx.updateUnitPosition) {
+          const tilesToPush = Math.max(1, Math.floor(d * 0.2));
+          const knock = getKnockbackResult(ctx.world, ctx.units, u, t, tilesToPush);
+          t.x = knock.newGx;
+          t.y = knock.newGy;
+          ctx.updateUnitPosition(t);
+          if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+          if (knock.collisionDamage > 0) applyDamage(t, knock.collisionDamage, false);
+        }
       }
     } break;
     case 'forge': {
@@ -1706,10 +1708,12 @@ function main() {
   }
 
   const turnPointerHeight = 1.15;
+  const turnPointerPlayerColors = { 1: 0x7BA3F5, 2: 0xEE7A8F }; // light royal blue, light crimson
   const turnPointerMesh = (() => {
+    const material = new THREE.MeshBasicMaterial({ color: turnPointerPlayerColors[1] });
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(0.1, 0.25, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffdd44 })
+      material
     );
     cone.rotation.x = Math.PI;
     cone.visible = false;
@@ -1740,6 +1744,7 @@ function main() {
     turnPointerMesh.removeFromParent();
     unitMesh.add(turnPointerMesh);
     turnPointerMesh.position.set(0, turnPointerHeight, 0);
+    if (turnPointerMesh.material) turnPointerMesh.material.color.setHex(turnPointerPlayerColors[unit.player] ?? turnPointerPlayerColors[1]);
     turnPointerMesh.visible = true;
   }
 
