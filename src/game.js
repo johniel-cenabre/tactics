@@ -224,9 +224,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
     case 'chakra': {
-      applyDamage(u, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(u, 'luk') * 0.2), true);
+      applyDamage(u, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(u, 'luk') * 0.2))), true);
       if (!t) break;
-      applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3) + getEffectiveStat(t, 'luk') * 0.2), true);
+      applyDamage(t, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(t, 'luk') * 0.2))), true);
     } break;
     case 'weaken': {
       if (!t) break;
