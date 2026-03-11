@@ -119,7 +119,7 @@ const CLASS_IMAGES = {
 
 const CLASS_SKILLS = {
   knight: [
-    { name: 'Shield Wall', description: 'Gain +2 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'shieldWall' },
+    { name: 'Brave', description: 'Gain +3 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'brave' },
     { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
@@ -183,7 +183,7 @@ const CLASS_SKILLS = {
     { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 6, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
-    { name: 'Forge', description: 'Gain +1 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 1, effectKey: 'forge' },
+    { name: 'Forge', description: 'Gain +2 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 1, effectKey: 'forge' },
     { name: 'Fortify', description: 'Gain +2 STR and +2 VIT for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 2, level: 3, effectKey: 'fortify' },
   ],
   alchemist: [
@@ -202,7 +202,7 @@ function getEffectiveStat(unit, key) {
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
-  const SKILL_DISPLAY_NAMES = { shieldWall: 'Shield Wall', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
+  const SKILL_DISPLAY_NAMES = { brave: 'Brave', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', freeze: 'Freeze', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
   const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
   const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
@@ -237,9 +237,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(gx, gy, text, false, isBuff ? 'buff' : 'debuff');
   };
   switch (effectKey) {
-    case 'shieldWall': {
+    case 'brave': {
       const bVal = 3;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.vit = 2; u.tempBuff.duration = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.vit = bVal; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${bVal} VIT`, true);
     } break;
     case 'dominate': {
@@ -338,7 +338,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'blind': {
       if (!t) break;
-      const dVal = 2;
+      const dVal = 1;
       t.dex = Math.max(1, (t.dex || 0) - dVal); u.dex = (u.dex || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} DEX`, false); showStatChange(u.x, u.y, `+${dVal} DEX`, true);
     } break;
@@ -3497,7 +3497,7 @@ function main() {
 
       const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'assault', 'powerShot', 'concoct']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
-      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
+      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
       const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
 
