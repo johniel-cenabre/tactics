@@ -31,7 +31,7 @@ const AI_DRAFT_PREFERENCE_OPTIONS = [
   { value: 'custom', label: 'Custom order' },
 ];
 /** When preference is 'custom', AI picks first available from this order (class keys). */
-const AI_DRAFT_CUSTOM_ORDER = ['berserker', 'knight', 'lancer', 'werewolf', 'samurai', 'ninja', 'assassin', 'ghoul', 'monk', 'hunter', 'mage', 'witch'];
+const AI_DRAFT_CUSTOM_ORDER = ['berserker', 'knight', 'lancer', 'werewolf', 'samurai', 'ninja', 'assassin', 'ghoul', 'monk', 'hunter', 'mage', 'witch', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist'];
 
 const TileType = {
   PATH: 0,
@@ -44,7 +44,7 @@ const TileType = {
   CENTER: 7,
 };
 
-const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf'];
+const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist'];
 
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -55,48 +55,66 @@ function shuffleArray(arr) {
 }
 
 const CLASSES = {
-  knight:   { name: 'Knight',   gender: 'male',  hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:    { name: 'Mage',     gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 6,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 4 },
-  monk:    { name: 'Monk',     gender: 'male',   hp: 23, maxHp: 23, mp: 12, maxMp: 12, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11,  int: 10, range: 1 },
-  ghoul:   { name: 'Ghoul',    gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9, int: 5,  range: 1 },
-  lancer:  { name: 'Lancer',   gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
-  hunter:  { name: 'Hunter',   gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 6 },
-  assassin:{ name: 'Assassin', gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
-  berserker:{ name: 'Berserker', gender: 'male', hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
-  witch:   { name: 'Witch',    gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
-  ninja:   { name: 'Ninja',    gender: 'female', hp: 20, maxHp: 20, mp: 12, maxMp: 12, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
-  samurai: { name: 'Samurai',  gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
-  werewolf:{ name: 'Werewolf', gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
+  knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
+  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 15, range: 1 },
+  monk:       { name: 'Monk',       gender: 'male',   hp: 23, maxHp: 23, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
+  ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
+  lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
+  hunter:     { name: 'Hunter',     gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 7 },
+  assassin:   { name: 'Assassin',   gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
+  berserker:  { name: 'Berserker',  gender: 'male',   hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
+  witch:      { name: 'Witch',      gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 6,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
+  ninja:      { name: 'Ninja',      gender: 'female', hp: 20, maxHp: 20, mp: 11, maxMp: 11, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
+  samurai:    { name: 'Samurai',    gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
+  werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
+  paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 6,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
+  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 20, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 6,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 22, maxHp: 22, mp: 5,  maxMp: 5,  str: 9,  agi: 17, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
+  blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 13, agi: 9,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
+  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 8,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
 };
 
 const CLASS_LOOK = {
-  knight:   { primary: 0x696969, secondary: 0x8B4513, hair: 0xC4A484, cape: 0x333333 },
-  mage:     { primary: 0xFFFDD0, secondary: 0x333333, hair: 0xCBC3E3, cape: 0x4A0E4E },
-  monk:     { primary: 0xFFFFE4, secondary: 0xF5F5F5, hair: 0x2c1810 },
-  ghoul:    { primary: 0x008080, secondary: 0x654321, hair: 0x008080, skin: 0x008080 },
-  lancer:   { primary: 0x305CDE, secondary: 0xFFFDD0, hair: 0xF1EAD2, cape: 0xDC143C },
-  hunter:   { primary: 0x808000, secondary: 0x92400e, hair: 0x78866B, cape: 0xF5F5F5 },
-  assassin: { primary: 0x0F0E47, secondary: 0xF5F5F5, hair: 0x280137 },
-  berserker:{ primary: 0x0A0A0A, secondary: 0x0F0E47, hair: 0x0A0A0A, cape: 0x111111 },
-  witch:    { primary: 0xF5F5F5, secondary: 0x800020, hair: 0xFFFFE4, cape: 0x228B22 },
-  ninja:    { primary: 0x04141c, secondary: 0x486581, hair: 0x486581 },
-  samurai:  { primary: 0xD3D3D3, secondary: 0x36454F, hair: 0x36454F },
-  werewolf: { primary: 0xA9A9A9, secondary: 0xDCDCDC, hair: 0xC0C0C0 },
+  knight:     { primary: 0x696969, secondary: 0x8B4513, hair: 0xb27a01, cape: 0x333333 },
+  mage:       { primary: 0xFFFDD0, secondary: 0x333333, hair: 0xCBC3E3, cape: 0x4A0E4E },
+  monk:       { primary: 0xFFFFE4, secondary: 0xF5F5F5, hair: 0x2c1810 },
+  ghoul:      { primary: 0x008080, secondary: 0x654321, hair: 0x008080, skin: 0x008080 },
+  lancer:     { primary: 0x305CDE, secondary: 0xFFFDD0, hair: 0xF1EAD2, cape: 0xDC143C },
+  hunter:     { primary: 0x808000, secondary: 0x92400e, hair: 0x78866B, cape: 0xF5F5F5 },
+  assassin:   { primary: 0x0F0E47, secondary: 0xF5F5F5, hair: 0x280137 },
+  berserker:  { primary: 0x0A0A0A, secondary: 0x0F0E47, hair: 0x0A0A0A, cape: 0x111111 },
+  witch:      { primary: 0xF5F5F5, secondary: 0x800020, hair: 0xFFFFE4, cape: 0x228B22 },
+  ninja:      { primary: 0x04141c, secondary: 0x021945, hair: 0x0C1222 },
+  samurai:    { primary: 0xD3D3D3, secondary: 0x36454F, hair: 0x1f2022 },
+  werewolf:   { primary: 0xA9A9A9, secondary: 0xDCDCDC, hair: 0xC0C0C0 },
+  paladin:    { primary: 0xFAF0BE, secondary: 0xFFF5EE, hair: 0xC4A484, cape: 0x4169E1 },
+  exorcist:   { primary: 0x3B3B3B, secondary: 0x3B3B3B, hair: 0xFFFAFA, cape: 0x818589 },
+  bandit:     { primary: 0x8B3E31, secondary: 0x5C4033, hair: 0xDC143C, cape: 0x666699 },
+  ranger:     { primary: 0xA68613, secondary: 0xFFFAFA, hair: 0xf4ae00, cape: 0xADFC6C },
+  blacksmith: { primary: 0xD3B683, secondary: 0x964B00, hair: 0xb27a01 },
+  alchemist:  { primary: 0xFF69B4, secondary: 0xAA336A, hair: 0xFF007F, cape: 0x87CEEB },
 };
 
 const CLASS_IMAGES = {
-  knight:   'https://creator.nightcafe.studio/jobs/OlIWpAye2LeM5gPkAGEI/OlIWpAye2LeM5gPkAGEI--1--xc223.jpg',
-  mage:     'https://media.craiyon.com/2025-08-13/bLqz0LbwSIynOcUHty4Maw.webp',
-  monk:     'https://cdnb.artstation.com/p/assets/images/images/028/576/499/large/ahruna-art-oct17.jpg?1594859688',
-  ghoul:    'https://i.pinimg.com/736x/d3/cc/41/d3cc41778d05dec0371a69e29659f792.jpg',
-  lancer:   'https://i.redd.it/zolf64gpoa0c1.jpg',
-  hunter:   'https://coolvibe.com/wp-content/uploads/2011/02/hunter.jpg',
-  assassin: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQk2-NBPpPOU7duYgN_k_9oFKZ5hJjU28qyoA&s',
-  berserker:'https://entertainment.inquirer.net/files/2016/07/top_bg.jpg',
-  witch:    'https://w0.peakpx.com/wallpaper/382/134/HD-wallpaper-evil-witch-witch-female-dress-white-hair-evil-black-woman-girl-darkness-anime-dark-beauty-lady-long-hair.jpg',
-  ninja:    'https://i.pinimg.com/474x/02/88/60/0288609778e53701b7e64051d7164922.jpg',
-  samurai:  'https://files.idyllic.app/files/static/3120390?width=256&optimizer=image',
-  werewolf: 'https://i.pinimg.com/736x/1f/95/27/1f9527c6255465547d664f19dd11967c.jpg',
+  knight:     'https://creator.nightcafe.studio/jobs/OlIWpAye2LeM5gPkAGEI/OlIWpAye2LeM5gPkAGEI--1--xc223.jpg',
+  mage:       'https://media.craiyon.com/2025-08-13/bLqz0LbwSIynOcUHty4Maw.webp',
+  monk:       'https://cdnb.artstation.com/p/assets/images/images/028/576/499/large/ahruna-art-oct17.jpg?1594859688',
+  ghoul:      'https://i.pinimg.com/736x/d3/cc/41/d3cc41778d05dec0371a69e29659f792.jpg',
+  lancer:     'https://i.redd.it/zolf64gpoa0c1.jpg',
+  hunter:     'https://coolvibe.com/wp-content/uploads/2011/02/hunter.jpg',
+  assassin:   'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQk2-NBPpPOU7duYgN_k_9oFKZ5hJjU28qyoA&s',
+  berserker:  'https://entertainment.inquirer.net/files/2016/07/top_bg.jpg',
+  witch:      'https://w0.peakpx.com/wallpaper/382/134/HD-wallpaper-evil-witch-witch-female-dress-white-hair-evil-black-woman-girl-darkness-anime-dark-beauty-lady-long-hair.jpg',
+  ninja:      'https://i.pinimg.com/474x/02/88/60/0288609778e53701b7e64051d7164922.jpg',
+  samurai:    'https://files.idyllic.app/files/static/3120390?width=256&optimizer=image',
+  werewolf:   'https://i.pinimg.com/736x/1f/95/27/1f9527c6255465547d664f19dd11967c.jpg',
+  paladin:    'https://upload-os-bbs.hoyolab.com/upload/2023/12/01/84522063/a6a130d65b61025d979eda3750b0abd4_2602645990799609868.jpg?x-oss-process=image%2Fresize%2Cs_1000%2Fauto-orient%2C0%2Finterlace%2C1%2Fformat%2Cwebp%2Fquality%2Cq_70',
+  exorcist:   'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/bdc0afb9-e917-4267-b7e6-2155f9c5c14c/detuach-b1b79b16-7fed-4175-b1a2-ca3d1bc6166b.jpg/v1/fill/w_1024,h_1449,q_75,strp/my_priest_by_domyzu_detuach-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiIvZi9iZGMwYWZiOS1lOTE3LTQyNjctYjdlNi0yMTU1ZjljNWMxNGMvZGV0dWFjaC1iMWI3OWIxNi03ZmVkLTQxNzUtYjFhMi1jYTNkMWJjNjE2NmIuanBnIiwiaGVpZ2h0IjoiPD0xNDQ5Iiwid2lkdGgiOiI8PTEwMjQifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uud2F0ZXJtYXJrIl0sIndtayI6eyJwYXRoIjoiL3dtL2JkYzBhZmI5LWU5MTctNDI2Ny1iN2U2LTIxNTVmOWM1YzE0Yy9kb215enUtNC5wbmciLCJvcGFjaXR5Ijo5NSwicHJvcG9ydGlvbnMiOjAuNDUsImdyYXZpdHkiOiJjZW50ZXIifX0.5ueq8PhVPSB7hz65z6Cok8mX7IGeIrsQzCOaVFpt1pU',
+  bandit:     'https://i.pinimg.com/736x/6b/15/b0/6b15b06ae23f690e20968bc87c370831.jpg',
+  ranger:     'https://i.redd.it/2nfikbmqpwoa1.jpg',
+  blacksmith: 'https://images-ng.pixai.art/images/orig/489d970a-890e-4523-8f99-c0ba2d6bfeae',
+  alchemist:  'https://pics.craiyon.com/2023-07-11/ddbb35d3d2614541a9ad13181838257d.webp',
 };
 
 const CLASS_SKILLS = {
@@ -109,7 +127,7 @@ const CLASS_SKILLS = {
     { name: 'Freeze', description: 'Reduce target\'s AGI by 10 for 1 turn.', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'freeze' },
   ],
   monk: [
-    { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 4, level: 2, effectKey: 'mantra' },
+    { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
@@ -121,8 +139,8 @@ const CLASS_SKILLS = {
     { name: 'Pierce', description: 'Deal STR-based damage through the defense.', cost: 6, target: 'enemy', range: 2, level: 3, effectKey: 'pierce' },
   ],
   hunter: [
-    { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 2, effectKey: 'focus' },
-    { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 3, effectKey: 'snipe' },
+    { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'focus' },
+    { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 2, effectKey: 'snipe' },
   ],
   assassin: [
     { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
@@ -141,12 +159,36 @@ const CLASS_SKILLS = {
     { name: 'Blind', description: 'Steal 2 DEX from an enemy.', cost: 8, target: 'enemy', range: 1, level: 3, effectKey: 'blind' },
   ],
   samurai: [
-    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
+    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 3 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
     { name: 'Chokuto', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'chokuto' },
   ],
   werewolf: [
     { name: 'Bite', description: 'Deal STR+AGI-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'bite' },
-    { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 2 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
+    { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 3 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
+  ],
+  paladin: [
+    { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 3, effectKey: 'sacrifice' },
+    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 7, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
+  ],
+  exorcist: [
+    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 6, target: 'enemy', range: 1, level: 1, effectKey: 'sanctuary' },
+    { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 7, target: 'enemy', range: 1, level: 2, effectKey: 'exorcise', type: 'spell' },
+  ],
+  bandit: [
+    { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
+    { name: 'Assault', description: 'Deal LUK-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'assault' },
+  ],
+  ranger: [
+    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'windWalk' },
+    { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 6, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
+  ],
+  blacksmith: [
+    { name: 'Forge', description: 'Gain +1 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'forge' },
+    { name: 'Fortify', description: 'Gain +2 STR and +2 VIT for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 1, level: 3, effectKey: 'fortify' },
+  ],
+  alchemist: [
+    { name: 'Poison', description: 'Poison enemy for 2 turns.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'poison' },
+    { name: 'Concoct', description: 'Deal INT-based damage to one enemy and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
   ],
 };
 
@@ -324,6 +366,84 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const bVal = 2;
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 2;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
+    } break;
+    case 'sacrifice': {
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4));
+      applyDamage(t, d, true);
+      applyDamage(u, 3, false);
+    } break;
+    case 'judgement': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((u.maxHp - u.hp) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2 + getEffectiveStat(t, 'vit') * 0.1)));
+      applyDamage(t, d, false);
+    } break;
+    case 'sanctuary': {
+      const bVal = 1;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 2;
+      showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
+      showStatChange(ally.x, ally.y, `+${bVal} STR, +${bVal} VIT, +${bVal} DEX, +${bVal} AGI, +${bVal} INT, +${bVal} LUK`, true);
+    } break;
+    case 'exorcise': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((t.maxHp - t.hp) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+    } break;
+    case 'raid': {
+      const dVal = 2;
+      t.luk = Math.max(1, (t.luk || 0) - dVal); u.luk = (u.luk || 0) + dVal;
+      showStatChange(t.x, t.y, `-${dVal} LUK`, false); showStatChange(u.x, u.y, `+${dVal} LUK`, true);
+    } break;
+    case 'assault': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'luk') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+    } break;
+    case 'windWalk': {
+      const bValDex = 1, bValAgi = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = bValDex; u.tempBuff.agi = bValAgi; u.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${bValDex} DEX, +${bValAgi} AGI`, true);
+    } break;
+    case 'powerShot': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+      if (ctx.world && ctx.units && ctx.updateUnitPosition) {
+        const tilesToPush = Math.max(1, Math.floor(d * 0.2));
+        const knock = getKnockbackResult(ctx.world, ctx.units, u, t, tilesToPush);
+        t.x = knock.newGx;
+        t.y = knock.newGy;
+        ctx.updateUnitPosition(t);
+        if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+        if (knock.collisionDamage > 0) applyDamage(t, knock.collisionDamage, false);
+      }
+    } break;
+    case 'forge': {
+      const bVal = 2;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.duration = 3;
+      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${bVal} STR`, true);
+      showStatChange(t.x, t.y, `+${bVal} STR`, true);
+    } break;
+    case 'fortify': {
+      const bVal = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.duration = 3;
+      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.duration = 3;
+      showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT`, true);
+      showStatChange(t.x, t.y, `+${bVal} STR, +${bVal} VIT`, true);
+    } break;
+    case 'poison': {
+      if (!t) break;
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.2));
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.poison = poisonVal; t.tempDebuff.duration = 3;
+      showStatChange(t.x, t.y, `Poisoned for 2 turns`, false);
+    } break;
+    case 'concoct': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
+      const lukVal = Math.max(1, Math.floor(d * 0.5));
+      u.luk = Math.max(1, (u.luk || 0) + lukVal);
+      showStatChange(u.x, u.y, `+${lukVal} LUK`, true);
     } break;
     default: break;
   }
@@ -557,6 +677,43 @@ function isWalkable(world, x, y) {
   const t = world.type[y][x];
   if (t === TileType.TREE || t === TileType.WATER || t === TileType.ROCK) return false;
   return true;
+}
+
+/**
+ * Compute knockback result: push target N tiles away from attacker.
+ * If target would be pushed into an obstacle or another unit, leave target at last valid tile and apply variable collision damage.
+ * @param {object} world - world with w, h, type
+ * @param {Array} units - all units (to check occupancy)
+ * @param {object} attacker - unit doing the knockback
+ * @param {object} target - unit being knocked back
+ * @param {number} tilesToPush - number of tiles to push (e.g. 1 or 2)
+ * @returns {{ newGx: number, newGy: number, collisionDamage: number }}
+ */
+function getKnockbackResult(world, units, attacker, target, tilesToPush) {
+  let curGx = target.x;
+  let curGy = target.y;
+  const dx = target.x - attacker.x;
+  const dy = target.y - attacker.y;
+  const stepDx = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 1 : dx < 0 ? -1 : 0) : 0;
+  const stepDy = Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 1 : dy < 0 ? -1 : 0) : 0;
+  if (stepDx === 0 && stepDy === 0) return { newGx: curGx, newGy: curGy, collisionDamage: 0 };
+
+  let tilesPushed = 0;
+  for (let i = 0; i < tilesToPush; i++) {
+    const nextGx = curGx + stepDx;
+    const nextGy = curGy + stepDy;
+    const outOfBounds = nextGx < 0 || nextGx >= world.w || nextGy < 0 || nextGy >= world.h;
+    const blocked = !isWalkable(world, nextGx, nextGy);
+    const occupied = units.some((u) => u.hp > 0 && u.id !== target.id && u.x === nextGx && u.y === nextGy);
+    if (outOfBounds || blocked || occupied) {
+      const collisionDamage = Math.max(1, tilesPushed * 3 + Math.floor((attacker.str || 0) * 0.3));
+      return { newGx: curGx, newGy: curGy, collisionDamage };
+    }
+    curGx = nextGx;
+    curGy = nextGy;
+    tilesPushed++;
+  }
+  return { newGx: curGx, newGy: curGy, collisionDamage: 0 };
 }
 
 /** Tiles that the line from (ax,ay) to (bx,by) passes through (Bresenham). */
@@ -2057,18 +2214,15 @@ function main() {
 
     const btnAttack = cache.btnAttack || (cache.btnAttack = document.getElementById('btn-attack'));
     const btnSkill = cache.btnSkill || (cache.btnSkill = document.getElementById('btn-skill'));
-    const btnSpell = cache.btnSpell || (cache.btnSpell = document.getElementById('btn-spell'));
     const btnEnd = cache.btnEnd || (cache.btnEnd = document.getElementById('btn-end'));
     if (gameMode === 'cvcpu' && phase === 'playing') {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
-      btnSpell.disabled = true;
       if (btnEnd) btnEnd.disabled = true;
       turnEl.textContent = `Player ${currentPlayer} (CPU)`;
     } else if (isChoosingFacing) {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
-      btnSpell.disabled = true;
       turnEl.textContent = 'Click on map to choose facing direction';
     } else if (phase === 'playing') {
       btnAttack.disabled = hasAttacked;
@@ -2077,7 +2231,6 @@ function main() {
       const isHumanTurn = gameMode !== 'cvcpu' && (gameMode !== 'pvcpu' || currentPlayer === 1);
       const availableSkills = isHumanTurn && currentUnit && !hasAttacked ? getAvailableSkills(currentUnit) : [];
       btnSkill.disabled = hasAttacked || !isHumanTurn || availableSkills.length === 0;
-      btnSpell.disabled = false;
       if (btnEnd) btnEnd.disabled = false;
     }
     if (phase === 'playing') {
@@ -2142,6 +2295,33 @@ function main() {
       steps++;
     }
     currentTurnIndex = next;
+
+    for (let steps2 = 0; steps2 < n; steps2++) {
+      const nextUid = initiativeOrder[currentTurnIndex];
+      const nextUnitForPoison = units.find((u) => u.id === nextUid);
+      if (!nextUnitForPoison || nextUnitForPoison.hp <= 0) break;
+      const poisonVal = nextUnitForPoison.tempDebuff && nextUnitForPoison.tempDebuff.poison != null ? nextUnitForPoison.tempDebuff.poison : 0;
+      if (poisonVal <= 0) break;
+      nextUnitForPoison.hp = Math.max(0, nextUnitForPoison.hp - poisonVal);
+      showFloatingCombatText(nextUnitForPoison.x, nextUnitForPoison.y, String(poisonVal), false, 'poison');
+      updateUnitSlashVisibility(nextUnitForPoison);
+      if (nextUnitForPoison.hp <= 0) {
+        handleUnitDeath(nextUnitForPoison);
+        next = (currentTurnIndex + 1) % n;
+        let steps3 = 0;
+        while (steps3 < n) {
+          const uid = initiativeOrder[next];
+          const u = units.find((x) => x.id === uid);
+          if (u && u.hp > 0) break;
+          next = (next + 1) % n;
+          steps3++;
+        }
+        currentTurnIndex = next;
+        continue;
+      }
+      break;
+    }
+
     const nextUnit = units.find((u) => u.id === initiativeOrder[currentTurnIndex]);
     currentPlayer = nextUnit ? nextUnit.player : 1;
     hasMoved = false;
@@ -2292,10 +2472,6 @@ function main() {
     if (overlay.contains(e.target)) return;
     overlay.style.display = 'none';
     overlay.setAttribute('aria-hidden', 'true');
-  });
-  document.getElementById('btn-spell').addEventListener('click', () => {
-    if (isUnitMoving) return;
-    // TODO: spell mode
   });
   document.getElementById('btn-end').addEventListener('click', () => {
     if (isUnitMoving) return;
@@ -3314,11 +3490,11 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute']);
-      const HEAL_KEYS = new Set(['chakra']);
-      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra']);
-      const DEBUFF_KEYS = new Set(['freeze', 'impale']);
-      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'assault', 'powerShot', 'concoct']);
+      const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
+      const BUFF_KEYS = new Set(['shieldWall', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
+      const DEBUFF_KEYS = new Set(['freeze', 'impale', 'poison']);
+      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
 
       function getEnemyTargets(skill) {
         const targets = getSkillTargetTiles(unit, skill, units);
@@ -3330,6 +3506,12 @@ function main() {
         handleUnitDeath,
         updateUnitSlashVisibility,
         updateTurnUI,
+        world,
+        units,
+        updateUnitPosition(unit) {
+          const mesh = unitMeshes.get(unit.id);
+          if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
+        },
       };
 
       let chosen = null;
@@ -3954,6 +4136,12 @@ function main() {
         handleUnitDeath,
         updateUnitSlashVisibility,
         updateTurnUI,
+        world,
+        units,
+        updateUnitPosition(unit) {
+          const mesh = unitMeshes.get(unit.id);
+          if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
+        },
       };
       const skillTarget = selectedSkill.target === 'self' ? unit : (targetUnit || null);
       executeSkillWithProjectile(unit, skillTarget, selectedSkill, ctx, () => {
