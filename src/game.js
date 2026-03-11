@@ -248,14 +248,14 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.str = Math.max(1, (t.str || 0) - dVal); u.str = (u.str || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} STR`, false); showStatChange(u.x, u.y, `+${dVal} STR`, true);
     } break;
+    case 'freeze': if (t) {
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 3;
+      showStatChange(t.x, t.y, '-10 AGI', false);
+    } break;
     case 'arcaneBolt': {
       if (!t) break;
       const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
-    } break;
-    case 'freeze': if (t) {
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = 10; t.tempDebuff.duration = 3;
-      showStatChange(t.x, t.y, '-10 AGI', false);
     } break;
     case 'mantra': if (t) {
       const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3));
@@ -305,15 +305,15 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
-    case 'execute': if (t) {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
-    } break;
     case 'cripple': {
       if (!t) break;
       const dVal = 1;
       t.agi = Math.max(1, (t.agi || 0) - dVal); u.agi = (u.agi || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} AGI`, false); showStatChange(u.x, u.y, `+${dVal} AGI`, true);
+    } break;
+    case 'execute': if (t) {
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false);
     } break;
     case 'berserk': if (t) {
       applyDamage(t, Math.max(1, Math.floor(getEffectiveStat(u, 'str') * 0.8 - getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)), false);
@@ -375,7 +375,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'judgement': {
       if (!t) break;
       const d = Math.max(1, Math.floor((u.maxHp - u.hp) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2 + getEffectiveStat(t, 'vit') * 0.1)));
-      applyDamage(t, d, false);
+      applyDamage(t, d, false, true);
     } break;
     case 'sanctuary': {
       const bVal = 1;
@@ -387,7 +387,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'exorcise': {
       if (!t) break;
       const d = Math.max(1, Math.floor((t.maxHp - t.hp) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
+      applyDamage(t, d, false, true);
     } break;
     case 'raid': {
       const dVal = 2;
@@ -443,7 +443,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'concoct': {
       if (!t) break;
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false);
+      applyDamage(t, d, false, true);
       const lukVal = Math.max(1, Math.floor(d * 0.5));
       u.luk = Math.max(1, (u.luk || 0) + lukVal);
       showStatChange(u.x, u.y, `+${lukVal} LUK`, true);
