@@ -9,7 +9,7 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 6;
+const DRAFT_PICKS_PER_PLAYER = 7;
 const MAX_TURNS = 130;
 const MOVE_DURATION_MS = 300;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -1169,6 +1169,7 @@ function main() {
   const cz = (world.h * TILE_SIZE) / 2;
   const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 200);
   const INITIAL_ZOOM = 17;
+  const CAMERA_FOLLOW_LERP = 0.003;
   const cameraOffset = new THREE.Vector3(12, 38, 16).normalize().multiplyScalar(INITIAL_ZOOM);
   const cameraTarget = new THREE.Vector3();
   const _zoomDir = new THREE.Vector3();
@@ -1177,6 +1178,7 @@ function main() {
   const zoomDir = new THREE.Vector3();
   let isPanning = false;
   let isRotating = false;
+  let cameraFollowUnit = true;
   let ctrlKeyOnDown = false;
   let prevPointerNdc = null;
   const CLICK_DRAG_THRESHOLD_PX = 5;
@@ -1187,7 +1189,7 @@ function main() {
   let pointerDownPixel = { x: 0, y: 0 };
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 40;
-  const ZOOM_SENSITIVITY = 0.08;
+  const ZOOM_SENSITIVITY = 0.005;
   const PINCH_ZOOM_SENSITIVITY = 0.15;
   let pinchLastDistance = null;
 
@@ -1707,6 +1709,7 @@ function main() {
   const _endPosition = new THREE.Vector3();
 
   function centerCameraOnCurrentPlayer(instant = false) {
+    cameraFollowUnit = true;
     let unit = null;
     if (phase === 'playing' && initiativeOrder.length > 0) {
       const uid = initiativeOrder[currentTurnIndex];
@@ -2940,6 +2943,7 @@ function main() {
     selectedUnitId = null;
     clearHighlights();
     isUnitMoving = true;
+    cameraFollowUnit = true;
     updateUnitTileBorders(unit.id);
     requestRender();
     const mesh = unitMeshes.get(unit.id);
@@ -2974,6 +2978,15 @@ function main() {
         const eased = smoothstep(t);
         mesh.position.lerpVectors(startPos, endPos, eased);
         setWalkPose(mesh, eased);
+        if (cameraFollowUnit) {
+          const zoomDist = camera.position.distanceTo(cameraTarget);
+          const dist = zoomDist < 0.1 ? INITIAL_ZOOM : zoomDist;
+          _zoomDir.copy(camera.position).sub(cameraTarget).normalize();
+          if (_zoomDir.lengthSq() < 0.01) _zoomDir.copy(cameraOffset).normalize();
+          cameraTarget.lerp(mesh.position, CAMERA_FOLLOW_LERP);
+          camera.position.copy(cameraTarget).add(_zoomDir.clone().multiplyScalar(dist));
+          camera.lookAt(cameraTarget);
+        }
         if (t < 1) requestAnimationFrame(tick);
         else { stepIndex++; animateStep(); }
       }
@@ -4570,6 +4583,7 @@ function main() {
       selectedUnitId = null;
       clearHighlights();
       isUnitMoving = true;
+      cameraFollowUnit = true;
       updateUnitTileBorders(u.id);
       const mesh = unitMeshes.get(u.id);
       let stepIndex = 1;
@@ -4607,6 +4621,15 @@ function main() {
           const eased = smoothstep(t);
           mesh.position.lerpVectors(startPos, endPos, eased);
           setWalkPose(mesh, eased);
+          if (cameraFollowUnit) {
+            const zoomDist = camera.position.distanceTo(cameraTarget);
+            const dist = zoomDist < 0.1 ? INITIAL_ZOOM : zoomDist;
+            _zoomDir.copy(camera.position).sub(cameraTarget).normalize();
+            if (_zoomDir.lengthSq() < 0.01) _zoomDir.copy(cameraOffset).normalize();
+            cameraTarget.lerp(mesh.position, CAMERA_FOLLOW_LERP);
+            camera.position.copy(cameraTarget).add(_zoomDir.clone().multiplyScalar(dist));
+            camera.lookAt(cameraTarget);
+          }
           if (t < 1) requestAnimationFrame(tick);
           else {
             stepIndex++;
@@ -4693,8 +4716,13 @@ function main() {
     const dx = e.clientX - pointerDownPixel.x;
     const dy = e.clientY - pointerDownPixel.y;
     if (!isPanning && !isRotating && (Math.abs(dx) > CLICK_DRAG_THRESHOLD_PX || Math.abs(dy) > CLICK_DRAG_THRESHOLD_PX)) {
-      if (e.ctrlKey || ctrlKeyOnDown) isRotating = true;
-      else isPanning = true;
+      if (e.ctrlKey || ctrlKeyOnDown) {
+        isRotating = true;
+        cameraFollowUnit = false;
+      } else {
+        isPanning = true;
+        cameraFollowUnit = false;
+      }
     }
     if (isRotating) {
       _orbitOffset.copy(camera.position).sub(cameraTarget);
