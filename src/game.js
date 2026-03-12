@@ -10,7 +10,7 @@ const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 7;
-const MAX_TURNS = 130;
+const MAX_TURNS = 200;
 const MOVE_DURATION_MS = 300;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
