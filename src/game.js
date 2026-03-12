@@ -55,9 +55,12 @@ function getBalancedTargets(lineupSize) {
     sum += t;
   }
   let remainder = n - sum;
-  const byRatio = [...keys].sort((a, b) => (BALANCED_RATIOS[b] ?? 0) - (BALANCED_RATIOS[a] ?? 0));
-  for (let i = 0; remainder > 0 && i < byRatio.length; i++) {
-    targets[byRatio[i]]++;
+  const bySmallestFirst = [...keys].sort((a, b) => {
+    if (targets[a] !== targets[b]) return targets[a] - targets[b];
+    return (BALANCED_RATIOS[b] ?? 0) - (BALANCED_RATIOS[a] ?? 0);
+  });
+  for (let i = 0; remainder > 0 && i < bySmallestFirst.length; i++) {
+    targets[bySmallestFirst[i]]++;
     remainder--;
   }
   return targets;
@@ -173,8 +176,8 @@ const CLASS_SKILLS = {
     { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 2, effectKey: 'snipe' },
   ],
   assassin: [
-    { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
-    { name: 'Execute', description: 'Deal AGI-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'execute' },
+    { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
+    { name: 'Execute', description: 'Deal AGI-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'execute' },
   ],
   berserker: [
     { name: 'Berserk', description: 'Deal STR-based damage for -3 HP.', cost: 0, hpCost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'berserk' },
@@ -185,8 +188,8 @@ const CLASS_SKILLS = {
     { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
-    { name: 'Blind', description: 'Steal 1 DEX from an enemy.', cost: 6, target: 'enemy', range: 1, level: 2, effectKey: 'blind' },
-    { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 7, target: 'enemy', range: 4, level: 3, effectKey: 'shuriken' },
+    { name: 'Blind', description: 'Steal 1 DEX from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'blind' },
+    { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 6, target: 'enemy', range: 4, level: 3, effectKey: 'shuriken' },
   ],
   samurai: [
     { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 3 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
@@ -205,11 +208,11 @@ const CLASS_SKILLS = {
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 7, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
-    { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
-    { name: 'Assault', description: 'Deal LUK-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'assault' },
+    { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
+    { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
   ],
   ranger: [
-    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
+    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
     { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 6, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
@@ -344,7 +347,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `-${dVal} AGI`, false); showStatChange(u.x, u.y, `+${dVal} AGI`, true);
     } break;
     case 'execute': if (t) {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'agi') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'berserk': if (t) {
@@ -426,9 +429,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.luk = Math.max(1, (t.luk || 0) - dVal); u.luk = (u.luk || 0) + dVal;
       showStatChange(t.x, t.y, `-${dVal} LUK`, false); showStatChange(u.x, u.y, `+${dVal} LUK`, true);
     } break;
-    case 'assault': {
+    case 'ambush': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'luk') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'luk') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'windWalk': {
@@ -444,11 +447,22 @@ function applySkillEffect(effectKey, unit, target, ctx) {
         if (ctx.world && ctx.units && ctx.updateUnitPosition) {
           const tilesToPush = Math.max(1, Math.floor(d * 0.2));
           const knock = getKnockbackResult(ctx.world, ctx.units, u, t, tilesToPush);
+          const oldGx = t.x;
+          const oldGy = t.y;
           t.x = knock.newGx;
           t.y = knock.newGy;
-          ctx.updateUnitPosition(t);
-          if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
-          if (knock.collisionDamage > 0) applyDamage(t, knock.collisionDamage, false);
+          if (knock.collisionDamage > 0) {
+            ctx.updateUnitPosition(t);
+            if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+            applyDamage(t, knock.collisionDamage, false);
+          } else if (ctx.animateKnockback) {
+            ctx.animateKnockback(t, oldGx, oldGy, knock.newGx, knock.newGy, () => {
+              if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+            });
+          } else {
+            ctx.updateUnitPosition(t);
+            if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+          }
         }
       }
     } break;
@@ -3728,7 +3742,7 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'assault', 'powerShot', 'concoct']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
       const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
       const DEBUFF_KEYS = new Set(['manaDrain', 'impale', 'poison']);
@@ -3749,6 +3763,30 @@ function main() {
         updateUnitPosition(unit) {
           const mesh = unitMeshes.get(unit.id);
           if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
+        },
+        animateKnockback(target, fromGx, fromGy, toGx, toGy, onDone) {
+          const mesh = unitMeshes.get(target.id);
+          if (!mesh) {
+            if (onDone) onDone();
+            return;
+          }
+          const startPos = worldPos(fromGx, fromGy).clone();
+          const endPos = worldPos(toGx, toGy).clone();
+          const startTime = performance.now();
+          let tickCount = 0;
+          function tick(now) {
+            tickCount++;
+            if (tickCount % 2 === 0) requestRender();
+            const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+            const smoothstep = (x) => x * x * (3 - 2 * x);
+            mesh.position.lerpVectors(startPos, endPos, smoothstep(t));
+            if (t < 1) requestAnimationFrame(tick);
+            else {
+              mesh.position.copy(endPos);
+              if (onDone) onDone();
+            }
+          }
+          requestAnimationFrame(tick);
         },
       };
 
@@ -3796,6 +3834,8 @@ function main() {
                 }
               }
               if (skill.target === 'ally') {
+                if (skill.effectKey === 'forge' && hasActiveBuff) continue;
+                if (skill.effectKey === 'fortify' && hasActiveBuff) continue;
                 if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
                 if (skill.effectKey === 'sanctuary' && hasActiveBuff) continue;
                 const targets = getSkillTargetTiles(unit, skill, units);
@@ -4390,6 +4430,30 @@ function main() {
         updateUnitPosition(unit) {
           const mesh = unitMeshes.get(unit.id);
           if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
+        },
+        animateKnockback(target, fromGx, fromGy, toGx, toGy, onDone) {
+          const mesh = unitMeshes.get(target.id);
+          if (!mesh) {
+            if (onDone) onDone();
+            return;
+          }
+          const startPos = worldPos(fromGx, fromGy).clone();
+          const endPos = worldPos(toGx, toGy).clone();
+          const startTime = performance.now();
+          let tickCount = 0;
+          function tick(now) {
+            tickCount++;
+            if (tickCount % 2 === 0) requestRender();
+            const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+            const smoothstep = (x) => x * x * (3 - 2 * x);
+            mesh.position.lerpVectors(startPos, endPos, smoothstep(t));
+            if (t < 1) requestAnimationFrame(tick);
+            else {
+              mesh.position.copy(endPos);
+              if (onDone) onDone();
+            }
+          }
+          requestAnimationFrame(tick);
         },
       };
       const skillTarget = selectedSkill.target === 'self' ? unit : (targetUnit || null);
