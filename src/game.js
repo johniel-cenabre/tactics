@@ -5,11 +5,12 @@
 
 import * as THREE from 'three';
 
-const GRID_W = 35;
-const GRID_H = 25;
+let gridW = 35;
+let gridH = 25;
+let centerPlazaRadius = 0.29;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const MAX_TURNS = 200;
+let maxTurns = 200;
 let draftPicksPerPlayer = 7;
 let moveDurationMs = 300;
 const DEV_MODE = typeof window !== 'undefined' && (
@@ -539,53 +540,40 @@ function applySkillEffect(effectKey, unit, target, ctx) {
 }
 
 function createWorld() {
-  const w = GRID_W;
-  const h = GRID_H;
+  const w = gridW;
+  const h = gridH;
   const path = Array.from({ length: h }, () => Array(w).fill(false));
   const height = Array.from({ length: h }, () => Array(w).fill(0));
   const type = Array.from({ length: h }, () => Array(w).fill(TileType.GRASS));
 
-  const topBaseX = Math.floor(w / 2);
-  const botBaseX = Math.floor(w / 2);
-  const topBaseY = 0;
-  const botBaseY = h - 1;
-
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const x = topBaseX + dx;
-      const y = topBaseY + dy;
-      if (x >= 0 && x < w && y >= 0 && y < h) {
-        path[y][x] = true;
-        type[y][x] = TileType.BASE_TOP;
-        height[y][x] = 1;
-      }
-    }
-  }
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const x = botBaseX + dx;
-      const y = botBaseY + dy;
-      if (x >= 0 && x < w && y >= 0 && y < h) {
-        path[y][x] = true;
-        type[y][x] = TileType.BASE_BOTTOM;
-        height[y][x] = 1;
-      }
-    }
-  }
-
+  // Invariant: same layout for any map size — top base at top, bottom base at bottom, center plaza in middle (all horizontally centered)
   const centerX = Math.floor(w / 2);
   const centerY = Math.floor(h / 2);
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const x = centerX + dx;
-      const y = centerY + dy;
-      if (x >= 0 && x < w && y >= 0 && y < h) {
-        path[y][x] = true;
-        type[y][x] = TileType.CENTER;
-        height[y][x] = 1;
+  const topBaseX = centerX;
+  const topBaseY = 0;
+  const botBaseX = centerX;
+  const botBaseY = h - 1;
+
+  // Base and center tile extent: 5 cols (center ±2), 3 rows each
+  const baseHalfW = 2;
+  const baseRows = 3;
+  function setRegion(typeId, rowStart, rowEnd, colCenter) {
+    const c = colCenter;
+    for (let gy = rowStart; gy <= rowEnd; gy++) {
+      if (gy < 0 || gy >= h) continue;
+      for (let dx = -baseHalfW; dx <= baseHalfW; dx++) {
+        const gx = c + dx;
+        if (gx < 0 || gx >= w) continue;
+        path[gy][gx] = true;
+        type[gy][gx] = typeId;
+        height[gy][gx] = 1;
       }
     }
   }
+
+  setRegion(TileType.BASE_TOP, topBaseY, topBaseY + baseRows - 1, topBaseX);
+  setRegion(TileType.BASE_BOTTOM, botBaseY - baseRows + 1, botBaseY, botBaseX);
+  setRegion(TileType.CENTER, centerY - 1, centerY + 1, centerX);
 
   // Two arcs (left and right) from bottom base to top base — do not connect through center plaza
   const pathCells = new Set();
@@ -598,7 +586,7 @@ function createWorld() {
   };
   const cx = Math.floor(w / 2);
   const cy = Math.floor(h / 2);
-  const radius = Math.min(w, h) * 0.29;
+  const radius = Math.min(w, h) * centerPlazaRadius;
   const numSamples = Math.max(60, (h + w) * 2);
   for (let arc = 0; arc < 2; arc++) {
     const centerXArc = arc === 0 ? cx - radius : cx + radius;
@@ -683,28 +671,10 @@ function createWorld() {
   fillPathStrip(botBaseY - botBaseRows + 1, botBaseY, leftArcX, botBaseX - 1);
   fillPathStrip(botBaseY - botBaseRows + 1, botBaseY, botBaseX + 1, rightArcX);
 
-  for (let dy = -1; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const x = topBaseX + dx;
-      const y = topBaseY + dy;
-      if (x >= 0 && x < w && y >= 0 && y < h) {
-        path[y][x] = true;
-        type[y][x] = TileType.BASE_TOP;
-        height[y][x] = 1;
-      }
-    }
-  }
-  for (let dy = -2; dy <= 1; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const x = botBaseX + dx;
-      const y = botBaseY + dy;
-      if (x >= 0 && x < w && y >= 0 && y < h) {
-        path[y][x] = true;
-        type[y][x] = TileType.BASE_BOTTOM;
-        height[y][x] = 1;
-      }
-    }
-  }
+  // Re-apply base and center so they are never overwritten by path (invariant: top, bottom, center)
+  setRegion(TileType.BASE_TOP, topBaseY, topBaseY + baseRows - 1, topBaseX);
+  setRegion(TileType.BASE_BOTTOM, botBaseY - baseRows + 1, botBaseY, botBaseX);
+  setRegion(TileType.CENTER, centerY - 1, centerY + 1, centerX);
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -1197,7 +1167,7 @@ function main() {
   const instructionsEl = document.querySelector('#mode-select-overlay .mode-select-instructions');
   if (instructionsEl) console.log(instructionsEl.textContent.trim());
 
-  const world = createWorld();
+  let world = createWorld();
   const container = document.getElementById('canvas-wrap');
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a1e24);
@@ -1243,15 +1213,15 @@ function main() {
   sun.shadow.camera.top = 50; sun.shadow.camera.bottom = -50;
   scene.add(sun);
 
-  const tilesGroup = buildTileMesh(world);
+  let tilesGroup = buildTileMesh(world);
   scene.add(tilesGroup);
 
   const units = [];
   let nextUnitId = 1;
   const unitMeshes = new Map();
   const unitNoiseBumpMap = createTilingNoiseTexture(64);
-  const hw = halfW(world);
-  const hh = halfH(world);
+  let hw = halfW(world);
+  let hh = halfH(world);
   function worldPos(gx, gy) {
     const topY = BASE_HEIGHT + world.height[gy][gx] * 0.35;
     const surfaceY = topY / 2 + BASE_HEIGHT / 2;
@@ -1260,6 +1230,62 @@ function main() {
       surfaceY,
       gy * TILE_SIZE - hh + TILE_SIZE / 2
     );
+  }
+
+  function rebuildWorldForPvp(mapMode) {
+    if (mapMode === 'short') {
+      gridW = 27;
+      gridH = 15;
+      centerPlazaRadius = 0.35;
+      maxTurns = 100;
+    } else {
+      gridW = 35;
+      gridH = 25;
+      centerPlazaRadius = 0.29;
+      maxTurns = 200;
+    }
+    scene.remove(tilesGroup);
+    tilesGroup.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((m) => m.dispose());
+      }
+    });
+    unitMeshes.forEach((mesh) => {
+      scene.remove(mesh);
+      mesh.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => m.dispose());
+        }
+      });
+    });
+    unitMeshes.clear();
+    units.length = 0;
+    nextUnitId = 1;
+    world = createWorld();
+    hw = halfW(world);
+    hh = halfH(world);
+    tilesGroup = buildTileMesh(world);
+    scene.add(tilesGroup);
+  }
+
+  function clearAllUnits() {
+    unitMeshes.forEach((mesh) => {
+      scene.remove(mesh);
+      mesh.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => m.dispose());
+        }
+      });
+    });
+    unitMeshes.clear();
+    units.length = 0;
+    nextUnitId = 1;
   }
 
   function nudgeColor(hex, amount) {
@@ -2496,13 +2522,13 @@ function main() {
       if (btnEnd) btnEnd.disabled = false;
     }
     if (phase === 'playing') {
-      const turnNum = Math.min(turnCount + 1, MAX_TURNS);
-      turnEl.textContent = (turnEl.textContent || '') + ` — Turn ${turnNum}/${MAX_TURNS}`;
+      const turnNum = Math.min(turnCount + 1, maxTurns);
+      turnEl.textContent = (turnEl.textContent || '') + ` — Turn ${turnNum}/${maxTurns}`;
       const turnsLeftEl = cache.turnsLeftEl || (cache.turnsLeftEl = document.getElementById('turns-left'));
       const turnsLeftValueEl = cache.turnsLeftValueEl || (cache.turnsLeftValueEl = document.getElementById('turns-left-value'));
       if (turnsLeftEl && turnsLeftValueEl) {
         turnsLeftEl.style.display = '';
-        const turnsLeft = Math.max(0, MAX_TURNS - turnCount);
+        const turnsLeft = Math.max(0, maxTurns - turnCount);
         turnsLeftValueEl.textContent = String(turnsLeft);
         turnsLeftEl.classList.toggle('turns-left-low', turnsLeft <= 10);
       }
@@ -2543,7 +2569,7 @@ function main() {
       if (world.type[gy][gx] === enemyBase && currentUnit.level === 2) levelUpUnit(currentUnit);
     }
     turnCount++;
-    if (turnCount >= MAX_TURNS) {
+    if (turnCount >= maxTurns) {
       endGameByTurnLimit();
       return;
     }
@@ -2760,16 +2786,80 @@ function main() {
   camera.lookAt(cameraTarget);
 
   const modeOverlay = document.getElementById('mode-select-overlay');
-  const btnPvP = document.getElementById('mode-pvp');
-  const btnPvCPU = document.getElementById('mode-pvcpu');
-  const btnCvCPU = document.getElementById('mode-cvcpu');
+  const carouselTrack = document.getElementById('mode-carousel-track');
+  const carouselPrev = document.getElementById('mode-carousel-prev');
+  const carouselNext = document.getElementById('mode-carousel-next');
+  const carouselDots = document.getElementById('mode-carousel-dots');
+  const modePlayBtn = document.getElementById('mode-play-btn');
+  const modeSettingsPvp = document.getElementById('mode-settings-pvp');
+  const modeSettingsPvpMap = document.getElementById('mode-settings-pvp-map');
+  const modeSettingsPvpNone = document.getElementById('mode-settings-pvp-none');
+  const modeSettingsOptions = document.getElementById('mode-settings-options');
+  const pvpMapModeSelect = document.getElementById('pvp-map-mode');
   const aiDraftSelect = document.getElementById('ai-draft-preference');
-
-  const modeSelectOptions = document.getElementById('mode-select-options');
-  if (modeSelectOptions) modeSelectOptions.style.display = DEV_MODE ? '' : 'none';
-
   const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
   const moveSpeedInput = document.getElementById('move-speed');
+  const draftPicksInput = document.getElementById('draft-picks-per-player');
+
+  const MODES = ['pvp', 'pvcpu', 'cvcpu', 'story'];
+  const maxSlideIndex = DEV_MODE ? 3 : 2;
+  let currentSlideIndex = 0;
+
+  function getDomSlideIndex(logicalIndex) {
+    if (DEV_MODE) return logicalIndex;
+    return logicalIndex === 2 ? 3 : logicalIndex;
+  }
+
+  function isStorySlide() {
+    return currentSlideIndex === maxSlideIndex;
+  }
+
+  function goToSlide(index) {
+    currentSlideIndex = Math.max(0, Math.min(index, maxSlideIndex));
+    const domSlideIndex = getDomSlideIndex(currentSlideIndex);
+    if (carouselTrack) carouselTrack.style.transform = `translateX(-${domSlideIndex * 100}%)`;
+    if (carouselDots) {
+      carouselDots.querySelectorAll('.mode-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlideIndex);
+        dot.setAttribute('aria-selected', i === currentSlideIndex);
+      });
+    }
+    if (modeSettingsPvp) modeSettingsPvp.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || isStorySlide()) ? '' : 'none';
+    if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1) ? '' : 'none';
+    if (modeSettingsPvpNone) modeSettingsPvpNone.style.display = isStorySlide() ? '' : 'none';
+    if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && currentSlideIndex === 2) ? '' : 'none';
+    const playTextEl = modePlayBtn?.querySelector('.mode-play-text');
+    if (modePlayBtn && playTextEl) {
+      if (isStorySlide()) {
+        modePlayBtn.disabled = true;
+        playTextEl.textContent = 'Coming Soon';
+      } else {
+        modePlayBtn.disabled = false;
+        playTextEl.textContent = 'Play game';
+      }
+    }
+  }
+
+  if (carouselDots) {
+    for (let i = 0; i <= maxSlideIndex; i++) {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'mode-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('role', 'tab');
+      dot.setAttribute('aria-label', `Mode ${i + 1}`);
+      dot.setAttribute('aria-selected', i === 0);
+      dot.addEventListener('click', () => goToSlide(i));
+      carouselDots.appendChild(dot);
+    }
+  }
+  if (carouselPrev) carouselPrev.addEventListener('click', () => goToSlide(currentSlideIndex - 1));
+  if (carouselNext) carouselNext.addEventListener('click', () => goToSlide(currentSlideIndex + 1));
+  if (modeOverlay && !DEV_MODE) {
+    const slideCvcpu = modeOverlay.querySelector('.mode-slide[data-mode="cvcpu"]');
+    if (slideCvcpu) slideCvcpu.style.display = 'none';
+  }
+  goToSlide(0);
+
   if (moveSpeedInput) {
     moveSpeedInput.value = String(moveDurationMs);
     moveSpeedInput.addEventListener('input', () => {
@@ -2781,8 +2871,6 @@ function main() {
       if (!Number.isNaN(v) && v >= 0) moveDurationMs = v;
     });
   }
-
-  const draftPicksInput = document.getElementById('draft-picks-per-player');
   if (draftPicksInput) {
     draftPicksInput.value = String(draftPicksPerPlayer);
     draftPicksInput.addEventListener('input', () => {
@@ -2794,7 +2882,6 @@ function main() {
       if (!Number.isNaN(v) && v >= 1) draftPicksPerPlayer = v;
     });
   }
-
   if (aiDraftSelect) {
     AI_DRAFT_PREFERENCE_OPTIONS.forEach((opt) => {
       const o = document.createElement('option');
@@ -2827,33 +2914,42 @@ function main() {
     }
   }
 
-  if (modeOverlay && btnPvP && btnPvCPU) {
-    btnPvP.addEventListener('click', () => {
-      startBackgroundMusic();
-      gameMode = 'pvp';
-      modeOverlay.classList.add('hidden');
-      startDraftPhase();
-    });
-    btnPvCPU.addEventListener('click', () => {
-      startBackgroundMusic();
-      gameMode = 'pvcpu';
-      modeOverlay.classList.add('hidden');
-      startDraftPhase();
-    });
-    if (btnCvCPU) {
-      if (DEV_MODE) {
-        btnCvCPU.addEventListener('click', () => {
-          startBackgroundMusic();
-          gameMode = 'cvcpu';
-          cvcpuTotalGames = Math.max(1, parseInt(cvcpuNumGamesInput?.value, 10) || 1);
-          cvcpuGamesPlayed = 0;
-          modeOverlay.classList.add('hidden');
-          startDraftPhase();
-        });
-      } else {
-        btnCvCPU.style.display = 'none';
-      }
+  function startSelectedMode() {
+    if (MODES[currentSlideIndex] === 'story') return;
+    const mode = MODES[currentSlideIndex];
+    startBackgroundMusic();
+    gameMode = mode;
+    if (mode === 'pvp' || mode === 'pvcpu') {
+      const mapMode = (pvpMapModeSelect && pvpMapModeSelect.value) || 'long';
+      rebuildWorldForPvp(mapMode);
+    } else if (mode === 'cvcpu') {
+      rebuildWorldForPvp('long');
     }
+    if (mode === 'cvcpu') {
+      cvcpuTotalGames = Math.max(1, parseInt(cvcpuNumGamesInput?.value, 10) || 1);
+      cvcpuGamesPlayed = 0;
+    }
+    if (modeOverlay) modeOverlay.classList.add('hidden');
+    startDraftPhase();
+  }
+
+  if (modePlayBtn) {
+    modePlayBtn.addEventListener('click', (e) => {
+      if (modePlayBtn.disabled) return;
+      const ripple = modePlayBtn.querySelector('.mode-play-ripple');
+      if (ripple) {
+        const rect = modePlayBtn.getBoundingClientRect();
+        ripple.style.left = (e.clientX - rect.left) + 'px';
+        ripple.style.top = (e.clientY - rect.top) + 'px';
+        ripple.style.width = ripple.style.height = '20px';
+        ripple.style.marginLeft = ripple.style.marginTop = '-10px';
+        ripple.classList.remove('ripple');
+        ripple.offsetHeight;
+        ripple.classList.add('ripple');
+        setTimeout(() => ripple.classList.remove('ripple'), 500);
+      }
+      startSelectedMode();
+    });
   } else {
     startDraftPhase();
   }
@@ -3715,7 +3811,7 @@ function main() {
         endTurn();
         return;
       }
-      const turnsLeft = MAX_TURNS - turnCount;
+      const turnsLeft = maxTurns - turnCount;
       if (turnsLeft <= 20 && centerTiles.length > 0) {
         const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
         if (onCenter && reachableTiles.length > 0) {
@@ -3818,7 +3914,7 @@ function main() {
     }
 
     /** Only play for survival when HP is below 3% of max: just move to safest tile or end turn. Skip when ≤20 turns left. */
-    if (isCriticalHp && (MAX_TURNS - turnCount) > 20 && !hasMoved && reachableTiles.length > 0) {
+    if (isCriticalHp && (maxTurns - turnCount) > 20 && !hasMoved && reachableTiles.length > 0) {
       let moveTowardLowHp = null;
       let bestEnemyHp = Infinity;
       for (const t of reachableTiles) {
@@ -4038,7 +4134,7 @@ function main() {
       return;
     }
 
-    const turnsLeft = MAX_TURNS - turnCount;
+    const turnsLeft = maxTurns - turnCount;
     if (turnsLeft <= 20 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter) {
@@ -5133,6 +5229,7 @@ function main() {
       if (cvcpuGamesPlayed < cvcpuTotalGames) {
         setTimeout(() => {
           overlay.classList.remove('visible');
+          clearAllUnits();
           startDraftPhase();
         }, 2000);
       }

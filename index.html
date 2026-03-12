@@ -65,38 +65,96 @@
     </div>
   </div>
   <div id="mode-select-overlay">
-    <div class="mode-select-title">Select game mode</div>
-    <div class="mode-select-buttons">
-      <button type="button" id="mode-pvp" class="mode-btn">Player vs Player</button>
-      <button type="button" id="mode-pvcpu" class="mode-btn">Player vs CPU</button>
-      <button type="button" id="mode-cvcpu" class="mode-btn">CPU vs CPU</button>
-    </div>
-    <div class="mode-select-options" id="mode-select-options">
-      <div class="mode-select-ai-draft" id="mode-select-ai-draft">
-        <label for="ai-draft-preference">AI draft:</label>
-        <select id="ai-draft-preference" aria-label="AI draft preference"></select>
+    <div class="mode-select-inner">
+      <h1 class="mode-select-title">TACTICS</h1>
+      <div class="mode-carousel">
+        <div class="mode-carousel-track" id="mode-carousel-track">
+          <div class="mode-slide" data-mode="pvp">
+            <div class="mode-card mode-card-desc">
+              <h2 class="mode-card-title">Player vs Player</h2>
+              <p>Two players on the same device. Take turns drafting units and battling for control of the plaza.</p>
+            </div>
+            <div class="mode-card mode-card-how">
+              <h3>How to play</h3>
+              <p>Draft: pick a class for each unit and place them on your base tiles.</p>
+              <p>On your turn, select a unit, then click a highlighted tile to move. Use Attack or Skill, then End Turn.</p>
+              <p>Reach the center plaza to level up to 2, the enemy base to level 3. Control the plaza or eliminate the enemy to win.</p>
+            </div>
+          </div>
+          <div class="mode-slide" data-mode="pvcpu">
+            <div class="mode-card mode-card-desc">
+              <h2 class="mode-card-title">Player vs CPU</h2>
+              <p>Face the AI. You control your army; the CPU drafts and plays automatically. Great for practice or a quick match.</p>
+            </div>
+            <div class="mode-card mode-card-how">
+              <h3>How to play</h3>
+              <p>Same rules as PvP. Draft your lineup, then take your turns while the CPU responds. Use the same tactics—control the plaza and pick off enemy units.</p>
+            </div>
+          </div>
+          <div class="mode-slide" data-mode="cvcpu">
+            <div class="mode-card mode-card-desc">
+              <h2 class="mode-card-title">CPU vs CPU</h2>
+              <p>Watch two AI armies draft and fight. Useful for testing strategies or running many games in a row.</p>
+            </div>
+            <div class="mode-card mode-card-how">
+              <h3>How to play</h3>
+              <p>No input needed. Choose AI draft style and number of games (dev). The match runs automatically.</p>
+            </div>
+          </div>
+          <div class="mode-slide" data-mode="story">
+            <div class="mode-card mode-card-desc">
+              <h2 class="mode-card-title">Story</h2>
+              <p>A level progression mode with different maps and enemies. Fight through a campaign and unlock new challenges.</p>
+            </div>
+            <div class="mode-card mode-card-how">
+              <h3>How to play</h3>
+              <p>Complete levels in order. Each stage has a unique map and enemy lineup. Win to advance and take on harder battles.</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
-        <label for="cvcpu-num-games">No of Games:</label>
-        <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
+      <div class="mode-carousel-nav">
+        <button type="button" class="mode-carousel-arrow mode-carousel-prev" id="mode-carousel-prev" aria-label="Previous mode">‹</button>
+        <div class="mode-carousel-dots" id="mode-carousel-dots" role="tablist"></div>
+        <button type="button" class="mode-carousel-arrow mode-carousel-next" id="mode-carousel-next" aria-label="Next mode">›</button>
       </div>
-      <div class="mode-select-ai-draft" id="mode-select-move-speed">
-        <label for="move-speed">Move speed:</label>
-        <input type="number" id="move-speed" min="0" value="300" aria-label="Move duration (ms)" />
+      <div class="mode-card mode-settings-card" id="mode-settings-card">
+        <h3 class="mode-settings-title">Settings</h3>
+        <div class="mode-settings-pvp" id="mode-settings-pvp">
+          <div class="mode-select-ai-draft" id="mode-settings-pvp-map">
+            <label for="pvp-map-mode">Mode:</label>
+            <select id="pvp-map-mode" aria-label="PvP map length">
+              <option value="long">Long</option>
+              <option value="short">Short</option>
+            </select>
+          </div>
+          <p class="mode-settings-pvp-none" id="mode-settings-pvp-none">No settings for this mode.</p>
+        </div>
+        <div class="mode-settings-options" id="mode-settings-options">
+          <div class="mode-select-ai-draft" id="mode-select-ai-draft">
+            <label for="ai-draft-preference">AI draft:</label>
+            <select id="ai-draft-preference" aria-label="AI draft preference"></select>
+          </div>
+          <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
+            <label for="cvcpu-num-games">No of Games:</label>
+            <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
+          </div>
+          <div class="mode-select-ai-draft" id="mode-select-move-speed">
+            <label for="move-speed">Move speed:</label>
+            <input type="number" id="move-speed" min="0" value="300" aria-label="Move duration (ms)" />
+          </div>
+          <div class="mode-select-ai-draft" id="mode-select-draft-picks">
+            <label for="draft-picks-per-player">Draft picks:</label>
+            <input type="number" id="draft-picks-per-player" min="1" value="7" aria-label="Draft picks per player" />
+          </div>
+        </div>
       </div>
-      <div class="mode-select-ai-draft" id="mode-select-draft-picks">
-        <label for="draft-picks-per-player">Draft picks:</label>
-        <input type="number" id="draft-picks-per-player" min="1" value="7" aria-label="Draft picks per player" />
+      <div class="mode-play-wrap">
+        <button type="button" class="mode-play-btn" id="mode-play-btn">
+          <span class="mode-play-text">Play game</span>
+          <span class="mode-play-ripple"></span>
+        </button>
       </div>
-    </div>
-    <div class="mode-select-instructions">
-      <h1><strong>How to play</strong></h1>
-      <p>Draft: pick a class for each unit and place them on your base tiles.</p>
-      <p>On your turn, select a unit, then click a highlighted tile to move.</p>
-      <p>Use Attack or Skill to target enemies in range, then End Turn.</p>
-      <p>Get to the center plaza to level up to 2.</p>
-      <p>Get to the enemy base to level up to 3.</p>
-      <p>Control the center plaza or eliminate the enemy to win.</p>
     </div>
   </div>
   <div id="rotate-overlay" aria-hidden="true">
