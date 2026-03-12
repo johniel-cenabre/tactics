@@ -56,7 +56,7 @@ function shuffleArray(arr) {
 
 const CLASSES = {
   knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 16, range: 1 },
+  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 17, range: 1 },
   monk:       { name: 'Monk',       gender: 'male',   hp: 23, maxHp: 23, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
   ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
   lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
@@ -68,8 +68,8 @@ const CLASSES = {
   samurai:    { name: 'Samurai',    gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
   paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
-  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 20, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
-  bandit:     { name: 'Bandit',     gender: 'male',   hp: 18, maxHp: 18, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 18, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
@@ -123,8 +123,8 @@ const CLASS_SKILLS = {
     { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 6, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'manaDrain' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 7, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 0, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -444,7 +444,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'concoct': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.8) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       const lukVal = Math.max(1, Math.floor(d * 0.5));
       u.luk = Math.max(1, (u.luk || 0) + lukVal);
@@ -3525,26 +3525,15 @@ function main() {
       let chosen = null;
       let chosenTarget = null;
 
-      for (const skill of available) {
-        if (skill.disabled) continue;
-        if (DAMAGE_KEYS.has(skill.effectKey)) {
-          if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
-          if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
-          if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
-          const enemyTargets = getEnemyTargets(skill);
-          if (enemyTargets.length === 0) continue;
-          const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
-          const sortBySpell = (a, b) => getEffectiveStat(a, 'int') - getEffectiveStat(b, 'int') || a.hp - b.hp;
-          const sortByHp = (a, b) => a.hp - b.hp;
-          const toHit = lowHp.length > 0
-            ? (skill.type === 'spell' ? lowHp.sort(sortBySpell)[0] : lowHp.sort(sortByHp)[0])
-            : (skill.type === 'spell' ? enemyTargets.sort(sortBySpell)[0] : enemyTargets.sort(sortByHp)[0]);
-          chosen = skill;
-          chosenTarget = toHit;
-          break;
-        }
-      }
-      if (!chosen) {
+      const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+      const hasLowHpEnemyReachable =
+        hasLowHpEnemyInRange ||
+        reachableTiles.some((t) => {
+          const inRange = getEnemiesInRangeFrom(t.gx, t.gy);
+          return inRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+        });
+
+      if (!hasLowHpEnemyReachable) {
         const HEAL_HP_RATIO_THRESHOLD = 0.5;
         for (const skill of available) {
           if (skill.disabled) continue;
@@ -3561,16 +3550,15 @@ function main() {
           }
         }
       }
-      if (!chosen) {
+      if (!chosen && !hasLowHpEnemyReachable) {
         const hasEnemyReachableOrNearby = enemiesInRange.length > 0 || reachableTiles.some((t) => getEnemiesInRangeFrom(t.gx, t.gy).length > 0);
         if (hasEnemyReachableOrNearby) {
           for (const skill of available) {
             if (skill.disabled) continue;
-            if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
             const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
-            if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
             if (BUFF_KEYS.has(skill.effectKey)) {
               if (skill.target === 'self') {
+                if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
                 if (!hasActiveBuff) {
                   chosen = skill;
                   chosenTarget = unit;
@@ -3578,6 +3566,8 @@ function main() {
                 }
               }
               if (skill.target === 'ally') {
+                if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
+                if (skill.effectKey === 'sanctuary' && hasActiveBuff) continue;
                 const targets = getSkillTargetTiles(unit, skill, units);
                 const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
                 if (allyTargets.length > 0) {
@@ -3592,7 +3582,27 @@ function main() {
           }
         }
       }
-      const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+      if (!chosen) {
+        for (const skill of available) {
+          if (skill.disabled) continue;
+          if (DAMAGE_KEYS.has(skill.effectKey)) {
+            if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
+            if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
+            if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
+            const enemyTargets = getEnemyTargets(skill);
+            if (enemyTargets.length === 0) continue;
+            const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
+            const sortBySpell = (a, b) => getEffectiveStat(a, 'int') - getEffectiveStat(b, 'int') || a.hp - b.hp;
+            const sortByHp = (a, b) => a.hp - b.hp;
+            const toHit = lowHp.length > 0
+              ? (skill.type === 'spell' ? lowHp.sort(sortBySpell)[0] : lowHp.sort(sortByHp)[0])
+              : (skill.type === 'spell' ? enemyTargets.sort(sortBySpell)[0] : enemyTargets.sort(sortByHp)[0]);
+            chosen = skill;
+            chosenTarget = toHit;
+            break;
+          }
+        }
+      }
       if (!chosen && !hasLowHpEnemyInRange) {
         for (const skill of available) {
           if (skill.disabled) continue;
