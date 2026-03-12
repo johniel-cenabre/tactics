@@ -91,7 +91,7 @@ const CLASS_LOOK = {
   paladin:    { primary: 0xFAF0BE, secondary: 0xFFF5EE, hair: 0xC4A484, cape: 0x4169E1, belt: 0x4169E1 },
   exorcist:   { primary: 0x3B3B3B, secondary: 0x3B3B3B, hair: 0xFFFAFA, cape: 0x818589 },
   bandit:     { primary: 0x8B3E31, secondary: 0x5C4033, hair: 0xDC143C, cape: 0x666699 },
-  ranger:     { primary: 0xFFFAFA, secondary: 0xA68613, hair: 0xf4ae00, cape: 0xADFC6C },
+  ranger:     { primary: 0xFFFAFA, secondary: 0xA68613, hair: 0xf4ae00, cape: 0xADFC6C, belt: 0xA68613 },
   blacksmith: { primary: 0xD3B683, secondary: 0x964B00, hair: 0xb27a01, apron: 0x964B00 },
   alchemist:  { primary: 0xFF69B4, secondary: 0xAA336A, hair: 0xFF007F, cape: 0x87CEEB },
 };
