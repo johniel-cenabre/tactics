@@ -11,7 +11,7 @@ const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 const DRAFT_PICKS_PER_PLAYER = 7;
 const MAX_TURNS = 200;
-const MOVE_DURATION_MS = 300;
+const MOVE_DURATION_MS = 30;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
@@ -101,7 +101,7 @@ const CLASSES = {
   samurai:    { name: 'Samurai',    gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
   paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
-  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
+  exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 21, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
   bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 20, mp: 5,  maxMp: 5,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 22, maxHp: 22, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
@@ -149,6 +149,44 @@ const CLASS_IMAGES = {
   blacksmith: 'https://images-ng.pixai.art/images/orig/489d970a-890e-4523-8f99-c0ba2d6bfeae',
   alchemist:  'https://pics.craiyon.com/2023-07-11/ddbb35d3d2614541a9ad13181838257d.webp',
 };
+
+const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
+  acc[k] = { battles: 0, kills: 0, deaths: 0, wins: 0, losses: 0 };
+  return acc;
+}, /** @type {Record<string, { battles: number, kills: number, deaths: number, wins: number, losses: number }>} */ ({}));
+
+function recordClassKill(killerClass, victimClass) {
+  if (!DEV_MODE) return;
+  if (CLASS_KEYS.includes(killerClass) && CLASS_RECORD[killerClass]) CLASS_RECORD[killerClass].kills++;
+  if (CLASS_KEYS.includes(victimClass) && CLASS_RECORD[victimClass]) CLASS_RECORD[victimClass].deaths++;
+}
+
+function recordGameOver(unitsList, winningPlayer) {
+  if (!DEV_MODE) return;
+  for (const u of unitsList) {
+    if (!u || !CLASS_RECORD[u.class]) continue;
+    CLASS_RECORD[u.class].battles++;
+    if (winningPlayer != null) {
+      if (u.player === winningPlayer) CLASS_RECORD[u.class].wins++;
+      else CLASS_RECORD[u.class].losses++;
+    }
+  }
+  const table = CLASS_KEYS.map((k) => {
+    const r = CLASS_RECORD[k];
+    const total = r.wins + r.losses || 1;
+    return {
+      class: k,
+      battles: r.battles,
+      kills: r.kills,
+      deaths: r.deaths,
+      wins: r.wins,
+      losses: r.losses,
+      winRate: r.wins + r.losses > 0 ? (r.wins / total * 100).toFixed(1) + '%' : '-',
+      lossRate: r.wins + r.losses > 0 ? (r.losses / total * 100).toFixed(1) + '%' : '-',
+    };
+  });
+  console.table(table);
+}
 
 const CLASS_SKILLS = {
   knight: [
@@ -258,7 +296,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
         if (victim !== u) skillDamage = d;
         if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, String(d), false);
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(victim);
-        if (victim.hp <= 0 && ctx.handleUnitDeath) ctx.handleUnitDeath(victim);
+        if (victim.hp <= 0 && ctx.handleUnitDeath) ctx.handleUnitDeath(victim, u);
       } else {
         if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, 'MISS', true);
       }
@@ -1760,6 +1798,8 @@ function main() {
   let currentPlayer = 1;
   let phase = 'draft';
   let gameMode = 'pvp';
+  let cvcpuTotalGames = 1;
+  let cvcpuGamesPlayed = 0;
   let wakeLock = null;
 
   async function requestWakeLock() {
@@ -2721,6 +2761,10 @@ function main() {
   const aiDraftRow = document.getElementById('mode-select-ai-draft');
   if (aiDraftRow) aiDraftRow.style.display = DEV_MODE ? '' : 'none';
 
+  const cvcpuNumGamesRow = document.getElementById('mode-select-cvcpu-num-games');
+  const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
+  if (cvcpuNumGamesRow) cvcpuNumGamesRow.style.display = DEV_MODE ? '' : 'none';
+
   if (aiDraftSelect) {
     AI_DRAFT_PREFERENCE_OPTIONS.forEach((opt) => {
       const o = document.createElement('option');
@@ -2771,6 +2815,8 @@ function main() {
         btnCvCPU.addEventListener('click', () => {
           startBackgroundMusic();
           gameMode = 'cvcpu';
+          cvcpuTotalGames = Math.max(1, parseInt(cvcpuNumGamesInput?.value, 10) || 1);
+          cvcpuGamesPlayed = 0;
           modeOverlay.classList.add('hidden');
           startDraftPhase();
         });
@@ -3041,7 +3087,7 @@ function main() {
         target.hp = Math.max(0, target.hp - damage);
         showFloatingCombatText(target.x, target.y, String(damage), false);
         updateUnitSlashVisibility(target);
-        if (target.hp <= 0) handleUnitDeath(target);
+        if (target.hp <= 0) handleUnitDeath(target, unit);
       } else {
         showFloatingCombatText(target.x, target.y, 'MISS', true);
       }
@@ -3100,7 +3146,7 @@ function main() {
             const targetMesh = unitMeshes.get(target.id);
             if (targetMesh) hitReactStartTime = now;
             else if (targetDeathPending) {
-              handleUnitDeath(target);
+              handleUnitDeath(target, unit);
               targetDeathPending = false;
             }
             updateUnitSlashVisibility(target);
@@ -3120,14 +3166,14 @@ function main() {
               targetMesh.position.copy(targetBasePos);
               hitReactStartTime = null;
               if (targetDeathPending) {
-                handleUnitDeath(target);
+                handleUnitDeath(target, unit);
                 targetDeathPending = false;
               }
             }
           } else {
             hitReactStartTime = null;
             if (targetDeathPending) {
-              handleUnitDeath(target);
+              handleUnitDeath(target, unit);
               targetDeathPending = false;
             }
           }
@@ -3138,7 +3184,7 @@ function main() {
         } else {
           const hitReactDone = hitReactStartTime == null;
           if (hitReactDone && targetDeathPending) {
-            handleUnitDeath(target);
+            handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
           if (hitReactDone) {
@@ -3191,7 +3237,7 @@ function main() {
           if (targetMesh) {
             hitReactStartTime = now;
           } else if (targetDeathPending) {
-            handleUnitDeath(target);
+            handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
         } else {
@@ -3210,14 +3256,14 @@ function main() {
             targetMesh.position.copy(targetBasePos);
             hitReactStartTime = null;
             if (targetDeathPending) {
-              handleUnitDeath(target);
+              handleUnitDeath(target, unit);
               targetDeathPending = false;
             }
           }
         } else {
           hitReactStartTime = null;
           if (targetDeathPending) {
-            handleUnitDeath(target);
+            handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
         }
@@ -3230,7 +3276,7 @@ function main() {
         rightArm.rotation.y = 0;
         const hitReactDone = hitReactStartTime == null;
         if (hitReactDone && targetDeathPending) {
-          handleUnitDeath(target);
+          handleUnitDeath(target, unit);
           targetDeathPending = false;
         }
         if (hitReactDone) {
@@ -3340,7 +3386,7 @@ function main() {
           const targetMesh = unitMeshes.get(target.id);
           if (targetMesh && skill.target !== 'ally') hitReactStartTime = now;
           else if (targetDeathPending) {
-            handleUnitDeath(target);
+            handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
         }
@@ -3355,14 +3401,14 @@ function main() {
               targetMesh.position.copy(targetBasePos);
               hitReactStartTime = null;
               if (targetDeathPending) {
-                handleUnitDeath(target);
+                handleUnitDeath(target, unit);
                 targetDeathPending = false;
               }
             }
           } else {
             hitReactStartTime = null;
             if (targetDeathPending) {
-              handleUnitDeath(target);
+              handleUnitDeath(target, unit);
               targetDeathPending = false;
             }
           }
@@ -3373,7 +3419,7 @@ function main() {
           mesh.position.copy(startPos);
           rightArm.rotation.y = 0;
           if (hitReactStartTime == null && targetDeathPending) {
-            handleUnitDeath(target);
+            handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
           if (hitReactStartTime == null) {
@@ -4549,7 +4595,7 @@ function main() {
           const damage = Math.max(1, Math.floor(rawDamage));
           target.hp = Math.max(0, target.hp - damage);
           showFloatingCombatText(target.x, target.y, String(damage), false);
-          if (target.hp <= 0) handleUnitDeath(target);
+          if (target.hp <= 0) handleUnitDeath(target, u);
           updateUnitSlashVisibility(target);
         } else {
           showFloatingCombatText(target.x, target.y, 'MISS', true);
@@ -4899,7 +4945,8 @@ function main() {
     requestAnimationFrame(tick);
   }
 
-  function handleUnitDeath(unit) {
+  function handleUnitDeath(unit, killer) {
+    recordClassKill(killer?.class, unit.class);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
     const mesh = unitMeshes.get(unit.id);
@@ -4969,6 +5016,7 @@ function main() {
 
   function showGameOver(winningPlayer, titleOverride) {
     releaseWakeLock();
+    recordGameOver(units, winningPlayer);
     phase = 'gameover';
     document.getElementById('turn-menu').style.display = 'none';
     hideUnitPreviewCard();
@@ -4976,6 +5024,11 @@ function main() {
     const overlay = document.getElementById('game-over-overlay');
     const titleEl = document.getElementById('game-over-title');
     const cardsEl = document.getElementById('game-over-cards');
+    const classRecordEl = document.getElementById('game-over-class-record');
+    if (classRecordEl) {
+      classRecordEl.style.display = 'none';
+      classRecordEl.innerHTML = '';
+    }
     titleEl.textContent = titleOverride != null ? titleOverride : `Player ${winningPlayer} wins!`;
     const winnerUnits = units.filter((u) => u.player === (winningPlayer != null ? winningPlayer : 1));
     cardsEl.innerHTML = winnerUnits.map((unit) => {
@@ -5004,6 +5057,56 @@ function main() {
       `;
     }).join('');
     overlay.classList.add('visible');
+
+    if (gameMode === 'cvcpu' && DEV_MODE) {
+      cvcpuGamesPlayed++;
+      if (classRecordEl && cvcpuGamesPlayed >= cvcpuTotalGames) {
+        const tableRows = CLASS_KEYS.map((k) => {
+          const r = CLASS_RECORD[k];
+          const total = r.wins + r.losses || 1;
+          const winRate = r.wins + r.losses > 0 ? (r.wins / total * 100).toFixed(1) + '%' : '—';
+          const lossRate = r.wins + r.losses > 0 ? (r.losses / total * 100).toFixed(1) + '%' : '—';
+          return { class: k, battles: r.battles, kills: r.kills, deaths: r.deaths, wins: r.wins, losses: r.losses, winRate, lossRate };
+        });
+        classRecordEl.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Class</th>
+                <th>Battles</th>
+                <th>Kills</th>
+                <th>Deaths</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>Win%</th>
+                <th>Loss%</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows.map((row) => `
+                <tr>
+                  <td class="class-name">${row.class}</td>
+                  <td>${row.battles}</td>
+                  <td>${row.kills}</td>
+                  <td>${row.deaths}</td>
+                  <td>${row.wins}</td>
+                  <td>${row.losses}</td>
+                  <td>${row.winRate}</td>
+                  <td>${row.lossRate}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        classRecordEl.style.display = 'block';
+      }
+      if (cvcpuGamesPlayed < cvcpuTotalGames) {
+        setTimeout(() => {
+          overlay.classList.remove('visible');
+          startDraftPhase();
+        }, 2000);
+      }
+    }
   }
 
   function animate(now = 0) {

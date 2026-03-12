@@ -636,6 +636,16 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   color: #e6edf3;
   cursor: pointer;
 }
+#mode-select-overlay .mode-select-ai-draft input[type="number"] {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  border: 1px solid rgba(48, 54, 61, 0.8);
+  border-radius: 6px;
+  background: #21262d;
+  color: #e6edf3;
+  width: 4ch;
+}
 #mode-select-overlay .mode-btn {
   font-family: 'Outfit', sans-serif;
   font-size: 1rem;
@@ -776,6 +786,43 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 #game-over-overlay .game-over-card-stats .stat-label { color: #8b949e; }
 #game-over-overlay .game-over-card-stats .stat-val { color: #e6edf3; text-align: right; font-weight: 600; }
 #game-over-overlay .game-over-card.low-hp .stat-val-hp { color: #f85149; }
+
+#game-over-overlay .game-over-class-record {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 640px;
+  overflow-x: auto;
+}
+#game-over-overlay .game-over-class-record table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-family: 'Outfit', sans-serif;
+  background: #161b22;
+  border: 1px solid #373e47;
+  border-radius: 8px;
+  overflow: hidden;
+}
+#game-over-overlay .game-over-class-record th,
+#game-over-overlay .game-over-class-record td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #21262d;
+}
+#game-over-overlay .game-over-class-record th {
+  background: #21262d;
+  color: #8b949e;
+  font-weight: 600;
+}
+#game-over-overlay .game-over-class-record td {
+  color: #e6edf3;
+}
+#game-over-overlay .game-over-class-record tr:last-child td {
+  border-bottom: none;
+}
+#game-over-overlay .game-over-class-record .class-name {
+  text-transform: capitalize;
+}
 
 /* Mobile landscape: short viewport, maximize game area and compact UI */
 @media (orientation: landscape) and (max-height: 520px) {

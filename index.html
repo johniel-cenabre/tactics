@@ -54,6 +54,7 @@
   <div id="game-over-overlay">
     <div class="game-over-title" id="game-over-title">Player 1 wins!</div>
     <div class="game-over-cards" id="game-over-cards"></div>
+    <div id="game-over-class-record" class="game-over-class-record" aria-label="Class record stats (dev)"></div>
   </div>
   <div id="battle-start-overlay" aria-hidden="true">
     <div class="battle-start-content">
@@ -73,6 +74,10 @@
     <div class="mode-select-ai-draft" id="mode-select-ai-draft">
       <label for="ai-draft-preference">AI draft:</label>
       <select id="ai-draft-preference" aria-label="AI draft preference"></select>
+    </div>
+    <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
+      <label for="cvcpu-num-games">Number of games:</label>
+      <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
     </div>
     <div class="mode-select-instructions">
       <h1><strong>How to play</strong></h1>
