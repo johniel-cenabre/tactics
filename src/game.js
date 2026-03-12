@@ -21,7 +21,7 @@ const DEV_MODE = typeof window !== 'undefined' && (
 /** AI draft preference: 'balanced' (default), 'random', 'tanky', 'aggressive', 'scout', 'ranged', 'caster', or 'custom'.
  *  When 'custom', use AI_DRAFT_CUSTOM_ORDER. Change at runtime via UI or set here. */
 const AI_DRAFT_PREFERENCE_OPTIONS = [
-  { value: 'balanced', label: 'Balanced (HP + even stats)' },
+  { value: 'balanced', label: 'Balanced (lineup mix)' },
   { value: 'tanky', label: 'Tanky (HP + VIT)' },
   { value: 'aggressive', label: 'Aggressive (STR + AGI)' },
   { value: 'scout', label: 'Scout (high AGI)' },
@@ -32,6 +32,36 @@ const AI_DRAFT_PREFERENCE_OPTIONS = [
 ];
 /** When preference is 'custom', AI picks first available from this order (class keys). */
 const AI_DRAFT_CUSTOM_ORDER = ['berserker', 'knight', 'lancer', 'werewolf', 'samurai', 'ninja', 'assassin', 'ghoul', 'monk', 'hunter', 'mage', 'witch', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist'];
+
+/** Role buckets for balanced draft: each class appears in at most one. */
+const BALANCED_ROLES = {
+  tank: ['knight', 'berserker', 'werewolf', 'ghoul'],
+  melee: ['assassin', 'ninja', 'samurai', 'bandit', 'lancer'],
+  support: ['paladin', 'monk', 'blacksmith', 'exorcist'],
+  ranged: ['hunter', 'ranger', 'alchemist'],
+  caster: ['mage', 'witch'],
+};
+/** Target count per role: computed from lineup size (see getBalancedTargets). */
+const BALANCED_RATIOS = { tank: 2, melee: 2, support: 1, ranged: 1, caster: 1 };
+function getBalancedTargets(lineupSize) {
+  const n = Math.max(1, lineupSize);
+  const keys = Object.keys(BALANCED_RATIOS);
+  const total = keys.reduce((s, k) => s + (BALANCED_RATIOS[k] ?? 0), 0);
+  const targets = {};
+  let sum = 0;
+  for (const k of keys) {
+    const t = Math.floor((n * (BALANCED_RATIOS[k] ?? 0)) / total);
+    targets[k] = t;
+    sum += t;
+  }
+  let remainder = n - sum;
+  const byRatio = [...keys].sort((a, b) => (BALANCED_RATIOS[b] ?? 0) - (BALANCED_RATIOS[a] ?? 0));
+  for (let i = 0; remainder > 0 && i < byRatio.length; i++) {
+    targets[byRatio[i]]++;
+    remainder--;
+  }
+  return targets;
+}
 
 const TileType = {
   PATH: 0,
@@ -2783,8 +2813,34 @@ function main() {
       return sorted[0] ?? null;
     }
 
-    // balanced (default): prefer high HP, then lower variance
+    // balanced (default): pick to build a balanced lineup (tank / melee / support / ranged / caster mix)
+    const p = getCurrentDraftPlayer();
+    const n = DRAFT_PICKS_PER_PLAYER;
+    const targets = getBalancedTargets(n);
+    const myClasses = units.filter((u) => u.player === p).map((u) => u.class);
+    const roleCounts = {};
+    for (const k of Object.keys(BALANCED_ROLES)) roleCounts[k] = 0;
+    for (const c of myClasses) {
+      for (const k of Object.keys(BALANCED_ROLES)) {
+        if (BALANCED_ROLES[k].includes(c)) {
+          roleCounts[k]++;
+          break;
+        }
+      }
+    }
+    const deficit = (key) => Math.max(0, (targets[key] ?? 0) - (roleCounts[key] ?? 0));
+    const getRole = (classKey) => {
+      for (const [role, list] of Object.entries(BALANCED_ROLES)) {
+        if (list.includes(classKey)) return role;
+      }
+      return null;
+    };
     const sorted = [...available].sort((a, b) => {
+      const roleA = getRole(a);
+      const roleB = getRole(b);
+      const defA = roleA != null ? deficit(roleA) : 0;
+      const defB = roleB != null ? deficit(roleB) : 0;
+      if (defB !== defA) return defB - defA;
       const hpA = CLASSES[a]?.hp ?? 0;
       const hpB = CLASSES[b]?.hp ?? 0;
       if (hpB !== hpA) return hpB - hpA;
