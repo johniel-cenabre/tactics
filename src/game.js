@@ -69,30 +69,30 @@ const CLASSES = {
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
   paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
   exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 20, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
-  bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 18, mp: 5,  maxMp: 5,  str: 9,  agi: 16, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 18, mp: 5,  maxMp: 5,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 24, maxHp: 24, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
 };
 
 const CLASS_LOOK = {
-  knight:     { primary: 0x696969, secondary: 0x8B4513, hair: 0xb27a01, cape: 0x333333 },
+  knight:     { primary: 0x696969, secondary: 0x8B4513, hair: 0xb27a01, cape: 0x333333, belt: 0x8B4513 },
   mage:       { primary: 0xFFFDD0, secondary: 0x333333, hair: 0xCBC3E3, cape: 0x4A0E4E },
-  monk:       { primary: 0xFFFFE4, secondary: 0xF5F5F5, hair: 0x2c1810 },
+  monk:       { primary: 0xFFFFE4, secondary: 0xF5F5F5, hair: 0x2c1810, belt: 0x0A0A0A },
   ghoul:      { primary: 0x008080, secondary: 0x654321, hair: 0x008080, skin: 0x008080 },
   lancer:     { primary: 0x305CDE, secondary: 0xFFFDD0, hair: 0xF1EAD2, cape: 0xDC143C },
   hunter:     { primary: 0x808000, secondary: 0x92400e, hair: 0x78866B, cape: 0xF5F5F5 },
-  assassin:   { primary: 0x0F0E47, secondary: 0xF5F5F5, hair: 0x280137 },
+  assassin:   { primary: 0x0F0E47, secondary: 0xF5F5F5, hair: 0x280137, belt: 0x888B8D },
   berserker:  { primary: 0x0A0A0A, secondary: 0x0F0E47, hair: 0x0A0A0A, cape: 0x111111 },
   witch:      { primary: 0xF5F5F5, secondary: 0x800020, hair: 0xFFFFE4, cape: 0x228B22 },
   ninja:      { primary: 0x04141c, secondary: 0x021945, hair: 0x0C1222 },
   samurai:    { primary: 0xD3D3D3, secondary: 0x36454F, hair: 0x1f2022 },
-  werewolf:   { primary: 0xA9A9A9, secondary: 0xDCDCDC, hair: 0xC0C0C0 },
-  paladin:    { primary: 0xFAF0BE, secondary: 0xFFF5EE, hair: 0xC4A484, cape: 0x4169E1 },
+  werewolf:   { primary: 0x43464b, secondary: 0x24496b, hair: 0xC0C0C0, belt: 0x071f35 },
+  paladin:    { primary: 0xFAF0BE, secondary: 0xFFF5EE, hair: 0xC4A484, cape: 0x4169E1, belt: 0x4169E1 },
   exorcist:   { primary: 0x3B3B3B, secondary: 0x3B3B3B, hair: 0xFFFAFA, cape: 0x818589 },
   bandit:     { primary: 0x8B3E31, secondary: 0x5C4033, hair: 0xDC143C, cape: 0x666699 },
-  ranger:     { primary: 0xA68613, secondary: 0xFFFAFA, hair: 0xf4ae00, cape: 0xADFC6C },
-  blacksmith: { primary: 0xD3B683, secondary: 0x964B00, hair: 0xb27a01 },
+  ranger:     { primary: 0xFFFAFA, secondary: 0xA68613, hair: 0xf4ae00, cape: 0xADFC6C },
+  blacksmith: { primary: 0xD3B683, secondary: 0x964B00, hair: 0xb27a01, apron: 0x964B00 },
   alchemist:  { primary: 0xFF69B4, secondary: 0xAA336A, hair: 0xFF007F, cape: 0x87CEEB },
 };
 
@@ -1290,9 +1290,16 @@ function main() {
     group.add(rightArm);
 
     if (look.cape != null) {
-      const capeW = torsoW * 1.35;
-      const capeH = legH + torsoH * 0.15;
-      const capeGeo = new THREE.PlaneGeometry(capeW, capeH);
+      const capeW = torsoW * 1.95;
+      const capeWTop = capeW * 0.60;
+      const capeH = legH + torsoH * 0.28;
+      const shape = new THREE.Shape();
+      shape.moveTo(-capeWTop / 2, capeH / 2);
+      shape.lineTo(capeWTop / 2, capeH / 2);
+      shape.lineTo(capeW / 2, -capeH / 2);
+      shape.lineTo(-capeW / 2, -capeH / 2);
+      shape.closePath();
+      const capeGeo = new THREE.ShapeGeometry(shape);
       const capeMat = new THREE.MeshStandardMaterial({
         color: darkenColor(nudgeColor(look.cape, 0.08)),
         metalness: 0.15,
@@ -1302,10 +1309,93 @@ function main() {
       capeMat.bumpMap = unitNoiseBumpMap;
       capeMat.bumpScale = 0.12;
       const cape = new THREE.Mesh(capeGeo, capeMat);
-      cape.position.set(0, legH + capeH / 2 - 0.02, -torsoD / 2 - 0.02);
+      cape.position.set(0, legH + torsoH - capeH / 2 + 0.05, -torsoD / 2 - 0.02);
       cape.rotation.y = Math.PI;
       cape.castShadow = true;
       group.add(cape);
+      const padRadius = 0.055;
+      const shoulderY = legH + torsoH + 0.02;
+      const shoulderZ = 0.02;
+      const padX = torsoW / 2 + armW * 0.5;
+      const leftPad = new THREE.Mesh(
+        new THREE.SphereGeometry(padRadius, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        capeMat.clone()
+      );
+      leftPad.position.set(-padX, shoulderY, shoulderZ);
+      leftPad.rotation.x = -Math.PI * 0.35;
+      leftPad.rotation.z = Math.PI * 0.5;
+      leftPad.scale.set(1.2, 0.85, 1.1);
+      leftPad.castShadow = true;
+      group.add(leftPad);
+      const rightPad = new THREE.Mesh(
+        new THREE.SphereGeometry(padRadius, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        capeMat.clone()
+      );
+      rightPad.position.set(padX, shoulderY, shoulderZ);
+      rightPad.rotation.x = -Math.PI * 0.35;
+      rightPad.rotation.z = -Math.PI * 0.5;
+      rightPad.scale.set(1.2, 0.85, 1.1);
+      rightPad.castShadow = true;
+      group.add(rightPad);
+    }
+
+    if (look.belt != null) {
+      const beltMat = new THREE.MeshStandardMaterial({
+        color: darkenColor(nudgeColor(look.belt, 0.08)),
+        metalness: 0.2,
+        roughness: Math.max(0.4, Math.min(1, 0.6 + roughnessVar())),
+      });
+      beltMat.bumpMap = unitNoiseBumpMap;
+      beltMat.bumpScale = 0.1;
+      const beltThick = 0.022;
+      const beltDepth = 0.04;
+      const belt = new THREE.Mesh(
+        new THREE.BoxGeometry(torsoW + 0.04, beltThick, torsoD + beltDepth),
+        beltMat
+      );
+      belt.position.set(0, legH + 0.04, 0);
+      belt.castShadow = true;
+      group.add(belt);
+    }
+
+    if (look.apron != null) {
+      const apronMat = new THREE.MeshStandardMaterial({
+        color: darkenColor(nudgeColor(look.apron, 0.08)),
+        metalness: 0.08,
+        roughness: Math.max(0.5, Math.min(1, 0.75 + roughnessVar())),
+        side: THREE.DoubleSide,
+      });
+      apronMat.bumpMap = unitNoiseBumpMap;
+      apronMat.bumpScale = 0.12;
+      const apronW = torsoW * 0.95;
+      const apronH = legH * 0.85;
+      const apron = new THREE.Mesh(
+        new THREE.PlaneGeometry(apronW, apronH),
+        apronMat
+      );
+      const apronTopY = legH + 0.2;
+      apron.position.set(0, apronTopY - apronH / 2, torsoD / 2 + 0.02);
+      apron.castShadow = true;
+      group.add(apron);
+      const shoulderY = legH + torsoH + 0.02;
+      const strapX = torsoW / 2 + armW * 0.2;
+      const strapW = 0.018;
+      const strapThick = 0.008;
+      const strapLen = shoulderY - apronTopY;
+      const leftStrap = new THREE.Mesh(
+        new THREE.BoxGeometry(strapW, strapLen, strapThick),
+        apronMat.clone()
+      );
+      leftStrap.position.set(-strapX, (apronTopY + shoulderY) / 2, torsoD / 2 + 0.015);
+      leftStrap.castShadow = true;
+      group.add(leftStrap);
+      const rightStrap = new THREE.Mesh(
+        new THREE.BoxGeometry(strapW, strapLen, strapThick),
+        apronMat.clone()
+      );
+      rightStrap.position.set(strapX, (apronTopY + shoulderY) / 2, torsoD / 2 + 0.015);
+      rightStrap.castShadow = true;
+      group.add(rightStrap);
     }
 
     const headRadius = 0.1;
@@ -1346,29 +1436,75 @@ function main() {
     });
     hairMat.bumpMap = unitNoiseBumpMap;
     hairMat.bumpScale = 0.15;
-    if (gender === 'female') {
-      const hairTop = new THREE.Mesh(
-        new THREE.SphereGeometry(headRadius * 0.85, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.45),
+    const addBangs = (parent) => {
+      const bangH = headRadius * 0.32;
+      const bangR = headRadius * 0.22;
+      const leftBang = new THREE.Mesh(
+        new THREE.ConeGeometry(bangR * 0.9, bangH, 5),
         hairMat
       );
-      hairTop.position.set(0, headRadius * 0.35, -headRadius * 0.2);
+      leftBang.position.set(-headRadius * 0.25, headRadius * 0.22, headRadius * 0.72);
+      leftBang.rotation.x = 0.35;
+      leftBang.rotation.z = 0.12;
+      leftBang.castShadow = true;
+      parent.add(leftBang);
+      const rightBang = new THREE.Mesh(
+        new THREE.ConeGeometry(bangR, bangH, 5),
+        hairMat
+      );
+      rightBang.position.set(headRadius * 0.28, headRadius * 0.18, headRadius * 0.68);
+      rightBang.rotation.x = 0.28;
+      rightBang.rotation.z = -0.1;
+      rightBang.castShadow = true;
+      parent.add(rightBang);
+      const centerBang = new THREE.Mesh(
+        new THREE.ConeGeometry(bangR * 0.7, bangH * 0.9, 5),
+        hairMat
+      );
+      centerBang.position.set(0, headRadius * 0.28, headRadius * 0.78);
+      centerBang.rotation.x = 0.4;
+      centerBang.castShadow = true;
+      parent.add(centerBang);
+    };
+    if (gender === 'female') {
+      const hairTop = new THREE.Mesh(
+        new THREE.SphereGeometry(headRadius * 0.92, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.52),
+        hairMat
+      );
+      hairTop.position.set(0, headRadius * 0.28, -headRadius * 0.18);
+      hairTop.rotation.y = 0.06;
+      hairTop.rotation.x = -0.04;
       hairTop.castShadow = true;
       head.add(hairTop);
       const hairLong = new THREE.Mesh(
-        new THREE.BoxGeometry(headRadius * 1.1, headRadius * 2.2, headRadius * 0.5),
+        new THREE.BoxGeometry(headRadius * 1.15, headRadius * 2.2, headRadius * 0.55),
         hairMat
       );
       hairLong.position.set(0, -headRadius * 0.6, -headRadius * 0.95);
+      hairLong.rotation.z = 0.03;
       hairLong.castShadow = true;
       head.add(hairLong);
+      addBangs(head);
     } else {
-      const hairShort = new THREE.Mesh(
-        new THREE.SphereGeometry(headRadius * 0.82, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.35),
+      const hairCap = new THREE.Mesh(
+        new THREE.SphereGeometry(headRadius * 0.9, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.5),
         hairMat
       );
-      hairShort.position.set(0, headRadius * 0.5, -headRadius * 0.15);
-      hairShort.castShadow = true;
-      head.add(hairShort);
+      hairCap.position.set(0, headRadius * 0.4, -headRadius * 0.12);
+      hairCap.rotation.y = 0.08;
+      hairCap.rotation.x = -0.05;
+      hairCap.rotation.z = 0.04;
+      hairCap.castShadow = true;
+      head.add(hairCap);
+      const hairSides = new THREE.Mesh(
+        new THREE.SphereGeometry(headRadius * 0.75, 10, 8, Math.PI * 0.2, Math.PI * 0.6, 0, Math.PI * 0.4),
+        hairMat
+      );
+      hairSides.position.set(0, headRadius * 0.1, -headRadius * 0.05);
+      hairSides.rotation.y = 0.1;
+      hairSides.castShadow = true;
+      head.add(hairSides);
+      addBangs(head);
     }
 
     group.userData.leftLeg = leftLeg;
@@ -3432,6 +3568,43 @@ function main() {
         }
         endTurn();
         return;
+      }
+      /** When not low HP (and turnsLeft > 20), same as post-attack: prioritize center then enemy base. */
+      if (!isLowHp && reachableTiles.length > 0) {
+        if (centerTiles.length > 0) {
+          const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+          if (!onCenter) {
+            const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
+            const result = getPathToNearestTarget(centerTargets);
+            const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+            if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+            const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
+            if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+          }
+        }
+        if (prioritizeEnemyBase && enemyBaseTiles.length > 0) {
+          const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+          if (!onEnemyBase) {
+            const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+            const result = getPathToNearestTarget(baseTargets);
+            const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+            if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+            const fallback = farthestReachableTowardTargets(reachableTiles, baseTargets);
+            if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+          }
+        }
       }
       const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
       const reachableCenterTiles = centerTiles.length > 0
