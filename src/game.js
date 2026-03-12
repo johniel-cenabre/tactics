@@ -1760,6 +1760,29 @@ function main() {
   let currentPlayer = 1;
   let phase = 'draft';
   let gameMode = 'pvp';
+  let wakeLock = null;
+
+  async function requestWakeLock() {
+    if (typeof navigator === 'undefined' || !navigator.wakeLock) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (_) { wakeLock = null; }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && gameMode === 'cvcpu' && phase === 'playing') {
+      requestWakeLock();
+    }
+  });
+
   let aiDraftPreference = 'balanced';
   let availableClasses = new Set(CLASS_KEYS);
   let draftPickIndex = 0;
@@ -2124,6 +2147,7 @@ function main() {
       updateTurnUI();
       updateActiveUnitPointer();
       centerCameraOnCurrentPlayer(true);
+      if (gameMode === 'cvcpu') requestWakeLock();
     }, BATTLE_START_DELAY_MS);
   }
 
@@ -4944,6 +4968,7 @@ function main() {
   }
 
   function showGameOver(winningPlayer, titleOverride) {
+    releaseWakeLock();
     phase = 'gameover';
     document.getElementById('turn-menu').style.display = 'none';
     hideUnitPreviewCard();
