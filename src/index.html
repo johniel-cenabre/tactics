@@ -71,13 +71,23 @@
       <button type="button" id="mode-pvcpu" class="mode-btn">Player vs CPU</button>
       <button type="button" id="mode-cvcpu" class="mode-btn">CPU vs CPU</button>
     </div>
-    <div class="mode-select-ai-draft" id="mode-select-ai-draft">
-      <label for="ai-draft-preference">AI draft:</label>
-      <select id="ai-draft-preference" aria-label="AI draft preference"></select>
-    </div>
-    <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
-      <label for="cvcpu-num-games">Number of games:</label>
-      <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
+    <div class="mode-select-options" id="mode-select-options">
+      <div class="mode-select-ai-draft" id="mode-select-ai-draft">
+        <label for="ai-draft-preference">AI draft:</label>
+        <select id="ai-draft-preference" aria-label="AI draft preference"></select>
+      </div>
+      <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
+        <label for="cvcpu-num-games">No of Games:</label>
+        <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
+      </div>
+      <div class="mode-select-ai-draft" id="mode-select-move-speed">
+        <label for="move-speed">Move speed:</label>
+        <input type="number" id="move-speed" min="0" value="300" aria-label="Move duration (ms)" />
+      </div>
+      <div class="mode-select-ai-draft" id="mode-select-draft-picks">
+        <label for="draft-picks-per-player">Draft picks:</label>
+        <input type="number" id="draft-picks-per-player" min="1" value="7" aria-label="Draft picks per player" />
+      </div>
     </div>
     <div class="mode-select-instructions">
       <h1><strong>How to play</strong></h1>

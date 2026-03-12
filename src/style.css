@@ -615,12 +615,22 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
+  max-width: 520px;
+}
+#mode-select-overlay .mode-select-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  width: 100%;
+  max-width: 520px;
+  align-items: center;
 }
 #mode-select-overlay .mode-select-ai-draft {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 0.5em;
+  margin-bottom: 0;
 }
 #mode-select-overlay .mode-select-ai-draft label {
   color: #8b949e;
@@ -635,6 +645,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   background: #21262d;
   color: #e6edf3;
   cursor: pointer;
+  min-width: 11em;
 }
 #mode-select-overlay .mode-select-ai-draft input[type="number"] {
   font-family: 'Outfit', sans-serif;
@@ -644,7 +655,10 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   border-radius: 6px;
   background: #21262d;
   color: #e6edf3;
-  width: 4ch;
+  -webkit-text-fill-color: #e6edf3;
+  caret-color: #e6edf3;
+  width: 11em;
+  box-sizing: border-box;
 }
 #mode-select-overlay .mode-btn {
   font-family: 'Outfit', sans-serif;

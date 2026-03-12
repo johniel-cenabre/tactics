@@ -9,9 +9,9 @@ const GRID_W = 35;
 const GRID_H = 25;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
-const DRAFT_PICKS_PER_PLAYER = 7;
 const MAX_TURNS = 200;
-const MOVE_DURATION_MS = 30;
+let draftPicksPerPlayer = 7;
+let moveDurationMs = 300;
 const DEV_MODE = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1' ||
@@ -2096,13 +2096,14 @@ function main() {
     scene.add(facingArrowMesh);
   }
 
-  const DRAFT_ORDER = (() => {
-    const n = DRAFT_PICKS_PER_PLAYER;
+  let DRAFT_ORDER = [];
+  (function initDraftOrder() {
+    const n = draftPicksPerPlayer;
     const order = [1];
     for (let i = 0; i < Math.floor((n - 1) / 2); i++) order.push(2, 2, 1, 1);
     if (n % 2 === 1) order.push(2);
     else { order.push(2, 2); order.push(1); }
-    return order;
+    DRAFT_ORDER = order;
   })();
 
   function getCurrentDraftPlayer() {
@@ -2119,6 +2120,12 @@ function main() {
   }
 
   function startDraftPhase() {
+    const n = draftPicksPerPlayer;
+    const order = [1];
+    for (let i = 0; i < Math.floor((n - 1) / 2); i++) order.push(2, 2, 1, 1);
+    if (n % 2 === 1) order.push(2);
+    else { order.push(2, 2); order.push(1); }
+    DRAFT_ORDER = order;
     phase = 'draft';
     draftPickIndex = 0;
     availableClasses = new Set(CLASS_KEYS);
@@ -2267,7 +2274,7 @@ function main() {
       draftPanel.style.display = 'flex';
     }
     const p = getCurrentDraftPlayer();
-      draftTitle.textContent = `Player ${p}: Pick a class (${getCurrentPlayerPickCount()}/${DRAFT_PICKS_PER_PLAYER})`;
+      draftTitle.textContent = `Player ${p}: Pick a class (${getCurrentPlayerPickCount()}/${draftPicksPerPlayer})`;
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: Player ${p} — pick a class`;
@@ -2357,7 +2364,7 @@ function main() {
       placementCardEl.innerHTML = '';
     }
     draftPickIndex++;
-    if (draftPickIndex >= 2 * DRAFT_PICKS_PER_PLAYER) {
+    if (draftPickIndex >= 2 * draftPicksPerPlayer) {
       endDraftPhase();
       return;
     }
@@ -2370,7 +2377,7 @@ function main() {
     const turnEl = document.getElementById('turn-player');
     if (draftPanel && draftTitle && draftClasses && turnEl) {
       draftPanel.style.display = 'flex';
-      draftTitle.textContent = `Player ${nextP}: Pick a class (${nextPickCount}/${DRAFT_PICKS_PER_PLAYER})`;
+      draftTitle.textContent = `Player ${nextP}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`;
       if (draftMessage) draftMessage.textContent = 'Get ready…';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: Player ${nextP} — pick a class`;
@@ -2758,12 +2765,35 @@ function main() {
   const btnCvCPU = document.getElementById('mode-cvcpu');
   const aiDraftSelect = document.getElementById('ai-draft-preference');
 
-  const aiDraftRow = document.getElementById('mode-select-ai-draft');
-  if (aiDraftRow) aiDraftRow.style.display = DEV_MODE ? '' : 'none';
+  const modeSelectOptions = document.getElementById('mode-select-options');
+  if (modeSelectOptions) modeSelectOptions.style.display = DEV_MODE ? '' : 'none';
 
-  const cvcpuNumGamesRow = document.getElementById('mode-select-cvcpu-num-games');
   const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
-  if (cvcpuNumGamesRow) cvcpuNumGamesRow.style.display = DEV_MODE ? '' : 'none';
+  const moveSpeedInput = document.getElementById('move-speed');
+  if (moveSpeedInput) {
+    moveSpeedInput.value = String(moveDurationMs);
+    moveSpeedInput.addEventListener('input', () => {
+      const v = parseInt(moveSpeedInput.value, 10);
+      if (!Number.isNaN(v) && v >= 0) moveDurationMs = v;
+    });
+    moveSpeedInput.addEventListener('change', () => {
+      const v = parseInt(moveSpeedInput.value, 10);
+      if (!Number.isNaN(v) && v >= 0) moveDurationMs = v;
+    });
+  }
+
+  const draftPicksInput = document.getElementById('draft-picks-per-player');
+  if (draftPicksInput) {
+    draftPicksInput.value = String(draftPicksPerPlayer);
+    draftPicksInput.addEventListener('input', () => {
+      const v = parseInt(draftPicksInput.value, 10);
+      if (!Number.isNaN(v) && v >= 1) draftPicksPerPlayer = v;
+    });
+    draftPicksInput.addEventListener('change', () => {
+      const v = parseInt(draftPicksInput.value, 10);
+      if (!Number.isNaN(v) && v >= 1) draftPicksPerPlayer = v;
+    });
+  }
 
   if (aiDraftSelect) {
     AI_DRAFT_PREFERENCE_OPTIONS.forEach((opt) => {
@@ -2902,7 +2932,7 @@ function main() {
 
     // balanced (default): pick to build a balanced lineup (tank / melee / support / ranged / caster mix)
     const p = getCurrentDraftPlayer();
-    const n = DRAFT_PICKS_PER_PLAYER;
+    const n = draftPicksPerPlayer;
     const targets = getBalancedTargets(n);
     const myClasses = units.filter((u) => u.player === p).map((u) => u.class);
     const roleCounts = {};
@@ -3043,7 +3073,7 @@ function main() {
       function tick(now) {
         tickCount++;
         if (tickCount % 2 === 0) requestRender();
-        const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+        const t = Math.min(1, (now - startTime) / moveDurationMs);
         const smoothstep = (x) => x * x * (3 - 2 * x);
         const eased = smoothstep(t);
         mesh.position.lerpVectors(startPos, endPos, eased);
@@ -3860,7 +3890,7 @@ function main() {
           function tick(now) {
             tickCount++;
             if (tickCount % 2 === 0) requestRender();
-            const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+            const t = Math.min(1, (now - startTime) / moveDurationMs);
             const smoothstep = (x) => x * x * (3 - 2 * x);
             mesh.position.lerpVectors(startPos, endPos, smoothstep(t));
             if (t < 1) requestAnimationFrame(tick);
@@ -4527,7 +4557,7 @@ function main() {
           function tick(now) {
             tickCount++;
             if (tickCount % 2 === 0) requestRender();
-            const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+            const t = Math.min(1, (now - startTime) / moveDurationMs);
             const smoothstep = (x) => x * x * (3 - 2 * x);
             mesh.position.lerpVectors(startPos, endPos, smoothstep(t));
             if (t < 1) requestAnimationFrame(tick);
@@ -4686,7 +4716,7 @@ function main() {
         function tick(now) {
           tickCount++;
           if (tickCount % 2 === 0) requestRender();
-          const t = Math.min(1, (now - startTime) / MOVE_DURATION_MS);
+          const t = Math.min(1, (now - startTime) / moveDurationMs);
           const smoothstep = (x) => x * x * (3 - 2 * x);
           const eased = smoothstep(t);
           mesh.position.lerpVectors(startPos, endPos, eased);
