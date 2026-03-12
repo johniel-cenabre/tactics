@@ -1195,10 +1195,12 @@ function main() {
   const ELEVATION_MAX = Math.PI * 0.4;
   const _orbitOffset = new THREE.Vector3();
   let pointerDownPixel = { x: 0, y: 0 };
+  let pointerIsTouch = false;
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 40;
   const ZOOM_SENSITIVITY = 0.005;
   const PINCH_ZOOM_SENSITIVITY = 0.15;
+  const TOUCH_PAN_SENSITIVITY = 1;
   let pinchLastDistance = null;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.45);
@@ -4841,6 +4843,7 @@ function main() {
   function onPointerDown(e) {
     pointerDownPixel.x = e.clientX;
     pointerDownPixel.y = e.clientY;
+    pointerIsTouch = e.isTouch === true;
     ctrlKeyOnDown = e.ctrlKey;
     prevPointerNdc = pointerToNdc(e.clientX, e.clientY);
     container.style.cursor = e.ctrlKey ? 'grabbing' : 'grabbing';
@@ -4869,7 +4872,7 @@ function main() {
     if (e.touches.length !== 1) return;
     pinchLastDistance = null;
     const c = touchCoords(e);
-    onPointerDown({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
+    onPointerDown({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false, isTouch: true });
   }
 
   function onTouchMove(e) {
@@ -4899,6 +4902,7 @@ function main() {
     if (e.touches.length < 2) pinchLastDistance = null;
     if (e.touches.length === 2) return;
     if (e.changedTouches.length === 0) return;
+    pointerIsTouch = false;
     const c = touchCoords(e);
     onPointerUp({ clientX: c.clientX, clientY: c.clientY, ctrlKey: false });
   }
@@ -4946,6 +4950,7 @@ function main() {
       raycaster.setFromCamera(new THREE.Vector2(currNdc.x, currNdc.y), camera);
       raycaster.ray.intersectPlane(panPlane, panIntersect);
       const delta = prevWorld.sub(panIntersect);
+      if (pointerIsTouch) delta.multiplyScalar(TOUCH_PAN_SENSITIVITY);
       cameraTarget.add(delta);
       camera.position.add(delta);
       camera.lookAt(cameraTarget);
