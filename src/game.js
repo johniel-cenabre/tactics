@@ -5,8 +5,8 @@
 
 import * as THREE from 'three';
 
-let gridW = 35;
-let gridH = 25;
+let gridW = 21;
+let gridH = 11;
 let centerPlazaRadius = 0.29;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
@@ -1240,11 +1240,6 @@ function main() {
       gridH = 15;
       centerPlazaRadius = 0.35;
       maxTurns = 100;
-    } else {
-      gridW = 35;
-      gridH = 25;
-      centerPlazaRadius = 0.29;
-      maxTurns = 200;
     }
     scene.remove(tilesGroup);
     tilesGroup.traverse((obj) => {
@@ -3455,8 +3450,10 @@ function main() {
 
   function executeSkillWithProjectile(unit, target, skill, ctx, onDone) {
     if (skill.target === 'enemy' && target == null) {
-      if (ctx.updateTurnUI) ctx.updateTurnUI();
-      if (onDone) onDone();
+      setTimeout(() => {
+        if (ctx.updateTurnUI) ctx.updateTurnUI();
+        if (onDone) onDone();
+      }, 400);
       return;
     }
     const range = skill.range ?? 0;
@@ -3464,8 +3461,10 @@ function main() {
     const useMeleeAnimation = !useProjectile && target != null && (target.x !== unit.x || target.y !== unit.y);
     if (!useProjectile && !useMeleeAnimation) {
       applySkillEffect(skill.effectKey, unit, target, ctx);
-      if (ctx.updateTurnUI) ctx.updateTurnUI();
-      if (onDone) onDone();
+      setTimeout(() => {
+        if (ctx.updateTurnUI) ctx.updateTurnUI();
+        if (onDone) onDone();
+      }, 400);
       return;
     }
     if (useMeleeAnimation) {
@@ -3473,8 +3472,10 @@ function main() {
       if (!mesh || !mesh.userData.rightArm) {
         applySkillEffect(skill.effectKey, unit, target, ctx);
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
-        if (ctx.updateTurnUI) ctx.updateTurnUI();
-        if (onDone) onDone();
+        setTimeout(() => {
+          if (ctx.updateTurnUI) ctx.updateTurnUI();
+          if (onDone) onDone();
+        }, 400);
         return;
       }
       const startPos = worldPos(unit.x, unit.y).clone();
@@ -3490,6 +3491,7 @@ function main() {
       let hitApplied = false;
       let hitReactStartTime = null;
       let targetDeathPending = false;
+      const ctxNoDeath = { ...ctx, handleUnitDeath: undefined };
       const startTime = performance.now();
       let skillTickCount = 0;
       function meleeSkillTick(now) {
@@ -3508,7 +3510,7 @@ function main() {
         rightArm.rotation.y = -armSwing * 1.1;
         if (!hitApplied && t >= ATTACK_HIT_AT_T) {
           hitApplied = true;
-          applySkillEffect(skill.effectKey, unit, target, ctx);
+          applySkillEffect(skill.effectKey, unit, target, ctxNoDeath);
           if (target.hp <= 0) targetDeathPending = true;
           if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
           const targetMesh = unitMeshes.get(target.id);
@@ -3552,8 +3554,10 @@ function main() {
           }
           if (hitReactStartTime == null) {
             renderer.shadowMap.enabled = true;
-            if (ctx.updateTurnUI) ctx.updateTurnUI();
-            if (onDone) onDone();
+            setTimeout(() => {
+              if (ctx.updateTurnUI) ctx.updateTurnUI();
+              if (onDone) onDone();
+            }, 400);
           } else {
             requestAnimationFrame(meleeSkillTick);
           }
@@ -3624,8 +3628,10 @@ function main() {
       } else {
         if (hitReactStartTime == null) {
           renderer.shadowMap.enabled = true;
-          if (ctx.updateTurnUI) ctx.updateTurnUI();
-          if (onDone) onDone();
+          setTimeout(() => {
+            if (ctx.updateTurnUI) ctx.updateTurnUI();
+            if (onDone) onDone();
+          }, 400);
         } else {
           requestAnimationFrame(projectileTick);
         }
@@ -3810,7 +3816,7 @@ function main() {
 
     if (hasAttacked) {
       if (hasMoved) {
-        endTurn();
+        setTimeout(() => endTurn(), 400);
         return;
       }
       const turnsLeft = maxTurns - turnCount;
@@ -3827,11 +3833,11 @@ function main() {
               return;
             }
           }
-          endTurn();
+          setTimeout(() => endTurn(), 400);
           return;
         }
         if (onCenter) {
-          endTurn();
+          setTimeout(() => endTurn(), 400);
           return;
         }
         if (reachableTiles.length > 0) {
@@ -3848,7 +3854,7 @@ function main() {
             return;
           }
         }
-        endTurn();
+        setTimeout(() => endTurn(), 400);
         return;
       }
       /** When not low HP (and turnsLeft > 20), same as post-attack: prioritize center then enemy base. */
@@ -3911,7 +3917,7 @@ function main() {
         performMove(unit, retreat.gx, retreat.gy, () => setTimeout(endTurn, 400));
         return;
       }
-      endTurn();
+      setTimeout(() => endTurn(), 400);
       return;
     }
 
@@ -3943,7 +3949,7 @@ function main() {
         performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
         return;
       }
-      endTurn();
+      setTimeout(() => endTurn(), 400);
       return;
     }
 
@@ -4231,7 +4237,7 @@ function main() {
           performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
           return;
         }
-        endTurn();
+        setTimeout(() => endTurn(), 400);
         return;
       }
     }
@@ -4385,7 +4391,7 @@ function main() {
       }
     }
 
-    endTurn();
+    setTimeout(() => endTurn(), 400);
   }
 
   function clearHighlights() {
@@ -4691,7 +4697,7 @@ function main() {
         const angle = dx * dx + dz * dz > 1e-6 ? Math.atan2(dx, dz) : mesh.rotation.y;
         mesh.rotation.y = snapToAllowedFacing(angle);
       }
-      endTurn();
+      setTimeout(() => endTurn(), 400);
       return;
     }
 
@@ -4732,8 +4738,8 @@ function main() {
         selectedUnitId = null;
         isAttackMode = false;
         clearHighlights();
-        if (hasMoved) endTurn();
-        else updateTurnUI();
+        if (hasMoved) setTimeout(() => endTurn(), 400);
+        else setTimeout(() => updateTurnUI(), 400);
       }
       return;
     }
@@ -4795,8 +4801,8 @@ function main() {
           updateUnitTileBorders();
           reachable = new Map();
           hasMoved = true;
-          if (hasAttacked) endTurn();
-          else updateTurnUI();
+          if (hasAttacked) setTimeout(() => endTurn(), 400);
+          else setTimeout(() => updateTurnUI(), 400);
           return;
         }
         const from = path[stepIndex - 1];
