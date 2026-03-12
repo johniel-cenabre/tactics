@@ -3589,6 +3589,7 @@ function main() {
             if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
             if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
             if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
+            if (skill.effectKey === 'judgement' && (unit.hp / unit.maxHp) > 0.7) continue;
             const enemyTargets = getEnemyTargets(skill);
             if (enemyTargets.length === 0) continue;
             const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
