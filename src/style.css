@@ -536,10 +536,10 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   z-index: 100;
   background: rgba(0, 0, 0, 0.85);
   align-items: center;
-  justify-content: center;
+  justify-content: start;
   flex-direction: column;
   padding: 24px;
-  overflow-y: auto;
+  overflow: auto;
 }
 #game-over-overlay.visible {
   display: flex;
@@ -956,7 +956,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   margin-top: 24px;
   width: 100%;
   max-width: 640px;
-  overflow-x: auto;
 }
 #game-over-overlay .game-over-class-record table {
   width: 100%;

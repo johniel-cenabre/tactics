@@ -5,8 +5,8 @@
 
 import * as THREE from 'three';
 
-let gridW = 21;
-let gridH = 11;
+let gridW = 35;
+let gridH = 25;
 let centerPlazaRadius = 0.29;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
@@ -1119,7 +1119,7 @@ function buildTileMesh(world) {
           ),
           roughness: 0.08,
           metalness: 0.45,
-          transparent: true,
+            transparent: true,
           opacity: 0.94,
           bumpMap: noiseBumpMap,
           bumpScale: 0.03,
@@ -1137,7 +1137,7 @@ function buildTileMesh(world) {
         rockMat.bumpMap = noiseBumpMap;
         rockMat.bumpScale = 0.2;
         const addRock = (size, offX, offZ) => {
-          const rock = new THREE.Mesh(
+        const rock = new THREE.Mesh(
             new THREE.DodecahedronGeometry(size, 0),
             rockMat
           );
@@ -1146,9 +1146,9 @@ function buildTileMesh(world) {
             surfaceY + size - 0.2,
             pz + offZ
           );
-          rock.rotation.set(Math.random(), Math.random(), Math.random());
-          rock.castShadow = true;
-          group.add(rock);
+        rock.rotation.set(Math.random(), Math.random(), Math.random());
+        rock.castShadow = true;
+        group.add(rock);
         };
         const s1 = 0.32 + Math.random() * 0.14;
         const s2 = 0.2 + Math.random() * 0.12;
@@ -1729,7 +1729,7 @@ function main() {
     unit.luk = boostStat(unit.luk);
     unit.int = boostStat(unit.int);
     if (unit.range > 2) {
-      unit.range = boostStat(unit.range);
+    unit.range = boostStat(unit.range);
     }
     console.log('[LEVEL UP]', `${unit.name} (${unit.class}, P${unit.player})`, `→ Lv.${unit.level}`, `| HP ${unit.hp}/${unit.maxHp} MP ${unit.mp}/${unit.maxMp} STR ${unit.str} VIT ${unit.vit}`);
     showLevelUpAnimation(unit);
@@ -1753,6 +1753,30 @@ function main() {
       else mesh.scale.setScalar(1);
     }
     requestAnimationFrame(levelUpTick);
+  }
+
+  function playBuffAnimation(unit, onDone) {
+    const mesh = unitMeshes.get(unit.id);
+    if (!mesh) {
+      if (onDone) onDone();
+      return;
+    }
+    const startTime = performance.now();
+    let tickCount = 0;
+    function tick(now) {
+      tickCount++;
+      if (tickCount % 2 === 0) requestRender();
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / LEVEL_UP_ANIMATION_MS);
+      const s = t < 0.5 ? 1 + 0.35 * (t / 0.5) : 1 + 0.35 * (1 - (t - 0.5) / 0.5);
+      mesh.scale.setScalar(s);
+      if (t < 1) requestAnimationFrame(tick);
+      else {
+        mesh.scale.setScalar(1);
+        if (onDone) onDone();
+      }
+    }
+    requestAnimationFrame(tick);
   }
 
   const CAMERA_TWEEN_MS = 400;
@@ -2214,9 +2238,9 @@ function main() {
       }
       document.getElementById('turn-menu').style.display = 'flex';
       updateUnitTileBorders();
-      updateTurnUI();
-      updateActiveUnitPointer();
-      centerCameraOnCurrentPlayer(true);
+    updateTurnUI();
+    updateActiveUnitPointer();
+    centerCameraOnCurrentPlayer(true);
       if (gameMode === 'cvcpu') requestWakeLock();
     }, BATTLE_START_DELAY_MS);
   }
@@ -2927,7 +2951,7 @@ function main() {
       cvcpuGamesPlayed = 0;
     }
     if (modeOverlay) modeOverlay.classList.add('hidden');
-    startDraftPhase();
+  startDraftPhase();
   }
 
   if (modePlayBtn) {
@@ -3238,6 +3262,8 @@ function main() {
       const dir = endPos.clone().sub(startPos).normalize();
       projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
       scene.add(projectile);
+      isUnitMoving = true;
+      const rightArm = mesh.userData.rightArm;
       const targetBasePos = worldPos(target.x, target.y).clone();
       const knockbackDir = endPos.clone().sub(startPos).normalize();
       const knockbackAmount = 0.4;
@@ -3256,6 +3282,10 @@ function main() {
         const elapsed = now - startTime;
         const t = Math.min(1, elapsed / PROJECTILE_MS);
         projectile.position.lerpVectors(projStart, projEnd, t);
+        if (rightArm) {
+          const armSway = Math.sin(t * Math.PI) * 1.1;
+          rightArm.rotation.y = -armSway;
+        }
 
         if (!hitApplied && t >= 1) {
           hitApplied = true;
@@ -3305,6 +3335,7 @@ function main() {
         if (t < 1) {
           requestAnimationFrame(projectileTick);
         } else {
+          if (rightArm) rightArm.rotation.y = 0;
           const hitReactDone = hitReactStartTime == null;
           if (hitReactDone && targetDeathPending) {
             handleUnitDeath(target, unit);
@@ -3312,6 +3343,7 @@ function main() {
           }
           if (hitReactDone) {
             renderer.shadowMap.enabled = true;
+            isUnitMoving = false;
             if (hasMoved) setTimeout(() => endTurn(), 400);
             else setTimeout(() => updateTurnUI(), 400);
           } else {
@@ -3461,10 +3493,21 @@ function main() {
     const useMeleeAnimation = !useProjectile && target != null && (target.x !== unit.x || target.y !== unit.y);
     if (!useProjectile && !useMeleeAnimation) {
       applySkillEffect(skill.effectKey, unit, target, ctx);
-      setTimeout(() => {
-        if (ctx.updateTurnUI) ctx.updateTurnUI();
-        if (onDone) onDone();
-      }, 400);
+      const isBuff = skill.target === 'self' || skill.target === 'ally';
+      const buffTarget = skill.target === 'self' ? unit : target;
+      if (isBuff && buffTarget) {
+        playBuffAnimation(buffTarget, () => {
+          setTimeout(() => {
+            if (ctx.updateTurnUI) ctx.updateTurnUI();
+            if (onDone) onDone();
+          }, 400);
+        });
+      } else {
+        setTimeout(() => {
+          if (ctx.updateTurnUI) ctx.updateTurnUI();
+          if (onDone) onDone();
+        }, 400);
+      }
       return;
     }
     if (useMeleeAnimation) {
@@ -3577,6 +3620,14 @@ function main() {
     const dir = endPos.clone().sub(startPos).normalize();
     projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     scene.add(projectile);
+    isUnitMoving = true;
+    const casterMesh = unitMeshes.get(unit.id);
+    const casterRightArm = casterMesh && casterMesh.userData.rightArm ? casterMesh.userData.rightArm : null;
+    if (casterMesh) {
+      const dx = endPos.x - startPos.x;
+      const dz = endPos.z - startPos.z;
+      if (dx * dx + dz * dz > 1e-6) casterMesh.rotation.y = Math.atan2(dx, dz);
+    }
     const projStart = projectile.position.clone();
     const projEnd = endPos.clone();
     projEnd.y += 0.6;
@@ -3594,6 +3645,10 @@ function main() {
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / PROJECTILE_MS);
       projectile.position.lerpVectors(projStart, projEnd, t);
+      if (casterRightArm) {
+        const armSway = Math.sin(t * Math.PI) * 1.1;
+        casterRightArm.rotation.y = -armSway;
+      }
 
       if (!hitApplied && t >= 1) {
         hitApplied = true;
@@ -3626,8 +3681,10 @@ function main() {
       if (t < 1) {
         requestAnimationFrame(projectileTick);
       } else {
+        if (casterRightArm) casterRightArm.rotation.y = 0;
         if (hitReactStartTime == null) {
           renderer.shadowMap.enabled = true;
+          isUnitMoving = false;
           setTimeout(() => {
             if (ctx.updateTurnUI) ctx.updateTurnUI();
             if (onDone) onDone();
@@ -5031,11 +5088,11 @@ function main() {
     const yOffset = extraClass === 'skill-name' ? 1.7 : 1.2;
     const startTime = performance.now();
     function updatePosition() {
-      _projVec.copy(worldPos(gx, gy));
+    _projVec.copy(worldPos(gx, gy));
       _projVec.y += yOffset;
-      _projVec.project(camera);
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+    _projVec.project(camera);
+    const w = container.clientWidth;
+    const h = container.clientHeight;
       el.style.left = (_projVec.x * 0.5 + 0.5) * w + 'px';
       el.style.top = (1 - (_projVec.y * 0.5 + 0.5)) * h + 'px';
     }
@@ -5086,7 +5143,7 @@ function main() {
     recordClassKill(killer?.class, unit.class);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
-    const mesh = unitMeshes.get(unit.id);
+      const mesh = unitMeshes.get(unit.id);
     if (!mesh) {
       updateUnitTileBorders();
       checkGameOver();
@@ -5105,7 +5162,7 @@ function main() {
         scene.remove(mesh);
         unitMeshes.delete(unit.id);
         updateUnitTileBorders();
-        checkGameOver();
+      checkGameOver();
       }
     }
     requestAnimationFrame(deathTick);
@@ -5256,12 +5313,12 @@ function main() {
     animate.frameCount = animateFrameCount + 1;
     const doUpdateAndRender = () => {
       if (needsRender) {
-        const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
-        for (let i = 0; i < highlightMaterials.length; i++) {
-          const base = i % 2 === 0 ? 0.4 : 0.7;
-          highlightMaterials[i].opacity = base * pulse;
-        }
-        renderer.render(scene, camera);
+    const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
+    for (let i = 0; i < highlightMaterials.length; i++) {
+      const base = i % 2 === 0 ? 0.4 : 0.7;
+      highlightMaterials[i].opacity = base * pulse;
+    }
+    renderer.render(scene, camera);
         needsRender = false;
       }
     };
