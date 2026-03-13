@@ -5,9 +5,9 @@
 
 import * as THREE from 'three';
 
-let gridW = 23;
-let gridH = 11;
-let centerPlazaRadius = 0.50;
+let gridW = 35;
+let gridH = 25;
+let centerPlazaRadius = 0.29;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 let maxTurns = 200;
