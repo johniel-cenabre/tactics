@@ -231,7 +231,7 @@ const CLASS_SKILLS = {
     { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 6, target: 'enemy', range: 4, level: 3, effectKey: 'shuriken' },
   ],
   samurai: [
-    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
+    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
     { name: 'Chokuto', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'chokuto' },
   ],
   werewolf: [
@@ -243,7 +243,7 @@ const CLASS_SKILLS = {
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
+    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
@@ -453,8 +453,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'sanctuary': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 3;
-      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.dex = bVal; t.tempBuff.agi = bVal; t.tempBuff.int = bVal; t.tempBuff.luk = bVal; t.tempBuff.duration = 3;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 4;
+      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.dex = bVal; t.tempBuff.agi = bVal; t.tempBuff.int = bVal; t.tempBuff.luk = bVal; t.tempBuff.duration = 4;
       showStatChange(u.x, u.y, `+${bVal} ALL STATS`, true);
       showStatChange(t.x, t.y, `+${bVal} ALL STATS`, true);
     } break;
