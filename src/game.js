@@ -3229,6 +3229,7 @@ function main() {
 
     const mesh = unitMeshes.get(unit.id);
     if (!mesh || !mesh.userData.rightArm) {
+      isUnitMoving = true;
       if (isHit) {
         target.hp = Math.max(0, target.hp - damage);
         showFloatingCombatText(target.x, target.y, String(damage), false);
@@ -3237,8 +3238,11 @@ function main() {
       } else {
         showFloatingCombatText(target.x, target.y, 'MISS', true);
       }
-      if (hasMoved) setTimeout(() => endTurn(), 400);
-      else setTimeout(() => updateTurnUI(), 400);
+      setTimeout(() => {
+        isUnitMoving = false;
+        if (hasMoved) endTurn();
+        else updateTurnUI();
+      }, 400);
       return;
     }
 
@@ -3435,6 +3439,7 @@ function main() {
         }
         if (hitReactDone) {
           renderer.shadowMap.enabled = true;
+          isUnitMoving = false;
           if (hasMoved) setTimeout(() => endTurn(), 400);
           else setTimeout(() => updateTurnUI(), 400);
         } else {
@@ -3442,6 +3447,7 @@ function main() {
         }
       }
     }
+    isUnitMoving = true;
     renderer.shadowMap.enabled = false;
     requestAnimationFrame(attackTick);
   }
@@ -3491,18 +3497,21 @@ function main() {
     const useProjectile = range > 2 && target != null && (target.x !== unit.x || target.y !== unit.y);
     const useMeleeAnimation = !useProjectile && target != null && (target.x !== unit.x || target.y !== unit.y);
     if (!useProjectile && !useMeleeAnimation) {
+      isUnitMoving = true;
       applySkillEffect(skill.effectKey, unit, target, ctx);
       const isBuff = skill.target === 'self' || skill.target === 'ally';
       const buffTarget = skill.target === 'self' ? unit : target;
       if (isBuff && buffTarget) {
         playBuffAnimation(buffTarget, () => {
           setTimeout(() => {
+            isUnitMoving = false;
             if (ctx.updateTurnUI) ctx.updateTurnUI();
             if (onDone) onDone();
           }, 400);
         });
       } else {
         setTimeout(() => {
+          isUnitMoving = false;
           if (ctx.updateTurnUI) ctx.updateTurnUI();
           if (onDone) onDone();
         }, 400);
@@ -3512,14 +3521,17 @@ function main() {
     if (useMeleeAnimation) {
       const mesh = unitMeshes.get(unit.id);
       if (!mesh || !mesh.userData.rightArm) {
+        isUnitMoving = true;
         applySkillEffect(skill.effectKey, unit, target, ctx);
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
         setTimeout(() => {
+          isUnitMoving = false;
           if (ctx.updateTurnUI) ctx.updateTurnUI();
           if (onDone) onDone();
         }, 400);
         return;
       }
+      isUnitMoving = true;
       const startPos = worldPos(unit.x, unit.y).clone();
       const endPos = worldPos(target.x, target.y).clone();
       const lungePos = startPos.clone().lerp(endPos, 0.35);
@@ -3596,6 +3608,7 @@ function main() {
           }
           if (hitReactStartTime == null) {
             renderer.shadowMap.enabled = true;
+            isUnitMoving = false;
             setTimeout(() => {
               if (ctx.updateTurnUI) ctx.updateTurnUI();
               if (onDone) onDone();
@@ -5251,9 +5264,9 @@ function main() {
     }).join('');
     overlay.classList.add('visible');
 
-    if (gameMode === 'cvcpu' && DEV_MODE) {
+    if (gameMode === 'cvcpu') {
       cvcpuGamesPlayed++;
-      if (classRecordEl && cvcpuGamesPlayed >= cvcpuTotalGames) {
+      if (classRecordEl && DEV_MODE && cvcpuGamesPlayed >= cvcpuTotalGames) {
         const tableRows = CLASS_KEYS.map((k) => {
           const r = CLASS_RECORD[k];
           const total = r.wins + r.losses || 1;
