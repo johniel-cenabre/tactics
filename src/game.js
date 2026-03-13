@@ -240,11 +240,11 @@ const CLASS_SKILLS = {
   ],
   paladin: [
     { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 3, effectKey: 'sacrifice' },
-    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 7, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
+    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 6, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
-    { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 7, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
+    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
+    { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
     { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
@@ -442,13 +442,13 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
     } break;
     case 'sacrifice': {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.4));
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.5));
       applyDamage(t, d, true);
       applyDamage(u, 3, false);
     } break;
     case 'judgement': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((u.maxHp - u.hp) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2 + getEffectiveStat(t, 'vit') * 0.1)));
+      const d = Math.max(1, Math.floor((u.maxHp - u.hp) - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
     } break;
     case 'sanctuary': {
@@ -521,7 +521,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'poison': {
       if (!t) break;
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.2));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3));
       t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.poison = poisonVal; t.tempDebuff.duration = 3;
       showStatChange(t.x, t.y, `Poisoned for 2 turns`, false);
     } break;
@@ -2823,12 +2823,11 @@ function main() {
   const draftPicksInput = document.getElementById('draft-picks-per-player');
 
   const MODES = ['pvp', 'pvcpu', 'cvcpu', 'story'];
-  const maxSlideIndex = DEV_MODE ? 3 : 2;
+  const maxSlideIndex = 3;
   let currentSlideIndex = 0;
 
   function getDomSlideIndex(logicalIndex) {
-    if (DEV_MODE) return logicalIndex;
-    return logicalIndex === 2 ? 3 : logicalIndex;
+    return logicalIndex;
   }
 
   function isStorySlide() {
