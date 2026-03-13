@@ -199,6 +199,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   background: #21262d;
   color: #e6edf3;
   transition: background 0.15s, color 0.15s;
+  min-width: 100px;
 }
 #turn-menu button:hover {
   background: #30363d;
@@ -1037,7 +1038,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   }
   #turn-menu .menu-actions { flex-wrap: nowrap; }
   #turn-menu .menu-label { font-size: 0.65rem; padding-right: 6px; margin-right: 2px; }
-  #turn-menu button { font-size: 0.7rem; padding: 6px 10px; }
+  #turn-menu button { font-size: 0.7rem; padding:10px; }
 
   #unit-preview-card {
     top: max(8px, env(safe-area-inset-top));

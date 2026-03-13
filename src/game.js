@@ -203,11 +203,11 @@ const CLASS_SKILLS = {
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
-    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
-    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 4, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
+    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
+    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 3, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
   ],
   lancer: [
-    { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 3 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
+    { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 2 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
     { name: 'Pierce', description: 'Deal STR-based damage through the defense.', cost: 6, target: 'enemy', range: 2, level: 3, effectKey: 'pierce' },
   ],
   hunter: [
@@ -231,12 +231,12 @@ const CLASS_SKILLS = {
     { name: 'Shuriken', description: 'Deal DEX-based ranged attack.', cost: 6, target: 'enemy', range: 4, level: 3, effectKey: 'shuriken' },
   ],
   samurai: [
-    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 3 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
+    { name: 'Iaido', description: 'Gain +1 STR and +1 DEX for 2 turns.', cost: 5, target: 'self', range: 0, level: 2, effectKey: 'iaido' },
     { name: 'Chokuto', description: 'Deal STR+DEX-based damage to one enemy.', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'chokuto' },
   ],
   werewolf: [
     { name: 'Bite', description: 'Deal STR+AGI-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 2, effectKey: 'bite' },
-    { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 3 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
+    { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 2 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
   ],
   paladin: [
     { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 3, effectKey: 'sacrifice' },
@@ -361,7 +361,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'impale': {
       if (!t) break;
       const dVal = 2;
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = dVal; t.tempDebuff.duration = 4;
+      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = dVal; t.tempDebuff.duration = 3;
       showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'pierce': {
@@ -423,7 +423,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'iaido': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 4;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} DEX`, true);
     } break;
     case 'chokuto': {
@@ -438,7 +438,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'howl': {
       const bVal = 2;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 4;
+      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 3;
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
     } break;
     case 'sacrifice': {
@@ -2826,18 +2826,13 @@ function main() {
   const maxSlideIndex = 3;
   let currentSlideIndex = 0;
 
-  function getDomSlideIndex(logicalIndex) {
-    return logicalIndex;
-  }
-
   function isStorySlide() {
     return currentSlideIndex === maxSlideIndex;
   }
 
   function goToSlide(index) {
     currentSlideIndex = Math.max(0, Math.min(index, maxSlideIndex));
-    const domSlideIndex = getDomSlideIndex(currentSlideIndex);
-    if (carouselTrack) carouselTrack.style.transform = `translateX(-${domSlideIndex * 100}%)`;
+    if (carouselTrack) carouselTrack.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
     if (carouselDots) {
       carouselDots.querySelectorAll('.mode-dot').forEach((dot, i) => {
         dot.classList.toggle('active', i === currentSlideIndex);
@@ -3650,6 +3645,24 @@ function main() {
     let hitApplied = false;
     let hitReactStartTime = null;
     let projTickCount = 0;
+    let pendingKnockback = null;
+    const ctxForEffect = skill.effectKey === 'powerShot'
+      ? {
+          ...ctx,
+          animateKnockback(targ, fromGx, fromGy, toGx, toGy, knockbackOnDone) {
+            pendingKnockback = { targ, fromGx, fromGy, toGx, toGy, knockbackOnDone };
+          },
+        }
+      : ctx;
+
+    function doProjectileComplete() {
+      renderer.shadowMap.enabled = true;
+      isUnitMoving = false;
+      setTimeout(() => {
+        if (ctx.updateTurnUI) ctx.updateTurnUI();
+        if (onDone) onDone();
+      }, 400);
+    }
 
     function projectileTick(now) {
       projTickCount++;
@@ -3668,7 +3681,7 @@ function main() {
         shaftGeo.dispose();
         projectileMat.dispose();
         if (skill.type === 'spell') showSpellExplosion(target.x, target.y);
-        applySkillEffect(skill.effectKey, unit, target, ctx);
+        applySkillEffect(skill.effectKey, unit, target, ctxForEffect);
         const targetMesh = unitMeshes.get(target.id);
         if (targetMesh && target.hp > 0) hitReactStartTime = now;
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(target);
@@ -3684,9 +3697,28 @@ function main() {
           if (tReact >= 1) {
             targetMesh.position.copy(targetBasePos);
             hitReactStartTime = null;
+            if (pendingKnockback) {
+              const { targ, fromGx, fromGy, toGx, toGy, knockbackOnDone } = pendingKnockback;
+              pendingKnockback = null;
+              if (ctx.animateKnockback) {
+                ctx.animateKnockback(targ, fromGx, fromGy, toGx, toGy, () => {
+                  if (knockbackOnDone) knockbackOnDone();
+                  if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(targ);
+                  doProjectileComplete();
+                });
+              } else {
+                doProjectileComplete();
+              }
+              return;
+            }
           }
         } else {
           hitReactStartTime = null;
+          if (pendingKnockback) {
+            pendingKnockback = null;
+            doProjectileComplete();
+            return;
+          }
         }
       }
 
@@ -3695,12 +3727,21 @@ function main() {
       } else {
         if (casterRightArm) casterRightArm.rotation.y = 0;
         if (hitReactStartTime == null) {
-          renderer.shadowMap.enabled = true;
-          isUnitMoving = false;
-          setTimeout(() => {
-            if (ctx.updateTurnUI) ctx.updateTurnUI();
-            if (onDone) onDone();
-          }, 400);
+          if (pendingKnockback) {
+            const { targ, fromGx, fromGy, toGx, toGy, knockbackOnDone } = pendingKnockback;
+            pendingKnockback = null;
+            if (ctx.animateKnockback) {
+              ctx.animateKnockback(targ, fromGx, fromGy, toGx, toGy, () => {
+                if (knockbackOnDone) knockbackOnDone();
+                if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(targ);
+                doProjectileComplete();
+              });
+            } else {
+              doProjectileComplete();
+            }
+          } else {
+            doProjectileComplete();
+          }
         } else {
           requestAnimationFrame(projectileTick);
         }
@@ -5320,9 +5361,7 @@ function main() {
     requestAnimationFrame(animate);
     if (lastInteractionTime === 0) lastInteractionTime = now;
     const isIdle = (now - lastInteractionTime > 500);
-    let animateFrameCount = 0;
-    if (typeof animate.frameCount === 'number') animateFrameCount = animate.frameCount;
-    animate.frameCount = animateFrameCount + 1;
+    animate.frameCount = (typeof animate.frameCount === 'number' ? animate.frameCount : 0) + 1;
     const doUpdateAndRender = () => {
       if (needsRender) {
     const pulse = 0.6 + 0.4 * Math.sin(now * 0.004);
