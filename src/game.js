@@ -5,9 +5,9 @@
 
 import * as THREE from 'three';
 
-let gridW = 35;
-let gridH = 25;
-let centerPlazaRadius = 0.29;
+let gridW = 23;
+let gridH = 11;
+let centerPlazaRadius = 0.50;
 const TILE_SIZE = 0.95;
 const BASE_HEIGHT = 0.35;
 let maxTurns = 200;
@@ -2819,6 +2819,9 @@ function main() {
   const pvpMapModeSelect = document.getElementById('pvp-map-mode');
   const aiDraftSelect = document.getElementById('ai-draft-preference');
   const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
+  const cvcpuGridWInput = document.getElementById('cvcpu-grid-w');
+  const cvcpuGridHInput = document.getElementById('cvcpu-grid-h');
+  const cvcpuCenterPlazaInput = document.getElementById('cvcpu-center-plaza');
   const moveSpeedInput = document.getElementById('move-speed');
   const draftPicksInput = document.getElementById('draft-picks-per-player');
 
@@ -2938,6 +2941,11 @@ function main() {
       const mapMode = (pvpMapModeSelect && pvpMapModeSelect.value) || 'long';
       rebuildWorldForPvp(mapMode);
     } else if (mode === 'cvcpu') {
+      if (DEV_MODE && cvcpuGridWInput && cvcpuGridHInput && cvcpuCenterPlazaInput) {
+        gridW = Math.max(5, Math.min(50, parseInt(cvcpuGridWInput.value, 10) || 21));
+        gridH = Math.max(5, Math.min(50, parseInt(cvcpuGridHInput.value, 10) || 11));
+        centerPlazaRadius = Math.max(0.1, Math.min(0.9, parseFloat(cvcpuCenterPlazaInput.value) || 0.29));
+      }
       rebuildWorldForPvp('long');
     }
     if (mode === 'cvcpu') {
