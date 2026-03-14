@@ -311,7 +311,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
   switch (effectKey) {
     case 'brave': {
       const bVal = 3;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.vit = bVal; u.tempBuff.duration = 3;
+      u.tempBuff = { vit: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} VIT`, true);
     } break;
     case 'dominate': {
@@ -336,10 +336,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'mantra': if (t) {
       const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3));
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.int = d; u.tempBuff.duration = 3;
+      u.tempBuff = { int: d, duration: 3 };
       showStatChange(u.x, u.y, `+${d} LUK`, true);
-      if (!t) break;
-      t.tempBuff = t.tempBuff || {}; t.tempBuff.luk = d; t.tempBuff.duration = 3;
+      t.tempBuff = { luk: d, duration: 3 };
       showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
     case 'chakra': {
@@ -364,7 +363,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'impale': {
       if (!t) break;
       const dVal = 2;
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.agi = dVal; t.tempDebuff.duration = 3;
+      t.tempDebuff = { agi: dVal, duration: 3 };
       showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'pierce': {
@@ -374,7 +373,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'focus': {
       const bVal = 3;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
+      u.tempBuff = { dex: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} DEX`, true);
     } break;
     case 'snipe': {
@@ -398,7 +397,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'bloodlust': {
       const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.2));
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = blVal; u.tempBuff.vit = blVal; u.tempBuff.duration = 2;
+      u.tempBuff = { str: blVal, vit: blVal, duration: 2 };
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true);
     } break;
     case 'hex': {
@@ -426,7 +425,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'iaido': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.dex = bVal; u.tempBuff.duration = 3;
+      u.tempBuff = { str: bVal, dex: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} DEX`, true);
     } break;
     case 'chokuto': {
@@ -441,7 +440,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'howl': {
       const bVal = 2;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.agi = bVal; u.tempBuff.duration = 3;
+      u.tempBuff = { str: bVal, agi: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} AGI`, true);
     } break;
     case 'sacrifice': {
@@ -456,8 +455,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'sanctuary': {
       const bVal = 1;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 4;
-      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.dex = bVal; t.tempBuff.agi = bVal; t.tempBuff.int = bVal; t.tempBuff.luk = bVal; t.tempBuff.duration = 4;
+      u.tempBuff = { str: bVal, vit: bVal, dex: bVal, agi: bVal, int: bVal, luk: bVal, duration: 4 };
+      t.tempBuff = { str: bVal, vit: bVal, dex: bVal, agi: bVal, int: bVal, luk: bVal, duration: 4 };
       if (u.hp < u.maxHp) u.hp += bVal;
       if (t.hp < t.maxHp) t.hp += bVal;
       showStatChange(u.x, u.y, `+${bVal} ALL STATS`, true);
@@ -480,7 +479,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'windWalk': {
       const bValDex = 1, bValAgi = 3;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.dex = bValDex; u.tempBuff.agi = bValAgi; u.tempBuff.duration = 3;
+      u.tempBuff = { dex: bValDex, agi: bValAgi, duration: 3 };
       showStatChange(u.x, u.y, `+${bValDex} DEX, +${bValAgi} AGI`, true);
     } break;
     case 'powerShot': {
@@ -500,35 +499,38 @@ function applySkillEffect(effectKey, unit, target, ctx) {
             ctx.updateUnitPosition(t);
             if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
             applyDamage(t, knock.collisionDamage, false);
+            if (t.hp > 0 && ctx.tryCollectPowerup) ctx.tryCollectPowerup(t);
           } else if (ctx.animateKnockback) {
             ctx.animateKnockback(t, oldGx, oldGy, knock.newGx, knock.newGy, () => {
               if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+              if (t.hp > 0 && ctx.tryCollectPowerup) ctx.tryCollectPowerup(t);
             });
           } else {
             ctx.updateUnitPosition(t);
             if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
+            if (t.hp > 0 && ctx.tryCollectPowerup) ctx.tryCollectPowerup(t);
           }
         }
       }
     } break;
     case 'forge': {
       const bVal = 2;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.duration = 3;
-      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.duration = 3;
+      u.tempBuff = { str: bVal, duration: 3 };
+      t.tempBuff = { str: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} STR`, true);
       showStatChange(t.x, t.y, `+${bVal} STR`, true);
     } break;
     case 'fortify': {
       const bVal = 3;
-      u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.duration = 3;
-      t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.duration = 3;
+      u.tempBuff = { str: bVal, vit: bVal, duration: 3 };
+      t.tempBuff = { str: bVal, vit: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT`, true);
       showStatChange(t.x, t.y, `+${bVal} STR, +${bVal} VIT`, true);
     } break;
     case 'poison': {
       if (!t) break;
       const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3));
-      t.tempDebuff = t.tempDebuff || {}; t.tempDebuff.poison = poisonVal; t.tempDebuff.duration = 3;
+      t.tempDebuff = { poison: poisonVal, duration: 3 };
       showStatChange(t.x, t.y, `Poisoned for 2 turns`, false);
     } break;
     case 'concoct': {
@@ -1229,6 +1231,106 @@ function main() {
   let tilesGroup = buildTileMesh(world);
   scene.add(tilesGroup);
 
+  const powerups = new Map();
+  const powerupMeshesGroup = new THREE.Group();
+  scene.add(powerupMeshesGroup);
+  let powerupSpawnedTurnsLeft = { 30: false, 20: false, 10: false };
+
+  const POWERUP_TYPES = ['red', 'yellow', 'purple', 'blue', 'green'];
+  const POWERUP_COLORS = { red: 0xe53935, yellow: 0xfdd835, purple: 0x8e24aa, blue: 0x1e88e5, green: 0x43a047 };
+
+  const POWERUP_GLOW_SIZE = 0.92;
+  function createPowerupTileGlow(colorHex, gx, gy) {
+    const topY = BASE_HEIGHT + world.height[gy][gx] * 0.35;
+    const surfaceY = topY / 2 + BASE_HEIGHT / 2;
+    const geo = new THREE.PlaneGeometry(POWERUP_GLOW_SIZE, POWERUP_GLOW_SIZE);
+    const mat = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(
+      gx * TILE_SIZE - hw + TILE_SIZE / 2,
+      surfaceY + 0.01,
+      gy * TILE_SIZE - hh + TILE_SIZE / 2
+    );
+    return mesh;
+  }
+
+  function createPowerupGem(colorHex) {
+    const geo = new THREE.OctahedronGeometry(0.22, 0);
+    const mat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.3, roughness: 0.4 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = Math.PI / 4;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function getValidPowerupSpawnTiles() {
+    const centerY = Math.floor(world.h / 2);
+    const tiles = [];
+    for (let gx = 0; gx < world.w; gx++) {
+      const gy = centerY;
+      if (world.type[gy][gx] !== TileType.PATH) continue;
+      const occupied = units.some((u) => u.hp > 0 && u.x === gx && u.y === gy);
+      if (occupied) continue;
+      const key = gy * world.w + gx;
+      if (powerups.has(key)) continue;
+      tiles.push({ gx, gy });
+    }
+    return tiles;
+  }
+
+  function spawnPowerupsForTurnsLeft(turnsLeft) {
+    const valid = getValidPowerupSpawnTiles();
+    if (valid.length === 0) return;
+    const tile = valid[Math.floor(Math.random() * valid.length)];
+    const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+    const key = tile.gy * world.w + tile.gx;
+    const colorHex = POWERUP_COLORS[type];
+    const pos = worldPos(tile.gx, tile.gy);
+    pos.y += 0.35;
+    const mesh = createPowerupGem(colorHex);
+    mesh.position.copy(pos);
+    powerupMeshesGroup.add(mesh);
+    const glowMesh = createPowerupTileGlow(colorHex, tile.gx, tile.gy);
+    powerupMeshesGroup.add(glowMesh);
+    powerups.set(key, { type, mesh, glowMesh });
+    console.log('powerup appeared', { turnsLeft, type, gx: tile.gx, gy: tile.gy });
+  }
+
+  function tryCollectPowerup(unit) {
+    const key = unit.y * world.w + unit.x;
+    const pu = powerups.get(key);
+    if (!pu) return;
+    const mesh = pu.mesh;
+    powerupMeshesGroup.remove(mesh);
+    mesh.geometry.dispose();
+    if (mesh.material) { const m = mesh.material; if (m.dispose) m.dispose(); }
+    if (pu.glowMesh) {
+      powerupMeshesGroup.remove(pu.glowMesh);
+      pu.glowMesh.geometry.dispose();
+      if (pu.glowMesh.material && pu.glowMesh.material.dispose) pu.glowMesh.material.dispose();
+    }
+    powerups.delete(key);
+    if (pu.type === 'green') {
+      unit.hp = Math.min(unit.maxHp, unit.hp + 6);
+      showFloatingCombatText(unit.x, unit.y, '+6 HP', false, 'buff');
+    } else {
+      const duration = 3;
+      if (pu.type === 'red') unit.tempBuff = { str: 4, duration };
+      else if (pu.type === 'yellow') unit.tempBuff = { agi: 4, duration };
+      else if (pu.type === 'purple') unit.tempBuff = { int: 4, duration };
+      else if (pu.type === 'blue') unit.tempBuff = { dex: 4, duration };
+      showFloatingCombatText(unit.x, unit.y, `+4 ${pu.type === 'red' ? 'STR' : pu.type === 'yellow' ? 'AGI' : pu.type === 'purple' ? 'INT' : 'DEX'}`, false, 'buff');
+    }
+    playBuffAnimation(unit, () => updateUnitSlashVisibility(unit));
+  }
+
   const units = [];
   let nextUnitId = 1;
   const unitMeshes = new Map();
@@ -1273,6 +1375,18 @@ function main() {
     unitMeshes.clear();
     units.length = 0;
     nextUnitId = 1;
+    powerups.forEach((pu) => {
+      powerupMeshesGroup.remove(pu.mesh);
+      pu.mesh.geometry.dispose();
+      if (pu.mesh.material && pu.mesh.material.dispose) pu.mesh.material.dispose();
+      if (pu.glowMesh) {
+        powerupMeshesGroup.remove(pu.glowMesh);
+        pu.glowMesh.geometry.dispose();
+        if (pu.glowMesh.material && pu.glowMesh.material.dispose) pu.glowMesh.material.dispose();
+      }
+    });
+    powerups.clear();
+    powerupSpawnedTurnsLeft = { 30: false, 20: false, 10: false };
     world = createWorld();
     hw = halfW(world);
     hh = halfH(world);
@@ -2178,6 +2292,19 @@ function main() {
   }
 
   function startDraftPhase() {
+    powerups.forEach((pu) => {
+      powerupMeshesGroup.remove(pu.mesh);
+      pu.mesh.geometry.dispose();
+      if (pu.mesh.material && pu.mesh.material.dispose) pu.mesh.material.dispose();
+      if (pu.glowMesh) {
+        powerupMeshesGroup.remove(pu.glowMesh);
+        pu.glowMesh.geometry.dispose();
+        if (pu.glowMesh.material && pu.glowMesh.material.dispose) pu.glowMesh.material.dispose();
+      }
+    });
+    powerups.clear();
+    powerupSpawnedTurnsLeft = { 30: false, 20: false, 10: false };
+
     const n = draftPicksPerPlayer;
     const order = [1];
     for (let i = 0; i < Math.floor((n - 1) / 2); i++) order.push(2, 2, 1, 1);
@@ -2563,6 +2690,12 @@ function main() {
         const turnsLeft = Math.max(0, maxTurns - turnCount);
         turnsLeftValueEl.textContent = String(turnsLeft);
         turnsLeftEl.classList.toggle('turns-left-low', turnsLeft <= 10);
+        if (turnsLeft === 30 || turnsLeft === 20 || turnsLeft === 10) {
+          if (!powerupSpawnedTurnsLeft[turnsLeft]) {
+            spawnPowerupsForTurnsLeft(turnsLeft);
+            powerupSpawnedTurnsLeft[turnsLeft] = true;
+          }
+        }
       }
     } else {
       const turnsLeftEl = cache.turnsLeftEl || (cache.turnsLeftEl = document.getElementById('turns-left'));
@@ -2834,6 +2967,7 @@ function main() {
   const cvcpuGridWInput = document.getElementById('cvcpu-grid-w');
   const cvcpuGridHInput = document.getElementById('cvcpu-grid-h');
   const cvcpuCenterPlazaInput = document.getElementById('cvcpu-center-plaza');
+  const cvcpuMaxTurnsInput = document.getElementById('cvcpu-max-turns');
   const moveSpeedInput = document.getElementById('move-speed');
   const draftPicksInput = document.getElementById('draft-picks-per-player');
 
@@ -2957,6 +3091,9 @@ function main() {
         gridW = Math.max(5, Math.min(50, parseInt(cvcpuGridWInput.value, 10) || 21));
         gridH = Math.max(5, Math.min(50, parseInt(cvcpuGridHInput.value, 10) || 11));
         centerPlazaRadius = Math.max(0.1, Math.min(0.9, parseFloat(cvcpuCenterPlazaInput.value) || 0.29));
+      }
+      if (DEV_MODE && cvcpuMaxTurnsInput) {
+        maxTurns = Math.max(10, Math.min(999, parseInt(cvcpuMaxTurnsInput.value, 10) || 200));
       }
       rebuildWorldForPvp('long');
     }
@@ -3184,6 +3321,7 @@ function main() {
       if (stepIndex >= path.length) {
         unit.x = path[path.length - 1].x;
         unit.y = path[path.length - 1].y;
+        tryCollectPowerup(unit);
         isUnitMoving = false;
         resetWalkPose(mesh);
         updateUnitTileBorders();
@@ -3954,6 +4092,13 @@ function main() {
       const k = t.gy * world.w + t.gx;
       if (!enemiesInRangeByTile.has(k)) enemiesInRangeByTile.set(k, getEnemiesInRangeFrom(t.gx, t.gy));
     }
+    const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+    const hasLowHpEnemyReachable =
+      hasLowHpEnemyInRange ||
+      reachableTiles.some((t) => {
+        const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
+        return inRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
+      });
 
     if (hasAttacked) {
       if (hasMoved) {
@@ -4110,6 +4255,7 @@ function main() {
         handleUnitDeath,
         updateUnitSlashVisibility,
         updateTurnUI,
+        tryCollectPowerup,
         world,
         units,
         updateUnitPosition(unit) {
@@ -4144,14 +4290,6 @@ function main() {
 
       let chosen = null;
       let chosenTarget = null;
-
-      const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
-      const hasLowHpEnemyReachable =
-        hasLowHpEnemyInRange ||
-        reachableTiles.some((t) => {
-          const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
-          return inRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
-        });
 
       if (!hasLowHpEnemyReachable) {
         const HEAL_HP_RATIO_THRESHOLD = 0.5;
@@ -4276,6 +4414,27 @@ function main() {
       const target = enemiesInRange[0].target;
       performAttack(unit, target);
       return;
+    }
+
+    /** Prioritize moving toward a powerup over center/enemy base when no very low HP enemies are reachable or in range. */
+    if (!hasMoved && !hasLowHpEnemyReachable && powerups.size > 0 && reachableTiles.length > 0) {
+      const powerupTiles = [];
+      powerups.forEach((_, key) => {
+        powerupTiles.push({ gx: key % world.w, gy: Math.floor(key / world.w) });
+      });
+      const pathToPowerupResult = getPathToNearestTarget(powerupTiles);
+      if (pathToPowerupResult) {
+        const toward = farthestUnoccupiedOnPath(pathToPowerupResult.path, unitAgi);
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+        const fallback = farthestReachableTowardTargets(reachableTiles, powerupTiles);
+        if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+          performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+          return;
+        }
+      }
     }
 
     const turnsLeft = maxTurns - turnCount;
@@ -4460,6 +4619,25 @@ function main() {
 
     const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
     if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
+      if (!hasLowHpEnemyReachable && powerups.size > 0) {
+        const powerupTiles = [];
+        powerups.forEach((_, key) => {
+          powerupTiles.push({ gx: key % world.w, gy: Math.floor(key / world.w) });
+        });
+        const pathToPowerupResult = getPathToNearestTarget(powerupTiles);
+        if (pathToPowerupResult) {
+          const toward = farthestUnoccupiedOnPath(pathToPowerupResult.path, unitAgi);
+          if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+            performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+            return;
+          }
+          const fallback = farthestReachableTowardTargets(reachableTiles, powerupTiles);
+          if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+            performMove(unit, fallback.gx, fallback.gy, () => setTimeout(runPlayingAI, 600));
+            return;
+          }
+        }
+      }
       const kite = bestKiteTile();
       if (kite && (kite.gx !== unit.x || kite.gy !== unit.y)) {
         performMove(unit, kite.gx, kite.gy, () => setTimeout(runPlayingAI, 600));
@@ -4783,6 +4961,7 @@ function main() {
         handleUnitDeath,
         updateUnitSlashVisibility,
         updateTurnUI,
+        tryCollectPowerup,
         world,
         units,
         updateUnitPosition(unit) {
