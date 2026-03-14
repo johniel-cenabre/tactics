@@ -251,8 +251,8 @@ const CLASS_SKILLS = {
     { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
   ],
   ranger: [
-    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
-    { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 6, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
+    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
+    { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 7, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
     { name: 'Forge', description: 'Gain +2 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 1, effectKey: 'forge' },
@@ -496,6 +496,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
           t.x = knock.newGx;
           t.y = knock.newGy;
           if (knock.collisionDamage > 0) {
+            console.log('knockback damage', { damage: knock.collisionDamage });
             ctx.updateUnitPosition(t);
             if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
             applyDamage(t, knock.collisionDamage, false);
