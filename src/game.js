@@ -2971,8 +2971,8 @@ function main() {
   const moveSpeedInput = document.getElementById('move-speed');
   const draftPicksInput = document.getElementById('draft-picks-per-player');
 
-  const MODES = ['pvp', 'pvcpu', 'cvcpu', 'story'];
-  const maxSlideIndex = 3;
+  const MODES = DEV_MODE ? ['pvp', 'pvcpu', 'cvcpu', 'story'] : ['pvp', 'pvcpu', 'story'];
+  const maxSlideIndex = MODES.length - 1;
   let currentSlideIndex = 0;
 
   function isStorySlide() {
@@ -2991,7 +2991,7 @@ function main() {
     if (modeSettingsPvp) modeSettingsPvp.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || isStorySlide()) ? '' : 'none';
     if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1) ? '' : 'none';
     if (modeSettingsPvpNone) modeSettingsPvpNone.style.display = isStorySlide() ? '' : 'none';
-    if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && currentSlideIndex === 2) ? '' : 'none';
+    if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu') ? '' : 'none';
     const playTextEl = modePlayBtn?.querySelector('.mode-play-text');
     if (modePlayBtn && playTextEl) {
       if (isStorySlide()) {
@@ -3020,7 +3020,7 @@ function main() {
   if (carouselNext) carouselNext.addEventListener('click', () => goToSlide(currentSlideIndex + 1));
   if (modeOverlay && !DEV_MODE) {
     const slideCvcpu = modeOverlay.querySelector('.mode-slide[data-mode="cvcpu"]');
-    if (slideCvcpu) slideCvcpu.style.display = 'none';
+    if (slideCvcpu && slideCvcpu.parentNode) slideCvcpu.parentNode.removeChild(slideCvcpu);
   }
   goToSlide(0);
 
@@ -3949,6 +3949,7 @@ function main() {
     const availableForMove = availableSkills.filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
     const maxSkillRange = availableForMove.length > 0 ? Math.max(...availableForMove.map((s) => s.range || 0)) : 0;
     const effectiveRange = Math.max(unit.range != null ? unit.range : 1, maxSkillRange);
+    const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
 
     const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
     const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
@@ -4104,6 +4105,26 @@ function main() {
       if (hasMoved) {
         setTimeout(() => endTurn(), 400);
         return;
+      }
+      /** When kiting (ranged unit with enemies), prioritize powerup over center or enemy base. */
+      if (isRangedUnit && enemies.length > 0 && powerups.size > 0 && reachableTiles.length > 0) {
+        const powerupTiles = [];
+        powerups.forEach((_, key) => {
+          powerupTiles.push({ gx: key % world.w, gy: Math.floor(key / world.w) });
+        });
+        const pathToPowerupResult = getPathToNearestTarget(powerupTiles);
+        if (pathToPowerupResult) {
+          const toward = farthestUnoccupiedOnPath(pathToPowerupResult.path, unitAgi);
+          if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+            performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+            return;
+          }
+          const fallback = farthestReachableTowardTargets(reachableTiles, powerupTiles);
+          if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+            performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+            return;
+          }
+        }
       }
       const turnsLeft = maxTurns - turnCount;
       if (turnsLeft <= 20 && centerTiles.length > 0) {
@@ -4617,7 +4638,6 @@ function main() {
       }
     }
 
-    const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
     if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
       if (!hasLowHpEnemyReachable && powerups.size > 0) {
         const powerupTiles = [];
