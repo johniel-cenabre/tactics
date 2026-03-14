@@ -192,7 +192,7 @@ function recordGameOver(unitsList, winningPlayer) {
 const CLASS_SKILLS = {
   knight: [
     { name: 'Brave', description: 'Gain +3 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'brave' },
-    { name: 'Dominate', description: 'Steal 1 STR from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
+    { name: 'Dominate', description: 'Steal 2 STR and 1 VIT from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
     { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 8, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
@@ -212,7 +212,7 @@ const CLASS_SKILLS = {
   ],
   hunter: [
     { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'focus' },
-    { name: 'Snipe', description: 'Deal DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 10, level: 2, effectKey: 'snipe' },
+    { name: 'Snipe', description: 'Deal long-ranged, DEX-based damage to one enemy.', cost: 5, target: 'enemy', range: 12, level: 2, effectKey: 'snipe' },
   ],
   assassin: [
     { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
@@ -247,8 +247,8 @@ const CLASS_SKILLS = {
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
-    { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
-    { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
+    { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
+    { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
   ],
   ranger: [
     { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
@@ -316,9 +316,12 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'dominate': {
       if (!t) break;
-      const dVal = 2;
-      t.str = Math.max(1, (t.str || 0) - dVal); u.str = (u.str || 0) + dVal;
-      showStatChange(t.x, t.y, `-${dVal} STR`, false); showStatChange(u.x, u.y, `+${dVal} STR`, true);
+      const dValStr = 2;
+      const dValVit = 1;
+      t.str = Math.max(1, (t.str || 0) - dValStr); u.str = (u.str || 0) + dValStr;
+      t.vit = Math.max(1, (t.vit || 0) - dValVit); u.vit = (u.vit || 0) + dValVit;
+      showStatChange(t.x, t.y, `-${dValStr} STR and -${dValVit} VIT`, false);
+      showStatChange(u.x, u.y, `+${dValStr} STR and +${dValVit} VIT`, true);
     } break;
     case 'arcaneBolt': {
       if (!t) break;
@@ -340,9 +343,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `+${d} LUK`, true);
     } break;
     case 'chakra': {
-      applyDamage(u, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(u, 'luk') * 0.2))), true);
+      applyDamage(u, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(u, 'luk') * 0.15))), true);
       if (!t) break;
-      applyDamage(t, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(t, 'luk') * 0.2))), true);
+      applyDamage(t, Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) + (getEffectiveStat(t, 'luk') * 0.15))), true);
     } break;
     case 'weaken': {
       if (!t) break;
@@ -455,6 +458,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const bVal = 1;
       u.tempBuff = u.tempBuff || {}; u.tempBuff.str = bVal; u.tempBuff.vit = bVal; u.tempBuff.dex = bVal; u.tempBuff.agi = bVal; u.tempBuff.int = bVal; u.tempBuff.luk = bVal; u.tempBuff.duration = 4;
       t.tempBuff = t.tempBuff || {}; t.tempBuff.str = bVal; t.tempBuff.vit = bVal; t.tempBuff.dex = bVal; t.tempBuff.agi = bVal; t.tempBuff.int = bVal; t.tempBuff.luk = bVal; t.tempBuff.duration = 4;
+      if (u.hp < u.maxHp) u.hp += bVal;
+      if (t.hp < t.maxHp) t.hp += bVal;
       showStatChange(u.x, u.y, `+${bVal} ALL STATS`, true);
       showStatChange(t.x, t.y, `+${bVal} ALL STATS`, true);
     } break;
@@ -470,7 +475,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'ambush': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'luk') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'luk') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'windWalk': {
@@ -818,6 +823,9 @@ function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
   const queue = [{ x: startX, y: startY, d: 0 }];
   const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
   const blockEnemies = units != null && movingUnit != null;
+  const enemyOccupiedKeys = blockEnemies
+    ? new Set(units.filter((u) => u.hp > 0 && u.player !== movingUnit.player).map((u) => u.y * world.w + u.x))
+    : null;
   while (queue.length) {
     const { x, y, d } = queue.shift();
     if (d >= maxMoves) continue;
@@ -825,10 +833,7 @@ function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
       const nx = x + dx;
       const ny = y + dy;
       if (!isWalkable(world, nx, ny)) continue;
-      if (blockEnemies) {
-        const occupant = units.find((u) => u.hp > 0 && u.x === nx && u.y === ny);
-        if (occupant && occupant.player !== movingUnit.player) continue;
-      }
+      if (blockEnemies && enemyOccupiedKeys.has(key(nx, ny))) continue;
       const k = key(nx, ny);
       if (dist.has(k)) continue;
       const nd = d + 1;
@@ -842,8 +847,12 @@ function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
 /** Tiles within Manhattan distance <= range (for attack range). Returns Map key -> dist (1..range). */
 function getTilesInManhattanRange(world, centerX, centerY, range) {
   const dist = new Map();
-  for (let gy = 0; gy < world.h; gy++) {
-    for (let gx = 0; gx < world.w; gx++) {
+  const gxLo = Math.max(0, centerX - range);
+  const gxHi = Math.min(world.w - 1, centerX + range);
+  const gyLo = Math.max(0, centerY - range);
+  const gyHi = Math.min(world.h - 1, centerY + range);
+  for (let gy = gyLo; gy <= gyHi; gy++) {
+    for (let gx = gxLo; gx <= gxHi; gx++) {
       const d = Math.abs(gx - centerX) + Math.abs(gy - centerY);
       if (d >= 1 && d <= range) dist.set(gy * world.w + gx, d);
     }
@@ -854,6 +863,9 @@ function getTilesInManhattanRange(world, centerX, centerY, range) {
 function getPath(world, startX, startY, endX, endY, units, movingUnit) {
   if (startX === endX && startY === endY) return [{ x: startX, y: startY }];
   const key = (x, y) => y * world.w + x;
+  const enemyOccupiedKeys = new Set(
+    units.filter((u) => u.hp > 0 && u.player !== movingUnit.player).map((u) => u.y * world.w + u.x)
+  );
   const parent = new Map();
   const queue = [{ x: startX, y: startY }];
   parent.set(key(startX, startY), null);
@@ -861,9 +873,7 @@ function getPath(world, startX, startY, endX, endY, units, movingUnit) {
 
   function canPass(x, y) {
     if (!isWalkable(world, x, y)) return false;
-    const occupant = units.find((u) => u.hp > 0 && u.x === x && u.y === y);
-    if (!occupant) return true;
-    return occupant.id === movingUnit.id || occupant.player === movingUnit.player;
+    return !enemyOccupiedKeys.has(key(x, y));
   }
 
   while (queue.length) {
@@ -2612,6 +2622,7 @@ function main() {
       if (!nextUnitForPoison || nextUnitForPoison.hp <= 0) break;
       const poisonVal = nextUnitForPoison.tempDebuff && nextUnitForPoison.tempDebuff.poison != null ? nextUnitForPoison.tempDebuff.poison : 0;
       if (poisonVal <= 0) break;
+      console.log('tempDebuff damage', { debuffKey: 'poison', damage: poisonVal });
       nextUnitForPoison.hp = Math.max(0, nextUnitForPoison.hp - poisonVal);
       showFloatingCombatText(nextUnitForPoison.x, nextUnitForPoison.y, String(poisonVal), false, 'poison');
       updateUnitSlashVisibility(nextUnitForPoison);
@@ -3138,10 +3149,10 @@ function main() {
     return enemies;
   }
 
-  function isAllyInDanger(unit) {
-    const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
+  function isAllyInDanger(unit, enemiesOpt, alliesOpt) {
+    const allies = alliesOpt != null ? alliesOpt : units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
+    const enemiesNear = enemiesOpt != null ? enemiesOpt : units.filter((u) => u.hp > 0 && u.player !== unit.player);
     for (const ally of allies) {
-      const enemiesNear = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       for (const en of enemiesNear) {
         const r = en.range != null ? en.range : 1;
         const d = manhattanDist(en.x, en.y, ally.x, ally.y);
@@ -3765,14 +3776,15 @@ function main() {
     const unit = units.find((u) => u.id === uid);
     if (!unit || unit.hp <= 0) return;
 
-    const reachableDist = getReachable(world, unit.x, unit.y, getEffectiveStat(unit, 'agi'), units, unit);
+    const unitAgi = getEffectiveStat(unit, 'agi');
+    const reachableDist = getReachable(world, unit.x, unit.y, unitAgi, units, unit);
+    const otherOccupiedKeys = new Set(
+      units.filter((u) => u.hp > 0 && u.id !== unit.id).map((u) => u.y * world.w + u.x)
+    );
     const reachableTiles = [];
     reachableDist.forEach((d, k) => {
       if (d === 0) return;
-      const gx = k % world.w;
-      const gy = Math.floor(k / world.w);
-      const occupied = units.some((o) => o.id !== unit.id && o.x === gx && o.y === gy && o.hp > 0);
-      if (!occupied) reachableTiles.push({ gx, gy, dist: d });
+      if (!otherOccupiedKeys.has(k)) reachableTiles.push({ gx: k % world.w, gy: Math.floor(k / world.w), dist: d });
     });
 
     const enemiesInRange = getEnemiesInRange(unit);
@@ -3784,14 +3796,23 @@ function main() {
     const isCriticalHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < SURVIVAL_ONLY_HP_RATIO;
     /** Level 2 only: go to enemy base to level up. Level 3 units prioritize fighting/surviving. */
     const prioritizeEnemyBase = unit.level === 2;
-    const occupiedByOther = (t) => units.some((u) => u.hp > 0 && u.x === t.gx && u.y === t.gy && u.id !== unit.id);
-    const unoccupiedCenterTiles = centerTiles.filter((t) => !occupiedByOther(t));
-    const unoccupiedEnemyBaseTiles = enemyBaseTiles.filter((t) => !occupiedByOther(t));
+    const unoccupiedCenterTiles = centerTiles.filter((t) => !otherOccupiedKeys.has(t.gy * world.w + t.gx));
+    const unoccupiedEnemyBaseTiles = enemyBaseTiles.filter((t) => !otherOccupiedKeys.has(t.gy * world.w + t.gx));
+
+    const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
+    const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
+    const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
+    const pathToCenterResult = centerTargets.length > 0 ? getPathToNearestTarget(centerTargets) : null;
+    const pathToEnemyBaseResult = baseTargets.length > 0 ? getPathToNearestTarget(baseTargets) : null;
 
     /** Max range for movement: attack range or best usable enemy-targeting skill range (if enough MP). */
-    const availableForMove = getAvailableSkills(unit).filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
+    const availableSkills = getAvailableSkills(unit);
+    const availableForMove = availableSkills.filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
     const maxSkillRange = availableForMove.length > 0 ? Math.max(...availableForMove.map((s) => s.range || 0)) : 0;
     const effectiveRange = Math.max(unit.range != null ? unit.range : 1, maxSkillRange);
+
+    const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
+    const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
 
     function closestTileToTargets(tiles, targets) {
       if (targets.length === 0) return null;
@@ -3851,8 +3872,7 @@ function main() {
       const limit = Math.min(maxSteps, path.length - 1);
       for (let i = limit; i >= 1; i--) {
         const p = path[i];
-        const occupied = units.some((o) => o.id !== unit.id && o.hp > 0 && o.x === p.x && o.y === p.y);
-        if (!occupied) return { gx: p.x, gy: p.y };
+        if (!otherOccupiedKeys.has(p.y * world.w + p.x)) return { gx: p.x, gy: p.y };
       }
       return null;
     }
@@ -3876,7 +3896,6 @@ function main() {
     function safestReachableTile(tiles) {
       const set = tiles != null ? tiles : reachableTiles;
       if (set.length === 0) return null;
-      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       if (enemies.length === 0) return set[0];
       let best = null;
       let bestMinDist = -1;
@@ -3891,8 +3910,6 @@ function main() {
     function bestRetreatTowardAlliesTile(tiles) {
       const set = tiles != null ? tiles : reachableTiles;
       if (set.length === 0) return null;
-      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
-      const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
       if (enemies.length === 0) return set[0];
       const isHighHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) >= 0.6;
       let best = null;
@@ -3917,7 +3934,6 @@ function main() {
     /** For ranged units: reachable tile that keeps at least one enemy in range but maximizes distance to nearest enemy. */
     function bestKiteTile() {
       const range = effectiveRange;
-      const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
       if (enemies.length === 0) return null;
       let best = null;
       let bestMinDistToEnemy = -1;
@@ -3932,6 +3948,12 @@ function main() {
       return best;
     }
 
+    const enemiesInRangeByTile = new Map();
+    for (const t of reachableTiles) {
+      const k = t.gy * world.w + t.gx;
+      if (!enemiesInRangeByTile.has(k)) enemiesInRangeByTile.set(k, getEnemiesInRangeFrom(t.gx, t.gy));
+    }
+
     if (hasAttacked) {
       if (hasMoved) {
         setTimeout(() => endTurn(), 400);
@@ -3941,7 +3963,6 @@ function main() {
       if (turnsLeft <= 20 && centerTiles.length > 0) {
         const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
         if (onCenter && reachableTiles.length > 0) {
-          const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
           const reachableCenterTiles = reachableTiles.filter((t) => centerKeys.has(t.gy * world.w + t.gx));
           const otherCenterTiles = reachableCenterTiles.filter((t) => t.gx !== unit.x || t.gy !== unit.y);
           if (otherCenterTiles.length > 0) {
@@ -3959,9 +3980,8 @@ function main() {
           return;
         }
         if (reachableTiles.length > 0) {
-          const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
-          const result = getPathToNearestTarget(centerTargets);
-          const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+          const result = pathToCenterResult;
+          const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
             return;
@@ -3975,31 +3995,13 @@ function main() {
         setTimeout(() => endTurn(), 400);
         return;
       }
-      /** When not low HP (and turnsLeft > 20), same as post-attack: prioritize center then enemy base. */
+      /** When not low HP (and turnsLeft > 20): level 2 prioritizes enemy base (level up), then center; others prioritize center. */
       if (!isLowHp && reachableTiles.length > 0) {
-        if (centerTiles.length > 0) {
-          const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
-          if (!onCenter) {
-            const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
-            const result = getPathToNearestTarget(centerTargets);
-            const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
-            if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
-              return;
-            }
-            const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
-            if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
-              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
-              return;
-            }
-          }
-        }
         if (prioritizeEnemyBase && enemyBaseTiles.length > 0) {
           const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
           if (!onEnemyBase) {
-            const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
-            const result = getPathToNearestTarget(baseTargets);
-            const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+            const result = pathToEnemyBaseResult;
+            const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
               performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
               return;
@@ -4011,8 +4013,23 @@ function main() {
             }
           }
         }
+        if (centerTiles.length > 0) {
+          const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
+          if (!onCenter) {
+            const result = pathToCenterResult;
+            const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
+            if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+            const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
+            if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
+              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+              return;
+            }
+          }
+        }
       }
-      const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
       const reachableCenterTiles = centerTiles.length > 0
         ? reachableTiles.filter((t) => centerKeys.has(t.gy * world.w + t.gx))
         : null;
@@ -4020,14 +4037,13 @@ function main() {
         ? reachableCenterTiles
         : reachableTiles;
 
-      const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
       let retreat = null;
       if (retreatTileSet.length > 0 && allies.length > 0) {
         retreat = bestRetreatTowardAlliesTile(retreatTileSet);
         if (retreat) {
           const path = getPath(world, unit.x, unit.y, retreat.gx, retreat.gy, units, unit);
           const steps = path ? path.length - 1 : Infinity;
-          if (!path || path.length <= 1 || steps > getEffectiveStat(unit, 'agi')) retreat = safestReachableTile(retreatTileSet);
+          if (!path || path.length <= 1 || steps > unitAgi) retreat = safestReachableTile(retreatTileSet);
         }
       }
       if (!retreat && retreatTileSet.length > 0) retreat = safestReachableTile(retreatTileSet);
@@ -4044,7 +4060,7 @@ function main() {
       let moveTowardLowHp = null;
       let bestEnemyHp = Infinity;
       for (const t of reachableTiles) {
-        const inRange = getEnemiesInRangeFrom(t.gx, t.gy);
+        const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
         const lowHp = inRange.filter((x) => x.target.maxHp > 0 && (x.target.hp / x.target.maxHp) < lowHpThreshold);
         if (lowHp.length > 0) {
           const minHp = Math.min(...lowHp.map((x) => x.target.hp));
@@ -4056,7 +4072,7 @@ function main() {
       }
       if (moveTowardLowHp) {
         const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-        const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
+        const toward = path ? farthestReachableOnPath(path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4073,7 +4089,7 @@ function main() {
 
     /** CPU skill usage: prioritize killing (damage on low-HP enemy) > damage in range > heal at 50% HP > buff when available > debuff. */
     if (!hasAttacked) {
-      const available = getAvailableSkills(unit);
+      const available = availableSkills;
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
@@ -4132,7 +4148,7 @@ function main() {
       const hasLowHpEnemyReachable =
         hasLowHpEnemyInRange ||
         reachableTiles.some((t) => {
-          const inRange = getEnemiesInRangeFrom(t.gx, t.gy);
+          const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
           return inRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
         });
 
@@ -4154,34 +4170,32 @@ function main() {
         }
       }
       if (!chosen && !hasLowHpEnemyReachable) {
-        const hasEnemyReachableOrNearby = enemiesInRange.length > 0 || reachableTiles.some((t) => getEnemiesInRangeFrom(t.gx, t.gy).length > 0);
+        const hasEnemyReachableOrNearby = enemiesInRange.length > 0 || reachableTiles.some((t) => (enemiesInRangeByTile.get(t.gy * world.w + t.gx) || []).length > 0);
         if (hasEnemyReachableOrNearby) {
-          for (const skill of available) {
-            if (skill.disabled) continue;
+          const buffSkills = available.filter((s) => !s.disabled && BUFF_KEYS.has(s.effectKey)).sort((a, b) => (b.level || 1) - (a.level || 1));
+          for (const skill of buffSkills) {
             const hasActiveBuff = unit.tempBuff && unit.tempBuff.duration > 0;
-            if (BUFF_KEYS.has(skill.effectKey)) {
-              if (skill.target === 'self') {
-                if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
-                if (!hasActiveBuff) {
-                  chosen = skill;
-                  chosenTarget = unit;
-                  break;
-                }
+            if (skill.target === 'self') {
+              if (skill.effectKey === 'bloodlust' && (unit.hp / unit.maxHp) > 0.8) continue;
+              if (!hasActiveBuff) {
+                chosen = skill;
+                chosenTarget = unit;
+                break;
               }
-              if (skill.target === 'ally') {
-                if (skill.effectKey === 'forge' && hasActiveBuff) continue;
-                if (skill.effectKey === 'fortify' && hasActiveBuff) continue;
-                if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
-                if (skill.effectKey === 'sanctuary' && hasActiveBuff) continue;
-                const targets = getSkillTargetTiles(unit, skill, units);
-                const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
-                if (allyTargets.length > 0) {
-                  const withoutBuff = allyTargets.filter((a) => !a.tempBuff || a.tempBuff.duration <= 0);
-                  const toBuff = (withoutBuff.length > 0 ? withoutBuff : allyTargets).sort((a, b) => a.hp - b.hp)[0];
-                  chosen = skill;
-                  chosenTarget = toBuff;
-                  break;
-                }
+            }
+            if (skill.target === 'ally') {
+              if (skill.effectKey === 'forge' && hasActiveBuff) continue;
+              if (skill.effectKey === 'fortify' && hasActiveBuff) continue;
+              if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
+              if (skill.effectKey === 'sanctuary' && hasActiveBuff) continue;
+              const targets = getSkillTargetTiles(unit, skill, units);
+              const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
+              if (allyTargets.length > 0) {
+                const withoutBuff = allyTargets.filter((a) => !a.tempBuff || a.tempBuff.duration <= 0);
+                const toBuff = (withoutBuff.length > 0 ? withoutBuff : allyTargets).sort((a, b) => a.hp - b.hp)[0];
+                chosen = skill;
+                chosenTarget = toBuff;
+                break;
               }
             }
           }
@@ -4198,11 +4212,14 @@ function main() {
             const enemyTargets = getEnemyTargets(skill);
             if (enemyTargets.length === 0) continue;
             const lowHp = enemyTargets.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpEnemyThreshold);
-            const sortBySpell = (a, b) => getEffectiveStat(a, 'int') - getEffectiveStat(b, 'int') || a.hp - b.hp;
-            const sortByHp = (a, b) => a.hp - b.hp;
-            const toHit = lowHp.length > 0
-              ? (skill.type === 'spell' ? lowHp.sort(sortBySpell)[0] : lowHp.sort(sortByHp)[0])
-              : (skill.type === 'spell' ? enemyTargets.sort(sortBySpell)[0] : enemyTargets.sort(sortByHp)[0]);
+            const pool = lowHp.length > 0 ? lowHp : enemyTargets;
+            const toHit = skill.type === 'spell'
+              ? pool.reduce((best, e) => {
+                  if (!best) return e;
+                  const c = getEffectiveStat(e, 'int') - getEffectiveStat(best, 'int');
+                  return c < 0 || (c === 0 && e.hp < best.hp) ? e : best;
+                }, null)
+              : pool.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null);
             chosen = skill;
             chosenTarget = toHit;
             break;
@@ -4214,7 +4231,7 @@ function main() {
           if (skill.disabled) continue;
           if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
-            const toHit = enemyTargets.sort((a, b) => a.hp - b.hp)[0];
+            const toHit = enemyTargets.length > 0 ? enemyTargets.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null) : null;
             chosen = skill;
             chosenTarget = toHit;
             break;
@@ -4228,7 +4245,7 @@ function main() {
             const enemyTargets = getEnemyTargets(skill);
             const notAlreadyDebuffed = enemyTargets.filter((e) => !e.tempDebuff || e.tempDebuff.duration <= 0);
             if (notAlreadyDebuffed.length > 0) {
-              const toHit = notAlreadyDebuffed.sort((a, b) => a.hp - b.hp)[0];
+              const toHit = notAlreadyDebuffed.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null);
               chosen = skill;
               chosenTarget = toHit;
               break;
@@ -4246,7 +4263,7 @@ function main() {
       }
     }
 
-    if (isAllyInDanger(unit) && enemiesInRange.length > 0) {
+    if (isAllyInDanger(unit, enemies, allies) && enemiesInRange.length > 0) {
       enemiesInRange.sort((a, b) => a.target.hp - b.target.hp || a.dist - b.dist);
       const target = enemiesInRange[0].target;
       performAttack(unit, target);
@@ -4264,25 +4281,32 @@ function main() {
     if (turnsLeft <= 20 && centerTiles.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter) {
-        const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
-        const result = getPathToNearestTarget(centerTargets);
+        const result = pathToCenterResult;
         const pathToCenter = result ? result.path : null;
-        const minDistToCenter = (gx, gy) =>
-          Math.min(...centerTiles.map((c) => manhattanDist(gx, gy, c.gx, c.gy)));
-        const unitDistToCenter = minDistToCenter(unit.x, unit.y);
+        const unitDistToCenter = centerTiles.length > 0
+          ? Math.min(...centerTiles.map((c) => manhattanDist(unit.x, unit.y, c.gx, c.gy)))
+          : Infinity;
+        const reachableMinDistToCenter = new Map();
+        const reachablePathIndex = new Map();
+        for (const t of reachableTiles) {
+          const k = t.gy * world.w + t.gx;
+          reachableMinDistToCenter.set(k, centerTiles.length > 0 ? Math.min(...centerTiles.map((c) => manhattanDist(t.gx, t.gy, c.gx, c.gy))) : Infinity);
+          reachablePathIndex.set(k, pathToCenter ? pathToCenter.findIndex((p) => p.x === t.gx && p.y === t.gy) : -1);
+        }
 
         /** When rushing to center with ≤20 turns left, still move into range of a weak enemy if on the way. */
         let moveTowardWeakOnPath = null;
         let bestPathIndex = -1;
         const weakEnemyThreshold = lowHpThreshold;
         for (const t of reachableTiles) {
-          if (minDistToCenter(t.gx, t.gy) > unitDistToCenter) continue;
-          const fromHere = getEnemiesInRangeFrom(t.gx, t.gy);
+          const k = t.gy * world.w + t.gx;
+          if (reachableMinDistToCenter.get(k) > unitDistToCenter) continue;
+          const fromHere = enemiesInRangeByTile.get(k) || [];
           const weak = fromHere.filter(
             (e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < weakEnemyThreshold
           );
           if (weak.length === 0) continue;
-          const pathIndexRaw = pathToCenter ? pathToCenter.findIndex((p) => p.x === t.gx && p.y === t.gy) : -1;
+          const pathIndexRaw = reachablePathIndex.get(k);
           const pathIndex = pathIndexRaw >= 0 ? pathIndexRaw : 0;
           if (pathIndex > bestPathIndex) {
             bestPathIndex = pathIndex;
@@ -4294,7 +4318,7 @@ function main() {
           return;
         }
 
-        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4311,7 +4335,7 @@ function main() {
       let moveTowardLowHp = null;
       let bestEnemyHp = Infinity;
       for (const t of reachableTiles) {
-        const inRange = getEnemiesInRangeFrom(t.gx, t.gy);
+        const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
         const lowHp = inRange.filter((x) => x.target.maxHp > 0 && (x.target.hp / x.target.maxHp) < lowHpThreshold);
         if (lowHp.length > 0) {
           const minHp = Math.min(...lowHp.map((x) => x.target.hp));
@@ -4323,7 +4347,7 @@ function main() {
       }
       if (moveTowardLowHp) {
         const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-        const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
+        const toward = path ? farthestReachableOnPath(path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4333,10 +4357,10 @@ function main() {
         const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
         if (!onEnemyBase) {
           const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
-          const result = getPathToNearestTarget(baseTargets);
+          const result = pathToEnemyBaseResult;
           const veryCloseByForSurvival = result != null && result.path.length <= 5;
           if (veryCloseByForSurvival) {
-            const toward = farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi'));
+            const toward = farthestUnoccupiedOnPath(result.path, unitAgi);
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
               performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
               return;
@@ -4364,8 +4388,8 @@ function main() {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter) {
         const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
-        const result = getPathToNearestTarget(centerTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+        const result = pathToCenterResult;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4382,8 +4406,8 @@ function main() {
       const onCenter = centerTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onCenter && reachableTiles.length > 0) {
         const centerTargets = unoccupiedCenterTiles.length > 0 ? unoccupiedCenterTiles : centerTiles;
-        const result = getPathToNearestTarget(centerTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+        const result = pathToCenterResult;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4399,12 +4423,11 @@ function main() {
     if (prioritizeEnemyBase && enemyBaseTiles.length > 0 && !hasMoved) {
       const onEnemyBase = enemyBaseTiles.some((c) => c.gx === unit.x && c.gy === unit.y);
       if (!onEnemyBase && reachableTiles.length > 0) {
-        const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
         const lowHpEnemies = enemies.filter((e) => e.maxHp > 0 && (e.hp / e.maxHp) < lowHpThreshold);
         let moveTowardLowHp = null;
         let bestEnemyHp = Infinity;
         for (const t of reachableTiles) {
-          const inRange = getEnemiesInRangeFrom(t.gx, t.gy);
+          const inRange = enemiesInRangeByTile.get(t.gy * world.w + t.gx) || [];
           const hit = inRange.find((x) => lowHpEnemies.some((e) => e.id === x.target.id));
           if (hit && hit.target.hp < bestEnemyHp) {
             bestEnemyHp = hit.target.hp;
@@ -4413,15 +4436,15 @@ function main() {
         }
         if (moveTowardLowHp) {
           const path = getPath(world, unit.x, unit.y, moveTowardLowHp.gx, moveTowardLowHp.gy, units, unit);
-          const toward = path ? farthestReachableOnPath(path, getEffectiveStat(unit, 'agi')) : null;
+          const toward = path ? farthestReachableOnPath(path, unitAgi) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
           }
         }
         const baseTargets = unoccupiedEnemyBaseTiles.length > 0 ? unoccupiedEnemyBaseTiles : enemyBaseTiles;
-        const result = getPathToNearestTarget(baseTargets);
-        const toward = result ? farthestUnoccupiedOnPath(result.path, getEffectiveStat(unit, 'agi')) : null;
+        const result = pathToEnemyBaseResult;
+        const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4434,7 +4457,6 @@ function main() {
       }
     }
 
-    const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
     const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
     if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
       const kite = bestKiteTile();
@@ -4461,7 +4483,7 @@ function main() {
             if (occupied) continue;
             const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
             const steps = path ? path.length - 1 : Infinity;
-            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= getEffectiveStat(unit, 'agi'));
+            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unitAgi);
             if (ok && (!bestPath || path.length < bestPath.length)) bestPath = path;
           }
         }
@@ -4483,7 +4505,7 @@ function main() {
           candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
         }
         const chosen = candidates[0];
-        const toward = farthestReachableOnPath(chosen.path, getEffectiveStat(unit, 'agi'));
+        const toward = farthestReachableOnPath(chosen.path, unitAgi);
         if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
           performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
           return;
@@ -4500,7 +4522,7 @@ function main() {
           }
         }
         if (bestPath) {
-          const toward = farthestReachableOnPath(bestPath, getEffectiveStat(unit, 'agi'));
+          const toward = farthestReachableOnPath(bestPath, unitAgi);
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
             performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
             return;
