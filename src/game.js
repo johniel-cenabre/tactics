@@ -94,7 +94,7 @@ const CLASSES = {
   monk:       { name: 'Monk',       gender: 'male',   hp: 23, maxHp: 23, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
   ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
   lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
-  hunter:     { name: 'Hunter',     gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 15, luk: 12, int: 5,  range: 7 },
+  hunter:     { name: 'Hunter',     gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 16, luk: 12, int: 5,  range: 7 },
   assassin:   { name: 'Assassin',   gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
   berserker:  { name: 'Berserker',  gender: 'male',   hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
   witch:      { name: 'Witch',      gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 6,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
