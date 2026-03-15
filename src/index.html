@@ -101,6 +101,16 @@
               <p>No input needed. Choose AI draft style and number of games (dev). The match runs automatically.</p>
             </div>
           </div>
+          <div class="mode-slide" data-mode="online">
+            <div class="mode-card mode-card-desc">
+              <h2 class="mode-card-title">Play Online</h2>
+              <p>Play against a friend over the internet. Connect via WebRTC using copy-paste; no server required.</p>
+            </div>
+            <div class="mode-card mode-card-how">
+              <h3>How to play</h3>
+              <p>Enter your name, then either create a game (and send the code to your friend) or join with a pasted code. Once connected, play like PvP—draft, then take turns moving and fighting.</p>
+            </div>
+          </div>
           <div class="mode-slide" data-mode="story">
             <div class="mode-card mode-card-desc">
               <h2 class="mode-card-title">Story</h2>
@@ -171,6 +181,37 @@
           <span class="mode-play-ripple"></span>
         </button>
       </div>
+    </div>
+  </div>
+  <div id="online-connect-overlay" class="online-connect-overlay" style="display: none;" aria-hidden="true">
+    <div class="online-connect-inner">
+      <h2 class="online-connect-title">Play Online</h2>
+      <label for="online-player-name">Your name</label>
+      <input type="text" id="online-player-name" maxlength="20" placeholder="Enter your name" aria-label="Your name" />
+      <div class="online-connect-actions">
+        <button type="button" id="online-btn-create">Create game</button>
+        <button type="button" id="online-btn-join">Join game</button>
+      </div>
+      <div id="online-create-section" class="online-section" style="display: none;">
+        <p class="online-instruction">Copy the code below and send it to your friend (e.g. via chat). When you receive their reply, paste it in the box below and click Connect.</p>
+        <textarea id="online-offer-text" readonly rows="4" aria-label="Connection code to send"></textarea>
+        <button type="button" id="online-btn-copy-offer">Copy</button>
+        <label for="online-reply-text">Paste your friend's reply here</label>
+        <textarea id="online-reply-text" rows="4" placeholder="Paste the reply from your friend" aria-label="Paste reply"></textarea>
+        <button type="button" id="online-btn-connect">Connect</button>
+      </div>
+      <div id="online-join-section" class="online-section" style="display: none;">
+        <label for="online-paste-offer">Paste the host's code here</label>
+        <textarea id="online-paste-offer" rows="4" placeholder="Paste the code from the host" aria-label="Paste host code"></textarea>
+        <button type="button" id="online-btn-join-connect">Join game</button>
+        <div id="online-join-answer-section" style="display: none;">
+          <p class="online-instruction">Copy the reply below and send it to the host. Once they connect, the game will start.</p>
+          <textarea id="online-answer-text" readonly rows="4" aria-label="Reply to send to host"></textarea>
+          <button type="button" id="online-btn-copy-answer">Copy</button>
+          <p id="online-waiting-msg" class="online-waiting">Waiting for host to connect…</p>
+        </div>
+      </div>
+      <p id="online-error" class="online-error" style="display: none;"></p>
     </div>
   </div>
   <div id="rotate-overlay" aria-hidden="true">

@@ -19,6 +19,25 @@ const DEV_MODE = typeof window !== 'undefined' && (
   window.location.search.includes('dev=1')
 );
 
+/** Seeded RNG for deterministic world generation (mulberry32). Returns a function that yields 0..1. */
+function createSeededRandom(seed) {
+  let s = typeof seed === 'string' ? hashString(seed) : (seed >>> 0);
+  return function () {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), s | 1);
+    t = (t ^ (t >>> 7)) >>> 0;
+    return t / 4294967296;
+  };
+}
+function hashString(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return h;
+}
+
 /** AI draft preference: 'balanced' (default), 'random', 'tanky', 'aggressive', 'scout', 'ranged', 'caster', or 'custom'.
  *  When 'custom', use AI_DRAFT_CUSTOM_ORDER. Change at runtime via UI or set here. */
 const AI_DRAFT_PREFERENCE_OPTIONS = [
@@ -547,12 +566,13 @@ function applySkillEffect(effectKey, unit, target, ctx) {
   if (ctx.updateTurnUI) ctx.updateTurnUI();
 }
 
-function createWorld() {
+function createWorld(seed) {
   const w = gridW;
   const h = gridH;
   const path = Array.from({ length: h }, () => Array(w).fill(false));
   const height = Array.from({ length: h }, () => Array(w).fill(0));
   const type = Array.from({ length: h }, () => Array(w).fill(TileType.GRASS));
+  const rnd = seed != null ? createSeededRandom(seed) : () => Math.random();
 
   // Invariant: same layout for any map size — top base at top, bottom base at bottom, center plaza in middle (all horizontally centered)
   const centerX = Math.floor(w / 2);
@@ -691,16 +711,16 @@ function createWorld() {
       const nearTopBase = Math.abs(x - topBaseX) <= 4 && Math.abs(y - topBaseY) <= 3;
       const nearBotBase = Math.abs(x - botBaseX) <= 4 && Math.abs(y - botBaseY) <= 3;
       const nearAnyBase = nearTopBase || nearBotBase;
-      const r = Math.random();
+      const r = rnd();
       if (r < 0.55 && !nearAnyBase) {
         type[y][x] = TileType.TREE;
-        height[y][x] = 1 + Math.floor(Math.random() * 2);
+        height[y][x] = 1 + Math.floor(rnd() * 2);
       } else if (r < 0.75 || (nearAnyBase && r < 0.5)) {
         type[y][x] = TileType.WATER;
         height[y][x] = 0;
       } else {
         type[y][x] = TileType.ROCK;
-        height[y][x] = 1 + Math.floor(Math.random() * 2);
+        height[y][x] = 1 + Math.floor(rnd() * 2);
       }
     }
   }
@@ -1347,7 +1367,7 @@ function main() {
     );
   }
 
-  function rebuildWorldForPvp(mapMode) {
+  function rebuildWorldForPvp(mapMode, mapSeed) {
     if (mapMode === 'short') {
       gridW = 27;
       gridH = 15;
@@ -1387,7 +1407,7 @@ function main() {
     });
     powerups.clear();
     powerupSpawnedTurnsLeft = { 30: false, 20: false, 10: false };
-    world = createWorld();
+    world = createWorld(typeof mapSeed !== 'undefined' ? mapSeed : undefined);
     hw = halfW(world);
     hh = halfH(world);
     tilesGroup = buildTileMesh(world);
@@ -1970,6 +1990,16 @@ function main() {
   let currentPlayer = 1;
   let phase = 'draft';
   let gameMode = 'pvp';
+  let localPlayerNumber = 1;
+  let playerNames = { 1: '', 2: '' };
+  let peerConnection = null;
+  let dataChannel = null;
+  let onlineMapSeed = null;
+  let onlineMapMode = 'long';
+  function getPlayerLabel(playerNum) {
+    if (gameMode === 'online' && playerNames[playerNum]) return playerNames[playerNum];
+    return 'Player ' + playerNum;
+  }
   let cvcpuTotalGames = 1;
   let cvcpuGamesPlayed = 0;
   let wakeLock = null;
@@ -2021,7 +2051,7 @@ function main() {
     imgEl.src = CLASS_IMAGES[unit.class] || '';
     imgEl.alt = unit.name;
     nameEl.textContent = unit.name;
-    metaEl.textContent = `Lv.${unit.level} ${unit.class} — Player ${unit.player}`;
+    metaEl.textContent = `Lv.${unit.level} ${unit.class} — ${getPlayerLabel(unit.player)}`;
     statsEl.innerHTML = [
       ['HP', `${unit.hp}/${unit.maxHp}`],
       ['MP', `${unit.mp}/${unit.maxMp}`],
@@ -2392,7 +2422,7 @@ function main() {
     const placementCardEl = document.getElementById('draft-placement-card');
     if (pendingClassKey) {
       draftPanel.style.display = 'none';
-      turnEl.textContent = `Draft: Player ${getCurrentDraftPlayer()} — place ${CLASSES[pendingClassKey].name}`;
+      turnEl.textContent = `Draft: ${getPlayerLabel(getCurrentDraftPlayer())} — place ${CLASSES[pendingClassKey].name}`;
       const p = getCurrentDraftPlayer();
       placementCardEl.style.display = 'flex';
       placementCardEl.classList.remove('player-1', 'player-2');
@@ -2459,10 +2489,10 @@ function main() {
       draftPanel.style.display = 'flex';
     }
     const p = getCurrentDraftPlayer();
-      draftTitle.textContent = `Player ${p}: Pick a class (${getCurrentPlayerPickCount()}/${draftPicksPerPlayer})`;
+      draftTitle.textContent = `${getPlayerLabel(p)}: Pick a class (${getCurrentPlayerPickCount()}/${draftPicksPerPlayer})`;
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
-      turnEl.textContent = `Draft: Player ${p} — pick a class`;
+      turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
       shuffleArray([...CLASS_KEYS]).forEach((key) => {
         const isAvailable = availableClasses.has(key);
         const c = CLASSES[key];
@@ -2504,6 +2534,9 @@ function main() {
     placementTileKeys = new Set(tilesSorted.map((t) => t.gy * world.w + t.gx));
     showPlacementHighlights(tilesSorted);
     updateDraftUI();
+    if (gameMode === 'online' && p === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+      sendOnlineMessage({ type: 'draftPick', classKey });
+    }
   }
 
   function placeUnit(gx, gy) {
@@ -2543,6 +2576,9 @@ function main() {
     pendingClassKey = null;
     placementTileKeys.clear();
     clearHighlights();
+    if (gameMode === 'online' && p === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+      sendOnlineMessage({ type: 'draftPlace', gx, gy });
+    }
     const placementCardEl = document.getElementById('draft-placement-card');
     if (placementCardEl) {
       placementCardEl.style.display = 'none';
@@ -2562,10 +2598,10 @@ function main() {
     const turnEl = document.getElementById('turn-player');
     if (draftPanel && draftTitle && draftClasses && turnEl) {
       draftPanel.style.display = 'flex';
-      draftTitle.textContent = `Player ${nextP}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`;
+      draftTitle.textContent = `${getPlayerLabel(nextP)}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`;
       if (draftMessage) draftMessage.textContent = 'Get ready…';
       draftClasses.innerHTML = '';
-      turnEl.textContent = `Draft: Player ${nextP} — pick a class`;
+      turnEl.textContent = `Draft: ${getPlayerLabel(nextP)} — pick a class`;
     }
     const DRAFT_AFTER_PLACEMENT_DELAY_MS = 1500;
     setTimeout(updateDraftUI, DRAFT_AFTER_PLACEMENT_DELAY_MS);
@@ -2652,12 +2688,12 @@ function main() {
     }
 
     if (selectedUnitId != null) {
-      turnEl.textContent = `Player ${currentPlayer} — Unit ${unitNameEl.innerHTML} active`;
+      turnEl.textContent = `${getPlayerLabel(currentPlayer)} — Unit ${unitNameEl.innerHTML} active`;
     } else {
       const currentUnit = initiativeOrder.length ? units.find((u) => u.id === initiativeOrder[currentTurnIndex]) : null;
-      turnEl.textContent = currentUnit ? `${currentUnit.name} (Player ${currentPlayer})` : `Player ${currentPlayer}`;
+      turnEl.textContent = currentUnit ? `${currentUnit.name} (${getPlayerLabel(currentPlayer)})` : getPlayerLabel(currentPlayer);
     }
-    menuLabel.textContent = `Player ${currentPlayer}`;
+    menuLabel.textContent = getPlayerLabel(currentPlayer);
 
     const btnAttack = cache.btnAttack || (cache.btnAttack = document.getElementById('btn-attack'));
     const btnSkill = cache.btnSkill || (cache.btnSkill = document.getElementById('btn-skill'));
@@ -2666,7 +2702,7 @@ function main() {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
       if (btnEnd) btnEnd.disabled = true;
-      turnEl.textContent = `Player ${currentPlayer} (CPU)`;
+      turnEl.textContent = `${getPlayerLabel(currentPlayer)} (CPU)`;
     } else if (isChoosingFacing) {
       btnAttack.disabled = true;
       btnSkill.disabled = true;
@@ -2705,6 +2741,9 @@ function main() {
   }
 
   function endTurn() {
+    if (gameMode === 'online' && currentPlayer === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+      sendOnlineMessage({ type: 'endTurn' });
+    }
     requestRender();
     hideUnitPreviewCard();
     isAttackMode = false;
@@ -2870,6 +2909,9 @@ function main() {
               updateUnitSlashVisibility,
               updateTurnUI,
             };
+            if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+              sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
+            }
             executeSkillWithProjectile(unit, unit, skill, ctx, () => {
               clearHighlights();
               isSkillMode = false;
@@ -2893,6 +2935,9 @@ function main() {
                 updateUnitSlashVisibility,
                 updateTurnUI,
               };
+              if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+                sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
+              }
               executeSkillWithProjectile(unit, unit, skill, ctx, () => {
                 clearHighlights();
                 isSkillMode = false;
@@ -2970,13 +3015,27 @@ function main() {
   const cvcpuMaxTurnsInput = document.getElementById('cvcpu-max-turns');
   const moveSpeedInput = document.getElementById('move-speed');
   const draftPicksInput = document.getElementById('draft-picks-per-player');
+  const onlineConnectOverlay = document.getElementById('online-connect-overlay');
+  const onlinePlayerNameInput = document.getElementById('online-player-name');
+  const onlineCreateSection = document.getElementById('online-create-section');
+  const onlineJoinSection = document.getElementById('online-join-section');
+  const onlineOfferText = document.getElementById('online-offer-text');
+  const onlineReplyText = document.getElementById('online-reply-text');
+  const onlinePasteOffer = document.getElementById('online-paste-offer');
+  const onlineJoinAnswerSection = document.getElementById('online-join-answer-section');
+  const onlineAnswerText = document.getElementById('online-answer-text');
+  const onlineErrorEl = document.getElementById('online-error');
+  const onlineWaitingMsg = document.getElementById('online-waiting-msg');
 
-  const MODES = DEV_MODE ? ['pvp', 'pvcpu', 'cvcpu', 'story'] : ['pvp', 'pvcpu', 'story'];
+  const MODES = DEV_MODE ? ['pvp', 'pvcpu', 'cvcpu', 'online', 'story'] : ['pvp', 'pvcpu', 'online', 'story'];
   const maxSlideIndex = MODES.length - 1;
   let currentSlideIndex = 0;
 
   function isStorySlide() {
     return currentSlideIndex === maxSlideIndex;
+  }
+  function isOnlineSlide() {
+    return MODES[currentSlideIndex] === 'online';
   }
 
   function goToSlide(index) {
@@ -2988,8 +3047,8 @@ function main() {
         dot.setAttribute('aria-selected', i === currentSlideIndex);
       });
     }
-    if (modeSettingsPvp) modeSettingsPvp.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || isStorySlide()) ? '' : 'none';
-    if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1) ? '' : 'none';
+    if (modeSettingsPvp) modeSettingsPvp.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || isStorySlide() || MODES[currentSlideIndex] === 'online') ? '' : 'none';
+    if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || MODES[currentSlideIndex] === 'online') ? '' : 'none';
     if (modeSettingsPvpNone) modeSettingsPvpNone.style.display = isStorySlide() ? '' : 'none';
     if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu') ? '' : 'none';
     const playTextEl = modePlayBtn?.querySelector('.mode-play-text');
@@ -2999,7 +3058,7 @@ function main() {
         playTextEl.textContent = 'Coming Soon';
       } else {
         modePlayBtn.disabled = false;
-        playTextEl.textContent = 'Play game';
+        playTextEl.textContent = isOnlineSlide() ? 'Connect' : 'Play game';
       }
     }
   }
@@ -3057,6 +3116,89 @@ function main() {
     aiDraftSelect.addEventListener('change', () => { aiDraftPreference = aiDraftSelect.value; });
   }
 
+  if (onlineConnectOverlay) {
+    const onlineBtnCreate = document.getElementById('online-btn-create');
+    const onlineBtnJoin = document.getElementById('online-btn-join');
+    const onlineBtnCopyOffer = document.getElementById('online-btn-copy-offer');
+    const onlineBtnConnect = document.getElementById('online-btn-connect');
+    const onlineBtnJoinConnect = document.getElementById('online-btn-join-connect');
+    const onlineBtnCopyAnswer = document.getElementById('online-btn-copy-answer');
+
+    if (onlineBtnCreate) {
+      onlineBtnCreate.addEventListener('click', async () => {
+        const name = (onlinePlayerNameInput && onlinePlayerNameInput.value.trim()) || 'Player 1';
+        if (!name) { showOnlineError('Enter your name'); return; }
+        showOnlineError('');
+        try {
+          onlineMapMode = (pvpMapModeSelect && pvpMapModeSelect.value) || 'long';
+          onlineMapSeed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+          rebuildWorldForPvp(onlineMapMode, onlineMapSeed);
+          const blob = await createOfferBlob(name, onlineMapSeed, onlineMapMode);
+          if (onlineOfferText) onlineOfferText.value = blob;
+          if (onlineCreateSection) {
+            onlineCreateSection.style.display = 'flex';
+            onlineCreateSection.style.alignItems = 'flex-start';
+          }
+          if (onlineJoinSection) onlineJoinSection.style.display = 'none';
+        } catch (err) {
+          showOnlineError(err.message || 'Failed to create game');
+        }
+      });
+    }
+    if (onlineBtnCopyOffer && onlineOfferText) {
+      onlineBtnCopyOffer.addEventListener('click', () => {
+        onlineOfferText.select();
+        document.execCommand('copy');
+      });
+    }
+    if (onlineBtnConnect && onlineReplyText) {
+      onlineBtnConnect.addEventListener('click', async () => {
+        const reply = onlineReplyText.value.trim();
+        if (!reply) { showOnlineError('Paste your friend\'s reply'); return; }
+        showOnlineError('');
+        try {
+          await applyAnswerBlob(reply);
+        } catch (err) {
+          showOnlineError(err.message || 'Failed to connect');
+        }
+      });
+    }
+    if (onlineBtnJoin) {
+      onlineBtnJoin.addEventListener('click', () => {
+        const name = (onlinePlayerNameInput && onlinePlayerNameInput.value.trim()) || 'Player 2';
+        if (!name) { showOnlineError('Enter your name'); return; }
+        showOnlineError('');
+        if (onlineCreateSection) onlineCreateSection.style.display = 'none';
+        if (onlineJoinSection) onlineJoinSection.style.display = 'flex';
+      });
+    }
+    if (onlineBtnJoinConnect && onlinePasteOffer) {
+      onlineBtnJoinConnect.addEventListener('click', async () => {
+        const blob = onlinePasteOffer.value.trim();
+        if (!blob) { showOnlineError('Paste the host\'s code'); return; }
+        showOnlineError('');
+        try {
+          localPlayerNumber = 2;
+          playerNames[2] = (onlinePlayerNameInput && onlinePlayerNameInput.value.trim()) || 'Player 2';
+          const answerStr = await createAnswerBlob(playerNames[2], blob);
+          if (onlineAnswerText) onlineAnswerText.value = answerStr;
+          if (onlineJoinAnswerSection) {
+            onlineJoinAnswerSection.style.display = 'flex';
+            onlineJoinAnswerSection.style.alignItems = 'flex-start';
+          }
+        } catch (err) {
+          showOnlineError(err.message || 'Failed to join');
+        }
+      });
+    }
+    if (onlineBtnCopyAnswer && onlineAnswerText) {
+      onlineBtnCopyAnswer.addEventListener('click', () => {
+        onlineAnswerText.select();
+        document.execCommand('copy');
+      });
+    }
+  }
+
   const bgMusic = new Audio();
   bgMusic.loop = true;
   bgMusic.volume = 0.30;
@@ -3078,11 +3220,271 @@ function main() {
     }
   }
 
+  function showOnlineError(msg) {
+    if (onlineErrorEl) {
+      onlineErrorEl.textContent = msg || '';
+      onlineErrorEl.style.display = msg ? 'block' : 'none';
+    }
+  }
+
+  function hideOnlineConnectOverlay() {
+    if (onlineConnectOverlay) {
+      onlineConnectOverlay.style.display = 'none';
+      onlineConnectOverlay.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function showOnlineConnectOverlay() {
+    showOnlineError('');
+    localPlayerNumber = 1;
+    playerNames = { 1: '', 2: '' };
+    if (onlineConnectOverlay) {
+      onlineConnectOverlay.style.display = 'flex';
+      onlineConnectOverlay.setAttribute('aria-hidden', 'false');
+    }
+    if (onlinePlayerNameInput) onlinePlayerNameInput.value = '';
+    if (onlineCreateSection) onlineCreateSection.style.display = 'none';
+    if (onlineJoinSection) onlineJoinSection.style.display = 'none';
+    if (onlineOfferText) onlineOfferText.value = '';
+    if (onlineReplyText) onlineReplyText.value = '';
+    if (onlinePasteOffer) onlinePasteOffer.value = '';
+    if (onlineAnswerText) onlineAnswerText.value = '';
+    if (onlineJoinAnswerSection) onlineJoinAnswerSection.style.display = 'none';
+    if (onlineWaitingMsg) onlineWaitingMsg.style.display = 'block';
+  }
+
+  function waitForIceGatheringComplete(pc) {
+    return new Promise((resolve) => {
+      if (pc.iceGatheringState === 'complete') {
+        resolve();
+        return;
+      }
+      const check = () => {
+        if (pc.iceGatheringState === 'complete') {
+          pc.removeEventListener('icegatheringstatechange', check);
+          resolve();
+        }
+      };
+      pc.addEventListener('icegatheringstatechange', check);
+    });
+  }
+
+  async function createOfferBlob(playerName, mapSeed, mapMode) {
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    const candidates = [];
+    pc.addEventListener('icecandidate', (e) => {
+      if (e.candidate) candidates.push(e.candidate);
+    });
+    const dc = pc.createDataChannel('game-sync', { ordered: true });
+    dataChannel = dc;
+    peerConnection = pc;
+    dc.addEventListener('open', () => setupDataChannel(dc, true));
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitForIceGatheringComplete(pc);
+    return JSON.stringify({
+      type: 'offer',
+      sdp: pc.localDescription.sdp,
+      candidates,
+      playerName: playerName || 'Player 1',
+    });
+  }
+
+  async function createAnswerBlob(playerName, offerBlob) {
+    const offer = JSON.parse(offerBlob);
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    const candidates = [];
+    pc.addEventListener('icecandidate', (e) => {
+      if (e.candidate) candidates.push(e.candidate);
+    });
+    pc.addEventListener('datachannel', (e) => {
+      dataChannel = e.channel;
+      peerConnection = pc;
+      setupDataChannel(dataChannel, false);
+    });
+    await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offer.sdp }));
+    if (offer.candidates && offer.candidates.length) {
+      for (const c of offer.candidates) {
+        await pc.addIceCandidate(new RTCIceCandidate(c));
+      }
+    }
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await waitForIceGatheringComplete(pc);
+    return JSON.stringify({
+      type: 'answer',
+      sdp: pc.localDescription.sdp,
+      candidates,
+      playerName: playerName || 'Player 2',
+    });
+  }
+
+  async function applyAnswerBlob(answerBlob) {
+    const answer = JSON.parse(answerBlob);
+    if (!peerConnection) return;
+    await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
+    if (answer.candidates && answer.candidates.length) {
+      for (const c of answer.candidates) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(c));
+      }
+    }
+  }
+
+  let lastAppliedSeq = 0;
+  function setupDataChannel(dc, isHost) {
+    dc.binaryType = 'arraybuffer';
+    dc.addEventListener('message', (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.seq != null && msg.seq <= lastAppliedSeq) return;
+        if (msg.seq != null) lastAppliedSeq = msg.seq;
+        handleOnlineMessage(msg, isHost);
+      } catch (err) {
+        console.warn('Online message parse error', err);
+      }
+    });
+    dc.addEventListener('close', () => {
+      if (gameMode === 'online') showOnlineError('Connection lost.');
+    });
+    if (!isHost) {
+      const name = playerNames[2] || (onlinePlayerNameInput && onlinePlayerNameInput.value.trim()) || 'Player 2';
+      sendOnlineMessage({ type: 'joined', playerName: name });
+      return;
+    }
+    const localName = (onlinePlayerNameInput && onlinePlayerNameInput.value.trim()) || 'Player 1';
+    const seed = onlineMapSeed != null ? onlineMapSeed : (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+    const mapMode = onlineMapMode || 'long';
+    playerNames[1] = localName;
+    sendOnlineMessage({ type: 'start', mapSeed: seed, mapMode, playerName: localName });
+  }
+
+  function handleOnlineMessage(msg, isHost) {
+    if (msg.type === 'start') {
+      playerNames[1] = msg.playerName || 'Player 1';
+      onlineMapSeed = msg.mapSeed;
+      onlineMapMode = msg.mapMode || 'long';
+      rebuildWorldForPvp(onlineMapMode, onlineMapSeed);
+      hideOnlineConnectOverlay();
+      startDraftPhase();
+      return;
+    }
+    if (msg.type === 'joined') {
+      playerNames[2] = msg.playerName || 'Player 2';
+      return;
+    }
+    if (phase === 'draft') {
+      if (msg.type === 'draftPick') {
+        pickClass(msg.classKey);
+      } else if (msg.type === 'draftPlace') {
+        placeUnit(msg.gx, msg.gy);
+      }
+      return;
+    }
+    if (phase === 'playing') {
+      if (msg.type === 'move') {
+        applyMoveFromRemote(msg.unitId, msg.toGx, msg.toGy);
+      } else if (msg.type === 'attack') {
+        applyAttackFromRemote(msg.unitId, msg.targetId, msg.hit, msg.damage);
+      } else if (msg.type === 'skill') {
+        applySkillFromRemote(msg);
+      } else if (msg.type === 'endTurn') {
+        endTurn();
+      }
+    }
+  }
+
+  function sendOnlineMessage(obj) {
+    if (dataChannel && dataChannel.readyState === 'open') {
+      const seq = (typeof sendOnlineMessage.seq !== 'undefined' ? sendOnlineMessage.seq : 0) + 1;
+      sendOnlineMessage.seq = seq;
+      dataChannel.send(JSON.stringify({ ...obj, seq }));
+    }
+  }
+
+  function applyMoveFromRemote(unitId, toGx, toGy) {
+    const unit = units.find((u) => u.id === unitId);
+    if (!unit || unit.hp <= 0) return;
+    performMove(unit, toGx, toGy, () => {});
+  }
+
+  function applyAttackFromRemote(unitId, targetId, hit, damage) {
+    const unit = units.find((u) => u.id === unitId);
+    const target = units.find((u) => u.id === targetId);
+    if (!unit || !target || target.hp <= 0) return;
+    hasAttacked = true;
+    selectedUnitId = null;
+    isAttackMode = false;
+    clearHighlights();
+    if (hit && damage != null) {
+      target.hp = Math.max(0, target.hp - damage);
+      showFloatingCombatText(target.x, target.y, String(damage), false);
+      updateUnitSlashVisibility(target);
+      if (target.hp <= 0) handleUnitDeath(target, unit);
+    } else {
+      showFloatingCombatText(target.x, target.y, 'MISS', true);
+    }
+    setTimeout(() => {
+      if (hasMoved) endTurn();
+      else updateTurnUI();
+    }, 400);
+  }
+
+  function applySkillFromRemote(msg) {
+    const unit = units.find((u) => u.id === msg.unitId);
+    const target = msg.targetId != null ? units.find((u) => u.id === msg.targetId) : null;
+    if (!unit) return;
+    if (msg.effectKey && unit.mp >= (CLASS_SKILLS[unit.class] || []).find((s) => s.effectKey === msg.effectKey)?.cost) {
+      const skill = (CLASS_SKILLS[unit.class] || []).find((s) => s.effectKey === msg.effectKey);
+      if (skill) {
+        unit.mp -= skill.cost;
+        const ctx = {
+          showFloatingCombatText,
+          handleUnitDeath,
+          updateUnitSlashVisibility,
+          updateTurnUI,
+          tryCollectPowerup,
+          world,
+          units,
+          updateUnitPosition(u) {
+            const m = unitMeshes.get(u.id);
+            if (m) m.position.copy(worldPos(u.x, u.y));
+          },
+          animateKnockback(targ, fromGx, fromGy, toGx, toGy, onDone) {
+            const mesh = unitMeshes.get(targ.id);
+            if (!mesh) { if (onDone) onDone(); return; }
+            const startPos = worldPos(fromGx, fromGy).clone();
+            const endPos = worldPos(toGx, toGy).clone();
+            const startTime = performance.now();
+            let tickCount = 0;
+            function tick(now) {
+              tickCount++;
+              if (tickCount % 2 === 0) requestRender();
+              const t = Math.min(1, (now - startTime) / moveDurationMs);
+              const smoothstep = (x) => x * x * (3 - 2 * x);
+              mesh.position.lerpVectors(startPos, endPos, smoothstep(t));
+              if (t < 1) requestAnimationFrame(tick);
+              else { mesh.position.copy(endPos); if (onDone) onDone(); }
+            }
+            requestAnimationFrame(tick);
+          },
+        };
+        applySkillEffect(msg.effectKey, unit, target, ctx);
+        if (target) updateUnitSlashVisibility(target);
+      }
+    }
+    setTimeout(() => { updateTurnUI(); }, 400);
+  }
+
   function startSelectedMode() {
     if (MODES[currentSlideIndex] === 'story') return;
     const mode = MODES[currentSlideIndex];
     startBackgroundMusic();
     gameMode = mode;
+    if (mode === 'online') {
+      if (modeOverlay) modeOverlay.classList.add('hidden');
+      showOnlineConnectOverlay();
+      return;
+    }
     if (mode === 'pvp' || mode === 'pvcpu') {
       const mapMode = (pvpMapModeSelect && pvpMapModeSelect.value) || 'long';
       rebuildWorldForPvp(mapMode);
@@ -3102,7 +3504,7 @@ function main() {
       cvcpuGamesPlayed = 0;
     }
     if (modeOverlay) modeOverlay.classList.add('hidden');
-  startDraftPhase();
+    startDraftPhase();
   }
 
   if (modePlayBtn) {
@@ -3327,6 +3729,9 @@ function main() {
         updateUnitTileBorders();
         reachable = new Map();
         hasMoved = true;
+        if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+          sendOnlineMessage({ type: 'move', unitId: unit.id, toGx: unit.x, toGy: unit.y });
+        }
         if (onDone) onDone();
         return;
       }
@@ -3377,6 +3782,10 @@ function main() {
     selectedUnitId = null;
     isAttackMode = false;
     clearHighlights();
+
+    if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+      sendOnlineMessage({ type: 'attack', unitId: unit.id, targetId: target.id, hit: isHit, damage: isHit ? damage : undefined });
+    }
 
     console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, isHit ? `${damage} dmg` : 'MISS', `| ${target.name} HP ${target.hp} → ${Math.max(0, target.hp - damage)}/${target.maxHp}`);
 
@@ -5014,6 +5423,9 @@ function main() {
         },
       };
       const skillTarget = selectedSkill.target === 'self' ? unit : (targetUnit || null);
+      if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+        sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: skillTarget ? skillTarget.id : undefined, effectKey: selectedSkill.effectKey });
+      }
       executeSkillWithProjectile(unit, skillTarget, selectedSkill, ctx, () => {
         clearHighlights();
         isSkillMode = false;
@@ -5471,19 +5883,19 @@ function main() {
     let title = '';
     if (p1OnCenter > p2OnCenter) {
       winningPlayer = 1;
-      title = `Time's up! Player 1 wins! (${p1OnCenter} vs ${p2OnCenter} units on center base)`;
+      title = `Time's up! ${getPlayerLabel(1)} wins! (${p1OnCenter} vs ${p2OnCenter} units on center base)`;
     } else if (p2OnCenter > p1OnCenter) {
       winningPlayer = 2;
-      title = `Time's up! Player 2 wins! (${p2OnCenter} vs ${p1OnCenter} units on center base)`;
+      title = `Time's up! ${getPlayerLabel(2)} wins! (${p2OnCenter} vs ${p1OnCenter} units on center base)`;
     } else {
       const p1TotalHp = units.filter((u) => u.hp > 0 && u.player === 1).reduce((sum, u) => sum + u.hp, 0);
       const p2TotalHp = units.filter((u) => u.hp > 0 && u.player === 2).reduce((sum, u) => sum + u.hp, 0);
       if (p1TotalHp > p2TotalHp) {
         winningPlayer = 1;
-        title = `Time's up! Draw on center — Player 1 wins on total HP (${p1TotalHp} vs ${p2TotalHp})`;
+        title = `Time's up! Draw on center — ${getPlayerLabel(1)} wins on total HP (${p1TotalHp} vs ${p2TotalHp})`;
       } else if (p2TotalHp > p1TotalHp) {
         winningPlayer = 2;
-        title = `Time's up! Draw on center — Player 2 wins on total HP (${p2TotalHp} vs ${p1TotalHp})`;
+        title = `Time's up! Draw on center — ${getPlayerLabel(2)} wins on total HP (${p2TotalHp} vs ${p1TotalHp})`;
       } else {
         title = `Draw! (equal units on center: ${p1OnCenter}, equal HP)`;
       }
@@ -5506,7 +5918,7 @@ function main() {
       classRecordEl.style.display = 'none';
       classRecordEl.innerHTML = '';
     }
-    titleEl.textContent = titleOverride != null ? titleOverride : `Player ${winningPlayer} wins!`;
+    titleEl.textContent = titleOverride != null ? titleOverride : `${getPlayerLabel(winningPlayer)} wins!`;
     const winnerUnits = units.filter((u) => u.player === (winningPlayer != null ? winningPlayer : 1));
     cardsEl.innerHTML = winnerUnits.map((unit) => {
       const c = unit;
