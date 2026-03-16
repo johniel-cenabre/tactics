@@ -2039,6 +2039,7 @@ function main() {
   let availableClasses = new Set(CLASS_KEYS);
   let draftPickIndex = 0;
   let pendingClassKey = null;
+  let draftSelectedClassKey = null;
   let placementTileKeys = new Set();
   let initiativeOrder = [];
   let currentTurnIndex = 0;
@@ -2362,6 +2363,7 @@ function main() {
     draftPickIndex = 0;
     availableClasses = new Set(CLASS_KEYS);
     pendingClassKey = null;
+    draftSelectedClassKey = null;
     placementTileKeys.clear();
     clearHighlights();
     updateDraftUI();
@@ -2512,38 +2514,86 @@ function main() {
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
+      const detailPlaceholder = document.getElementById('draft-detail-placeholder');
+      const detailImage = document.getElementById('draft-detail-image');
+      const detailContent = document.getElementById('draft-detail-content');
+      const detailName = document.getElementById('draft-detail-name');
+      const detailStats = document.getElementById('draft-detail-stats');
+      const detailSkills = document.getElementById('draft-detail-skills');
+      const selectBtn = document.getElementById('draft-select-btn');
+      function updateDraftDetailCard() {
+        const key = draftSelectedClassKey;
+        if (!key || !CLASSES[key]) {
+          if (detailPlaceholder) detailPlaceholder.style.display = '';
+          if (detailImage) detailImage.style.display = 'none';
+          if (detailContent) detailContent.style.display = 'none';
+          if (selectBtn) selectBtn.style.display = 'none';
+          return;
+        }
+        const c = CLASSES[key];
+        const skills = CLASS_SKILLS[key] || [];
+        if (detailPlaceholder) detailPlaceholder.style.display = 'none';
+        if (detailImage) {
+          detailImage.src = CLASS_IMAGES[key] || '';
+          detailImage.alt = c.name;
+          detailImage.style.display = 'block';
+        }
+        if (detailContent) detailContent.style.display = 'block';
+        if (detailName) detailName.textContent = c.name;
+        if (detailStats) {
+          detailStats.innerHTML = [
+            ['HP', c.hp], ['MP', c.mp], ['STR', c.str], ['AGI', c.agi], ['VIT', c.vit],
+            ['DEX', c.dex], ['LUK', c.luk], ['INT', c.int], ['Range', c.range],
+          ].map(([label, val]) => `<span class="draft-stat-label">${label}</span><span class="draft-stat-value">${val}</span>`).join('');
+        }
+        if (detailSkills) {
+          detailSkills.innerHTML = skills.length
+            ? skills.map((s) => `<div class="draft-detail-skill"><span class="draft-detail-skill-name">${s.name}</span><span class="draft-detail-skill-desc">${s.description || ''}</span></div>`).join('')
+            : '<div class="draft-detail-skill">No skills</div>';
+        }
+        if (selectBtn) {
+          selectBtn.style.display = 'block';
+          selectBtn.disabled = !availableClasses.has(key);
+          selectBtn.onclick = () => {
+            const k = draftSelectedClassKey;
+            if (k && availableClasses.has(k)) pickClass(k);
+          };
+        }
+        draftClasses.querySelectorAll('.draft-class-card').forEach((el) => {
+          el.classList.toggle('draft-class-card-selected', el.dataset.classKey === key);
+        });
+      }
       shuffleArray([...CLASS_KEYS]).forEach((key) => {
         const isAvailable = availableClasses.has(key);
         const c = CLASSES[key];
         const card = document.createElement('button');
         card.type = 'button';
-        card.className = 'draft-class-card' + (isAvailable ? '' : ' draft-class-card-selected');
+        card.dataset.classKey = key;
+        card.className = 'draft-class-card' + (isAvailable ? '' : ' draft-class-card-unavailable') + (draftSelectedClassKey === key ? ' draft-class-card-selected' : '');
         card.disabled = !isAvailable;
         card.innerHTML = `
           <img class="draft-class-card-image" src="${CLASS_IMAGES[key] || ''}" alt="${c.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.background='#21262d';this.onerror=null" />
           <div class="draft-class-card-body">
             <div class="draft-class-card-name">${c.name}</div>
-            <div class="draft-class-card-stats">
-              <span class="draft-stat-label">HP</span><span class="draft-stat-value">${c.hp}</span>
-              <span class="draft-stat-label">MP</span><span class="draft-stat-value">${c.mp}</span>
-              <span class="draft-stat-label">STR</span><span class="draft-stat-value">${c.str}</span>
-              <span class="draft-stat-label">AGI</span><span class="draft-stat-value">${c.agi}</span>
-              <span class="draft-stat-label">VIT</span><span class="draft-stat-value">${c.vit}</span>
-              <span class="draft-stat-label">DEX</span><span class="draft-stat-value">${c.dex}</span>
-              <span class="draft-stat-label">LUK</span><span class="draft-stat-value">${c.luk}</span>
-              <span class="draft-stat-label">INT</span><span class="draft-stat-value">${c.int}</span>
-              <span class="draft-stat-label">Range</span><span class="draft-stat-value">${c.range}</span>
-            </div>
           </div>
         `;
-        if (isAvailable) card.addEventListener('click', () => pickClass(key));
+        if (isAvailable) card.addEventListener('click', () => { draftSelectedClassKey = key; updateDraftDetailCard(); });
         draftClasses.appendChild(card);
       });
+      updateDraftDetailCard();
     } else {
       draftTitle.textContent = `${getPlayerLabel(p)} is picking a class`;
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
+      const detailPlaceholder = document.getElementById('draft-detail-placeholder');
+      const detailImage = document.getElementById('draft-detail-image');
+      const detailContent = document.getElementById('draft-detail-content');
+      const selectBtn = document.getElementById('draft-select-btn');
+      if (detailPlaceholder) detailPlaceholder.style.display = '';
+      if (detailImage) detailImage.style.display = 'none';
+      if (detailContent) detailContent.style.display = 'none';
+      if (selectBtn) selectBtn.style.display = 'none';
     }
     if (gameMode === 'pvcpu' && getCurrentDraftPlayer() === 2) setTimeout(runDraftAI, 500);
     if (gameMode === 'cvcpu') setTimeout(runDraftAI, 500);

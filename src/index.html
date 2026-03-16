@@ -40,9 +40,25 @@
     </div>
   </div>
   <div id="draft-panel">
-    <div id="draft-title">Player 1: Pick a class (1/5)</div>
-    <div id="draft-message"></div>
-    <div id="draft-classes"></div>
+    <div id="draft-header">
+      <div id="draft-title">Player 1: Pick a class (1/5)</div>
+      <div id="draft-message"></div>
+    </div>
+    <div id="draft-body">
+      <div id="draft-detail">
+        <div id="draft-detail-card" class="draft-detail-card">
+          <div id="draft-detail-placeholder" class="draft-detail-placeholder">Click a class to view details</div>
+          <img id="draft-detail-image" class="draft-detail-image" src="" alt="" referrerpolicy="no-referrer" style="display: none;" />
+          <div id="draft-detail-content" class="draft-detail-content" style="display: none;">
+            <div id="draft-detail-name" class="draft-detail-name"></div>
+            <div id="draft-detail-stats" class="draft-detail-stats"></div>
+            <div id="draft-detail-skills" class="draft-detail-skills"></div>
+          </div>
+          <button type="button" id="draft-select-btn" class="draft-select-btn" style="display: none;">Select</button>
+        </div>
+      </div>
+      <div id="draft-classes"></div>
+    </div>
   </div>
   <div id="draft-placement-card" style="display: none;"></div>
   <div id="unit-preview-card" class="player-1">
