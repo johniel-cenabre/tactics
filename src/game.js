@@ -222,8 +222,8 @@ const CLASS_SKILLS = {
     { name: 'Chakra', description: 'Heal HP for both ally and self.', cost: 8, target: 'ally', range: 4, level: 3, effectKey: 'chakra' },
   ],
   ghoul: [
-    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 2, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
-    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 3, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
+    { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
+    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
   ],
   lancer: [
     { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 2 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
