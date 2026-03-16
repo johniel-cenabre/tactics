@@ -129,7 +129,10 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   border: 1px solid rgba(248, 81, 73, 0.6);
   border-radius: 8px;
 }
-#turn-menu.low-hp .stat-val-hp { color: #f85149; }
+#turn-menu.low-hp .unit-info .unit-stats .stat-val-hp { color: #f85149; }
+#turn-menu .unit-info .unit-stats .stat-val-poison,
+#turn-menu .unit-info .unit-stats .stat-val-debuff { color: #f85149; }
+#turn-menu .unit-info .unit-stats .stat-val-buff { color: #3fb950; }
 #turn-menu .menu-actions {
   display: flex;
   align-items: center;
@@ -503,7 +506,10 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   animation: low-hp-pulse 1.2s ease-in-out infinite;
   border-color: rgba(248, 81, 73, 0.6);
 }
-#unit-preview-card.low-hp .stat-val-hp { color: #f85149; }
+#unit-preview-card.low-hp .unit-preview-stats .stat-val-hp { color: #f85149; }
+#unit-preview-card .unit-preview-stats .stat-val-poison,
+#unit-preview-card .unit-preview-stats .stat-val-debuff { color: #f85149; }
+#unit-preview-card .unit-preview-stats .stat-val-buff { color: #3fb950; }
 #combat-text-layer {
   position: absolute;
   left: 0;

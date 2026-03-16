@@ -258,8 +258,8 @@ const CLASS_SKILLS = {
     { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 2 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
   ],
   paladin: [
-    { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 3, effectKey: 'sacrifice' },
-    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 2, effectKey: 'judgement' },
+    { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 2, effectKey: 'sacrifice' },
+    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement' },
   ],
   exorcist: [
     { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
@@ -288,6 +288,16 @@ function getEffectiveStat(unit, key) {
   const buff = unit.tempBuff && unit.tempBuff[key] != null ? unit.tempBuff[key] : 0;
   const debuff = unit.tempDebuff && unit.tempDebuff[key] != null ? unit.tempDebuff[key] : 0;
   return base + buff - debuff;
+}
+
+function formatStatWithBuffs(unit, key) {
+  const base = unit[key] != null ? unit[key] : 0;
+  const buff = unit.tempBuff && unit.tempBuff[key] != null ? unit.tempBuff[key] : 0;
+  const debuff = unit.tempDebuff && unit.tempDebuff[key] != null ? unit.tempDebuff[key] : 0;
+  let html = String(base);
+  if (buff > 0) html += ` <span class="stat-val-buff">+${buff}</span>`;
+  if (debuff > 0) html += ` <span class="stat-val-debuff">-${debuff}</span>`;
+  return html;
 }
 
 function applySkillEffect(effectKey, unit, target, ctx) {
@@ -2052,16 +2062,23 @@ function main() {
     imgEl.alt = unit.name;
     nameEl.textContent = unit.name;
     metaEl.textContent = `Lv.${unit.level} ${unit.class} — ${getPlayerLabel(unit.player)}`;
-    statsEl.innerHTML = [
-      ['HP', `${unit.hp}/${unit.maxHp}`],
-      ['MP', `${unit.mp}/${unit.maxMp}`],
-      ['STR', getEffectiveStat(unit, 'str')],
-      ['AGI', getEffectiveStat(unit, 'agi')],
-      ['VIT', getEffectiveStat(unit, 'vit')],
-      ['DEX', getEffectiveStat(unit, 'dex')],
-      ['LUK', getEffectiveStat(unit, 'luk')],
-      ['INT', getEffectiveStat(unit, 'int')],
-    ].map(([label, val]) => `<span class="stat-label">${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
+    const statRows = [
+      ['HP', `${unit.hp}/${unit.maxHp}`, 'stat-val-hp'],
+      ['MP', `${unit.mp}/${unit.maxMp}`, ''],
+      ['STR', formatStatWithBuffs(unit, 'str'), ''],
+      ['AGI', formatStatWithBuffs(unit, 'agi'), ''],
+      ['VIT', formatStatWithBuffs(unit, 'vit'), ''],
+      ['DEX', formatStatWithBuffs(unit, 'dex'), ''],
+      ['LUK', formatStatWithBuffs(unit, 'luk'), ''],
+      ['INT', formatStatWithBuffs(unit, 'int'), ''],
+    ];
+    if (unit.tempDebuff && unit.tempDebuff.poison != null) {
+      statRows.push(['Poison', `${unit.tempDebuff.poison} dmg/turn`, 'stat-val-poison']);
+    }
+    statsEl.innerHTML = statRows.map(([label, val, extraClass]) => {
+      const cls = extraClass ? ` ${extraClass}` : '';
+      return `<span class="stat-label">${label}</span><span class="stat-val${cls}">${val}</span>`;
+    }).join('');
     const lowHp = unit.maxHp > 0 && (unit.hp / unit.maxHp) < 0.3;
     card.classList.toggle('low-hp', lowHp);
     card.style.display = 'block';
@@ -2489,6 +2506,8 @@ function main() {
       draftPanel.style.display = 'flex';
     }
     const p = getCurrentDraftPlayer();
+    const isMyDraftTurn = gameMode !== 'online' || p === localPlayerNumber;
+    if (isMyDraftTurn) {
       draftTitle.textContent = `${getPlayerLabel(p)}: Pick a class (${getCurrentPlayerPickCount()}/${draftPicksPerPlayer})`;
       draftMessage.textContent = '';
       draftClasses.innerHTML = '';
@@ -2520,6 +2539,12 @@ function main() {
         if (isAvailable) card.addEventListener('click', () => pickClass(key));
         draftClasses.appendChild(card);
       });
+    } else {
+      draftTitle.textContent = `${getPlayerLabel(p)} is picking a class`;
+      draftMessage.textContent = '';
+      draftClasses.innerHTML = '';
+      turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
+    }
     if (gameMode === 'pvcpu' && getCurrentDraftPlayer() === 2) setTimeout(runDraftAI, 500);
     if (gameMode === 'cvcpu') setTimeout(runDraftAI, 500);
   }
@@ -2596,10 +2621,13 @@ function main() {
     const draftMessage = document.getElementById('draft-message');
     const draftClasses = document.getElementById('draft-classes');
     const turnEl = document.getElementById('turn-player');
+    const nextIsMyDraftTurn = gameMode !== 'online' || nextP === localPlayerNumber;
     if (draftPanel && draftTitle && draftClasses && turnEl) {
       draftPanel.style.display = 'flex';
-      draftTitle.textContent = `${getPlayerLabel(nextP)}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`;
-      if (draftMessage) draftMessage.textContent = 'Get ready…';
+      draftTitle.textContent = nextIsMyDraftTurn
+        ? `${getPlayerLabel(nextP)}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`
+        : `${getPlayerLabel(nextP)} is picking a class`;
+      if (draftMessage) draftMessage.textContent = nextIsMyDraftTurn ? 'Get ready…' : '';
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(nextP)} — pick a class`;
     }
@@ -2641,7 +2669,9 @@ function main() {
     if (phase === 'playing' && initiativeOrder.length > 0) {
       const currentUid = initiativeOrder[currentTurnIndex];
       const currentUnitAlive = units.find((u) => u.id === currentUid && u.hp > 0);
-      if (currentUnitAlive && (selectedUnitId == null || !units.find((u) => u.id === selectedUnitId && u.hp > 0))) {
+      if (gameMode === 'online' && currentUnitAlive && currentUnitAlive.player !== localPlayerNumber) {
+        selectedUnitId = null;
+      } else if (currentUnitAlive && (selectedUnitId == null || !units.find((u) => u.id === selectedUnitId && u.hp > 0))) {
         selectedUnitId = currentUid;
       }
     }
@@ -2658,16 +2688,23 @@ function main() {
         unitLevelClassEl.textContent = `Lv.${u.level} ${u.class}`;
         unitClassImageEl.src = CLASS_IMAGES[u.class] || '';
         unitClassImageEl.alt = u.name;
-        unitStatsEl.innerHTML = [
-          ['HP', `${u.hp}/${u.maxHp}`],
-          ['MP', `${u.mp}/${u.maxMp}`],
-          ['STR', getEffectiveStat(u, 'str')],
-          ['AGI', getEffectiveStat(u, 'agi')],
-          ['VIT', getEffectiveStat(u, 'vit')],
-          ['DEX', getEffectiveStat(u, 'dex')],
-          ['LUK', getEffectiveStat(u, 'luk')],
-          ['INT', getEffectiveStat(u, 'int')],
-        ].map(([label, val]) => `<span>${label}</span><span class="stat-val${label === 'HP' ? ' stat-val-hp' : ''}">${val}</span>`).join('');
+        const statRows = [
+          ['HP', `${u.hp}/${u.maxHp}`, 'stat-val-hp'],
+          ['MP', `${u.mp}/${u.maxMp}`, ''],
+          ['STR', formatStatWithBuffs(u, 'str'), ''],
+          ['AGI', formatStatWithBuffs(u, 'agi'), ''],
+          ['VIT', formatStatWithBuffs(u, 'vit'), ''],
+          ['DEX', formatStatWithBuffs(u, 'dex'), ''],
+          ['LUK', formatStatWithBuffs(u, 'luk'), ''],
+          ['INT', formatStatWithBuffs(u, 'int'), ''],
+        ];
+        if (u.tempDebuff && u.tempDebuff.poison != null) {
+          statRows.push(['Poison', `${u.tempDebuff.poison} dmg/turn`, 'stat-val-poison']);
+        }
+        unitStatsEl.innerHTML = statRows.map(([label, val, extraClass]) => {
+          const cls = extraClass ? ` ${extraClass}` : '';
+          return `<span>${label}</span><span class="stat-val${cls}">${val}</span>`;
+        }).join('');
       } else {
         turnMenu.classList.remove('low-hp', 'level-2', 'level-3');
         unitInfo.classList.add('no-unit');
@@ -2711,10 +2748,10 @@ function main() {
       btnAttack.disabled = hasAttacked;
       const currentUid = initiativeOrder.length ? initiativeOrder[currentTurnIndex] : null;
       const currentUnit = currentUid ? units.find((u) => u.id === currentUid && u.hp > 0) : null;
-      const isHumanTurn = gameMode !== 'cvcpu' && (gameMode !== 'pvcpu' || currentPlayer === 1);
+      const isHumanTurn = gameMode !== 'cvcpu' && (gameMode !== 'pvcpu' || currentPlayer === 1) && (gameMode !== 'online' || currentPlayer === localPlayerNumber);
       const availableSkills = isHumanTurn && currentUnit && !hasAttacked ? getAvailableSkills(currentUnit) : [];
       btnSkill.disabled = hasAttacked || !isHumanTurn || availableSkills.length === 0;
-      if (btnEnd) btnEnd.disabled = false;
+      if (btnEnd) btnEnd.disabled = gameMode === 'online' && currentPlayer !== localPlayerNumber;
     }
     if (phase === 'playing') {
       const turnNum = Math.min(turnCount + 1, maxTurns);
@@ -2741,8 +2778,11 @@ function main() {
   }
 
   function endTurn() {
-    if (gameMode === 'online' && currentPlayer === localPlayerNumber && typeof sendOnlineMessage === 'function') {
-      sendOnlineMessage({ type: 'endTurn' });
+    if (gameMode === 'online' && currentPlayer === localPlayerNumber && typeof sendOrQueueOnlineMessage === 'function') {
+      const uid = initiativeOrder[currentTurnIndex];
+      const mesh = unitMeshes.get(uid);
+      const facingAngle = mesh != null ? mesh.rotation.y : undefined;
+      sendOrQueueOnlineMessage({ type: 'endTurn', unitId: uid, facingAngle });
     }
     requestRender();
     hideUnitPreviewCard();
@@ -2836,6 +2876,11 @@ function main() {
     if (isUnitMoving) return;
     if (hasAttacked) return;
     if (phase !== 'playing' || initiativeOrder.length === 0) return;
+    if (gameMode === 'online') {
+      const uid = initiativeOrder[currentTurnIndex];
+      const unit = units.find((u) => u.id === uid);
+      if (!unit || unit.player !== localPlayerNumber) return;
+    }
     hideUnitPreviewCard();
     const uid = initiativeOrder[currentTurnIndex];
     const unit = units.find((u) => u.id === uid);
@@ -2860,6 +2905,7 @@ function main() {
     const uid = initiativeOrder[currentTurnIndex];
     const unit = uid ? units.find((u) => u.id === uid && u.hp > 0) : null;
     if (!unit || unit.player !== currentPlayer) return;
+    if (gameMode === 'online' && unit.player !== localPlayerNumber) return;
     let overlay = document.getElementById('skill-list-overlay');
     const btnSkill = document.getElementById('btn-skill');
     if (!btnSkill) return;
@@ -2910,7 +2956,8 @@ function main() {
               updateTurnUI,
             };
             if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
-              sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
+              sendOnlineMessage({ type: 'requestRender' });
+              sendOrQueueOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
             }
             executeSkillWithProjectile(unit, unit, skill, ctx, () => {
               clearHighlights();
@@ -2936,7 +2983,8 @@ function main() {
                 updateTurnUI,
               };
               if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
-                sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
+                sendOnlineMessage({ type: 'requestRender' });
+                sendOrQueueOnlineMessage({ type: 'skill', unitId: unit.id, targetId: unit.id, effectKey: skill.effectKey });
               }
               executeSkillWithProjectile(unit, unit, skill, ctx, () => {
                 clearHighlights();
@@ -2980,6 +3028,7 @@ function main() {
     const uid = initiativeOrder[currentTurnIndex];
     const unit = units.find((u) => u.id === uid);
     if (!unit || unit.hp <= 0) return;
+    if (gameMode === 'online' && unit.player !== localPlayerNumber) return;
     isChoosingFacing = true;
     selectedUnitId = null;
     isAttackMode = false;
@@ -3270,6 +3319,11 @@ function main() {
   }
 
   async function createOfferBlob(playerName, mapSeed, mapMode) {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+      dataChannel = null;
+    }
     const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     const candidates = [];
     pc.addEventListener('icecandidate', (e) => {
@@ -3321,7 +3375,18 @@ function main() {
 
   async function applyAnswerBlob(answerBlob) {
     const answer = JSON.parse(answerBlob);
-    if (!peerConnection) return;
+    if (!peerConnection) {
+      showOnlineError('Create a game first, then paste your friend\'s reply.');
+      return;
+    }
+    const state = peerConnection.signalingState;
+    if (state === 'stable') {
+      return;
+    }
+    if (state !== 'have-local-offer') {
+      showOnlineError('Wrong step: create a game first and send the code, then paste the reply.');
+      return;
+    }
     await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
     if (answer.candidates && answer.candidates.length) {
       for (const c of answer.candidates) {
@@ -3331,6 +3396,52 @@ function main() {
   }
 
   let lastAppliedSeq = 0;
+  let pendingRemoteActionCount = 0;
+  const onlineMessageQueue = [];
+  let localMoveInProgress = false;
+  const onlineOutboundQueue = [];
+
+  function onRemoteActionDone() {
+    pendingRemoteActionCount = Math.max(0, pendingRemoteActionCount - 1);
+    if (pendingRemoteActionCount === 0) processNextOnlineMessage();
+  }
+
+  function processNextOnlineMessage() {
+    while (pendingRemoteActionCount === 0 && onlineMessageQueue.length > 0) {
+      const msg = onlineMessageQueue.shift();
+      if (msg.type === 'move') {
+        applyMoveFromRemote(msg.unitId, msg.toGx, msg.toGy);
+        return;
+      }
+      if (msg.type === 'attack') {
+        applyAttackFromRemote(msg.unitId, msg.targetId, msg.hit, msg.damage);
+        return;
+      }
+      if (msg.type === 'skill') {
+        applySkillFromRemote(msg);
+        return;
+      }
+      if (msg.type === 'endTurn') {
+        if (msg.unitId != null && msg.facingAngle != null) {
+          const mesh = unitMeshes.get(msg.unitId);
+          if (mesh) mesh.rotation.y = msg.facingAngle;
+        }
+        endTurn();
+        return;
+      }
+      if (msg.type === 'unitDeath') {
+        const unit = units.find((u) => u.id === msg.unitId);
+        const killer = msg.killerId != null ? units.find((u) => u.id === msg.killerId) : null;
+        if (unit) {
+          unit.hp = 0;
+          handleUnitDeath(unit, killer, { skipSync: true });
+        }
+        processNextOnlineMessage();
+        return;
+      }
+    }
+  }
+
   function setupDataChannel(dc, isHost) {
     dc.binaryType = 'arraybuffer';
     dc.addEventListener('message', (e) => {
@@ -3356,6 +3467,8 @@ function main() {
     const mapMode = onlineMapMode || 'long';
     playerNames[1] = localName;
     sendOnlineMessage({ type: 'start', mapSeed: seed, mapMode, playerName: localName });
+    hideOnlineConnectOverlay();
+    startDraftPhase();
   }
 
   function handleOnlineMessage(msg, isHost) {
@@ -3381,14 +3494,11 @@ function main() {
       return;
     }
     if (phase === 'playing') {
-      if (msg.type === 'move') {
-        applyMoveFromRemote(msg.unitId, msg.toGx, msg.toGy);
-      } else if (msg.type === 'attack') {
-        applyAttackFromRemote(msg.unitId, msg.targetId, msg.hit, msg.damage);
-      } else if (msg.type === 'skill') {
-        applySkillFromRemote(msg);
-      } else if (msg.type === 'endTurn') {
-        endTurn();
+      if (msg.type === 'move' || msg.type === 'attack' || msg.type === 'skill' || msg.type === 'endTurn' || msg.type === 'unitDeath') {
+        onlineMessageQueue.push(msg);
+        processNextOnlineMessage();
+      } else if (msg.type === 'requestRender') {
+        requestRender();
       }
     }
   }
@@ -3401,38 +3511,49 @@ function main() {
     }
   }
 
+  function sendOrQueueOnlineMessage(obj) {
+    if (gameMode === 'online' && localMoveInProgress && (obj.type === 'attack' || obj.type === 'skill' || obj.type === 'endTurn')) {
+      onlineOutboundQueue.push(obj);
+      return;
+    }
+    sendOnlineMessage(obj);
+  }
+
+  function flushOnlineOutboundQueue() {
+    while (onlineOutboundQueue.length > 0) {
+      const obj = onlineOutboundQueue.shift();
+      sendOnlineMessage(obj);
+    }
+  }
+
   function applyMoveFromRemote(unitId, toGx, toGy) {
     const unit = units.find((u) => u.id === unitId);
     if (!unit || unit.hp <= 0) return;
-    performMove(unit, toGx, toGy, () => {});
+    pendingRemoteActionCount++;
+    performMove(unit, toGx, toGy, () => {
+      requestRender();
+      updateTurnUI();
+      onRemoteActionDone();
+    });
   }
 
   function applyAttackFromRemote(unitId, targetId, hit, damage) {
     const unit = units.find((u) => u.id === unitId);
     const target = units.find((u) => u.id === targetId);
     if (!unit || !target || target.hp <= 0) return;
-    hasAttacked = true;
-    selectedUnitId = null;
-    isAttackMode = false;
-    clearHighlights();
-    if (hit && damage != null) {
-      target.hp = Math.max(0, target.hp - damage);
-      showFloatingCombatText(target.x, target.y, String(damage), false);
-      updateUnitSlashVisibility(target);
-      if (target.hp <= 0) handleUnitDeath(target, unit);
-    } else {
-      showFloatingCombatText(target.x, target.y, 'MISS', true);
-    }
-    setTimeout(() => {
-      if (hasMoved) endTurn();
-      else updateTurnUI();
-    }, 400);
+    pendingRemoteActionCount++;
+    performAttack(unit, target, hit, damage, () => {
+      requestRender();
+      updateTurnUI();
+      onRemoteActionDone();
+    });
   }
 
   function applySkillFromRemote(msg) {
     const unit = units.find((u) => u.id === msg.unitId);
     const target = msg.targetId != null ? units.find((u) => u.id === msg.targetId) : null;
     if (!unit) return;
+    pendingRemoteActionCount++;
     if (msg.effectKey && unit.mp >= (CLASS_SKILLS[unit.class] || []).find((s) => s.effectKey === msg.effectKey)?.cost) {
       const skill = (CLASS_SKILLS[unit.class] || []).find((s) => s.effectKey === msg.effectKey);
       if (skill) {
@@ -3470,9 +3591,26 @@ function main() {
         };
         applySkillEffect(msg.effectKey, unit, target, ctx);
         if (target) updateUnitSlashVisibility(target);
+        const isBuff = skill.target === 'self' || skill.target === 'ally';
+        const buffTarget = isBuff ? (skill.target === 'self' ? unit : target) : null;
+        if (buffTarget) {
+          playBuffAnimation(buffTarget, () => {
+            requestRender();
+            updateTurnUI();
+            onRemoteActionDone();
+          });
+        } else {
+          requestRender();
+          setTimeout(() => { requestRender(); updateTurnUI(); onRemoteActionDone(); }, 400);
+        }
+      } else {
+        requestRender();
+        setTimeout(() => { requestRender(); updateTurnUI(); onRemoteActionDone(); }, 400);
       }
+    } else {
+      requestRender();
+      setTimeout(() => { requestRender(); updateTurnUI(); onRemoteActionDone(); }, 400);
     }
-    setTimeout(() => { updateTurnUI(); }, 400);
   }
 
   function startSelectedMode() {
@@ -3769,25 +3907,35 @@ function main() {
     animateStep();
   }
 
-  function performAttack(unit, target) {
-    const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
-    const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
-    const isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
+  function performAttack(unit, target, overrideHit, overrideDamage, onDone) {
+    const isReplay = overrideHit !== undefined;
+    let isHit;
     let damage = 0;
-    if (isHit) {
-      const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.2 + getEffectiveStat(unit, 'int') * 0.1) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.2);
-      damage = Math.max(1, Math.floor(rawDamage));
+    if (isReplay) {
+      isHit = overrideHit;
+      damage = (overrideDamage != null && overrideDamage > 0) ? overrideDamage : 0;
+    } else {
+      if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+        sendOnlineMessage({ type: 'requestRender' });
+      }
+      const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
+      const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
+      isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
+      if (isHit) {
+        const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.2 + getEffectiveStat(unit, 'int') * 0.1) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.2);
+        damage = Math.max(1, Math.floor(rawDamage));
+      }
     }
     hasAttacked = true;
     selectedUnitId = null;
     isAttackMode = false;
     clearHighlights();
 
-    if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
-      sendOnlineMessage({ type: 'attack', unitId: unit.id, targetId: target.id, hit: isHit, damage: isHit ? damage : undefined });
+    if (!isReplay && gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOrQueueOnlineMessage === 'function') {
+      sendOrQueueOnlineMessage({ type: 'attack', unitId: unit.id, targetId: target.id, hit: isHit, damage: isHit ? damage : undefined });
     }
 
-    console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, isHit ? `${damage} dmg` : 'MISS', `| ${target.name} HP ${target.hp} → ${Math.max(0, target.hp - damage)}/${target.maxHp}`);
+    if (!isReplay) console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, isHit ? `${damage} dmg` : 'MISS', `| ${target.name} HP ${target.hp} → ${Math.max(0, target.hp - damage)}/${target.maxHp}`);
 
     const mesh = unitMeshes.get(unit.id);
     if (!mesh || !mesh.userData.rightArm) {
@@ -3802,8 +3950,11 @@ function main() {
       }
       setTimeout(() => {
         isUnitMoving = false;
-        if (hasMoved) endTurn();
-        else updateTurnUI();
+        if (onDone) onDone();
+        if (!isReplay) {
+          if (hasMoved) endTurn();
+          else updateTurnUI();
+        }
       }, 400);
       return;
     }
@@ -3909,8 +4060,11 @@ function main() {
           if (hitReactDone) {
             renderer.shadowMap.enabled = true;
             isUnitMoving = false;
-            if (hasMoved) setTimeout(() => endTurn(), 400);
-            else setTimeout(() => updateTurnUI(), 400);
+            if (onDone) setTimeout(() => onDone(), 0);
+            if (!isReplay) {
+              if (hasMoved) setTimeout(() => endTurn(), 400);
+              else setTimeout(() => updateTurnUI(), 400);
+            }
           } else {
             requestAnimationFrame(projectileTick);
           }
@@ -4002,8 +4156,11 @@ function main() {
         if (hitReactDone) {
           renderer.shadowMap.enabled = true;
           isUnitMoving = false;
-          if (hasMoved) setTimeout(() => endTurn(), 400);
-          else setTimeout(() => updateTurnUI(), 400);
+          if (onDone) setTimeout(() => onDone(), 0);
+          if (!isReplay) {
+            if (hasMoved) setTimeout(() => endTurn(), 400);
+            else setTimeout(() => updateTurnUI(), 400);
+          }
         } else {
           requestAnimationFrame(attackTick);
         }
@@ -5424,7 +5581,8 @@ function main() {
       };
       const skillTarget = selectedSkill.target === 'self' ? unit : (targetUnit || null);
       if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
-        sendOnlineMessage({ type: 'skill', unitId: unit.id, targetId: skillTarget ? skillTarget.id : undefined, effectKey: selectedSkill.effectKey });
+        sendOnlineMessage({ type: 'requestRender' });
+        sendOrQueueOnlineMessage({ type: 'skill', unitId: unit.id, targetId: skillTarget ? skillTarget.id : undefined, effectKey: selectedSkill.effectKey });
       }
       executeSkillWithProjectile(unit, skillTarget, selectedSkill, ctx, () => {
         clearHighlights();
@@ -5440,6 +5598,7 @@ function main() {
     if (isChoosingFacing) {
       const uid = initiativeOrder[currentTurnIndex];
       const unit = units.find((u) => u.id === uid);
+      if (gameMode === 'online' && unit && unit.player !== localPlayerNumber) return;
       const mesh = unitMeshes.get(uid);
       if (unit && mesh && allowedFacingAngles.length > 0) {
         const unitWorld = worldPos(unit.x, unit.y);
@@ -5456,9 +5615,10 @@ function main() {
     if (selectedUnitId != null && isAttackMode) {
       const u = units.find((x) => x.id === selectedUnitId);
       if (!u || u.player !== currentPlayer) return;
+      if (gameMode === 'online' && u.player !== localPlayerNumber) return;
       const k = gy * world.w + gx;
       const target = units.find((o) => o.x === gx && o.y === gy && o.hp > 0);
-      if (target && target.id === initiativeOrder[currentTurnIndex] && target.player === currentPlayer) {
+      if (target && target.id === initiativeOrder[currentTurnIndex] && target.player === currentPlayer && (gameMode !== 'online' || target.player === localPlayerNumber)) {
         isAttackMode = false;
         selectedUnitId = target.id;
         if (!hasMoved) {
@@ -5473,32 +5633,14 @@ function main() {
       }
       if (!reachable.has(k) || reachable.get(k) === 0) return;
       if (target && target.player !== currentPlayer) {
-        const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
-        const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
-        const isHit = evasionRoll <= getEffectiveStat(u, 'dex');
-        if (isHit) {
-          const rawDamage = (getEffectiveStat(u, 'str') * 0.7 + getEffectiveStat(u, 'dex') * 0.1 + getEffectiveStat(u, 'int') * 0.07) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.1);
-          const damage = Math.max(1, Math.floor(rawDamage));
-          target.hp = Math.max(0, target.hp - damage);
-          showFloatingCombatText(target.x, target.y, String(damage), false);
-          if (target.hp <= 0) handleUnitDeath(target, u);
-          updateUnitSlashVisibility(target);
-        } else {
-          showFloatingCombatText(target.x, target.y, 'MISS', true);
-        }
-        hasAttacked = true;
-        selectedUnitId = null;
-        isAttackMode = false;
-        clearHighlights();
-        if (hasMoved) setTimeout(() => endTurn(), 400);
-        else setTimeout(() => updateTurnUI(), 400);
+        performAttack(u, target);
       }
       return;
     }
 
     const unitAt = units.find((u) => u.x === gx && u.y === gy && u.hp > 0);
     if (unitAt) {
-      if (unitAt.id === initiativeOrder[currentTurnIndex] && unitAt.player === currentPlayer) {
+      if (unitAt.id === initiativeOrder[currentTurnIndex] && unitAt.player === currentPlayer && (gameMode !== 'online' || unitAt.player === localPlayerNumber)) {
         hideUnitPreviewCard();
         selectedUnitId = unitAt.id;
         isAttackMode = false;
@@ -5526,6 +5668,7 @@ function main() {
       if (isAttackMode) return;
       const u = units.find((x) => x.id === selectedUnitId);
       if (!u || u.player !== currentPlayer) return;
+      if (gameMode === 'online' && u.player !== localPlayerNumber) return;
       const k = gy * world.w + gx;
       if (!reachable.has(k) || reachable.get(k) === 0) return;
       const occupied = units.some((o) => o.id !== u.id && o.x === gx && o.y === gy && o.hp > 0);
@@ -5536,6 +5679,10 @@ function main() {
       const path = getPath(world, u.x, u.y, gx, gy, units, u);
       if (!path || path.length <= 1) return;
 
+      if (gameMode === 'online' && u.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+        sendOnlineMessage({ type: 'requestRender' });
+        localMoveInProgress = true;
+      }
       selectedUnitId = null;
       clearHighlights();
       isUnitMoving = true;
@@ -5548,11 +5695,17 @@ function main() {
         if (stepIndex >= path.length) {
           u.x = path[path.length - 1].x;
           u.y = path[path.length - 1].y;
+          tryCollectPowerup(u);
           isUnitMoving = false;
           resetWalkPose(mesh);
           updateUnitTileBorders();
           reachable = new Map();
           hasMoved = true;
+          if (gameMode === 'online' && u.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
+            sendOnlineMessage({ type: 'move', unitId: u.id, toGx: u.x, toGy: u.y });
+            localMoveInProgress = false;
+            flushOnlineOutboundQueue();
+          }
           if (hasAttacked) setTimeout(() => endTurn(), 400);
           else setTimeout(() => updateTurnUI(), 400);
           return;
@@ -5834,7 +5987,10 @@ function main() {
     requestAnimationFrame(tick);
   }
 
-  function handleUnitDeath(unit, killer) {
+  function handleUnitDeath(unit, killer, opts) {
+    if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
+      sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
+    }
     recordClassKill(killer?.class, unit.class);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
