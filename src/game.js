@@ -223,8 +223,8 @@ const CLASS_SKILLS = {
     { name: 'Dominate', description: 'Steal 2 STR and 1 VIT from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 8, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 1, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 7, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 1, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -251,7 +251,7 @@ const CLASS_SKILLS = {
     { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 1 turn.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
   ],
   witch: [
-    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'hex' },
+    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'hex', type: 'spell' },
     { name: 'Drain', description: 'Deal INT-based damage to HP and MP and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
@@ -268,7 +268,7 @@ const CLASS_SKILLS = {
   ],
   paladin: [
     { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 2, effectKey: 'sacrifice' },
-    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement' },
+    { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement', type: 'spell' },
   ],
   exorcist: [
     { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
@@ -291,11 +291,11 @@ const CLASS_SKILLS = {
     { name: 'Concoct', description: 'Deal INT-based damage and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
   ],
   vampire: [
-    { name: 'Gaze', description: 'Reduce target\'s AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze' },
+    { name: 'Gaze', description: 'Reduce target\'s AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze', type: 'spell' },
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
-    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 2 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate' },
+    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 2 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
 };
@@ -4496,7 +4496,7 @@ function main() {
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / SPELL_EXPLOSION_MS);
       const scale = t * (2 - t);
-      mesh.scale.setScalar(scale * 4.5);
+      mesh.scale.setScalar(scale * 7.5);
       mat.opacity = 0.9 * (1 - t);
       if (t < 1) {
         requestAnimationFrame(tick);
