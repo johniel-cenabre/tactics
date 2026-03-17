@@ -544,7 +544,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
           t.x = knock.newGx;
           t.y = knock.newGy;
           if (knock.collisionDamage > 0) {
-            console.log('knockback damage', { damage: knock.collisionDamage });
+            console.log('[KNOCKBACK]', `${knock.collisionDamage} dmg to ${t.name}`);
             ctx.updateUnitPosition(t);
             if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(t);
             applyDamage(t, knock.collisionDamage, false);
@@ -1388,7 +1388,7 @@ function main() {
     const glowMesh = createPowerupTileGlow(colorHex, tile.gx, tile.gy);
     powerupMeshesGroup.add(glowMesh);
     powerups.set(key, { type, mesh, glowMesh });
-    console.log('powerup appeared', { turnsLeft, type, gx: tile.gx, gy: tile.gy });
+    console.log('[POWERUP]', `turnsLeft: ${turnsLeft}, type: ${type}, gx: ${tile.gx}, gy: ${tile.gy}`);
   }
 
   function tryCollectPowerup(unit) {
@@ -3128,7 +3128,7 @@ function main() {
       if (!nextUnit || nextUnit.hp <= 0) break;
       const tempDebuffs = nextUnit.tempDebuff || {};
       const tempDebuffName = TEMP_DEBUFF_DAMAGER.find((name) => !isNaN(tempDebuffs[name]));
-      const tempDebuffValue = tempDebuffs[tempDebuffName];
+      const tempDebuffValue = tempDebuffs[tempDebuffName] || 0;
       if (tempDebuffValue <= 0) break;
       console.log('[DEBUFF]', `${tempDebuffName}: ${tempDebuffValue} to ${nextUnit.name}`);
       nextUnit.hp = Math.max(0, nextUnit.hp - tempDebuffValue);
