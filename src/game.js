@@ -513,7 +513,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'exorcise': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((t.maxHp - t.hp) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((t.maxHp - t.hp) - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
     } break;
     case 'raid': {
@@ -598,7 +598,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'bloodSuck': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       const isHit = applyDamage(t, d, false, true);
       if (isHit) applyDamage(u, d, true);
       showStatChange(t.x, t.y, `-${d} HP`, false);
@@ -2591,9 +2591,9 @@ function main() {
 
     const appearanceClass = deadUnit.class && CLASS_KEYS.includes(deadUnit.class) ? deadUnit.class : 'knight';
     const hairColor = deadUnit.hairColor != null ? deadUnit.hairColor : (CLASS_LOOK[appearanceClass] || CLASS_LOOK.knight).hair;
-    const q = (v) => Math.max(1, Math.floor((v || 0) * 3 / 4));
+    const q = (v) => Math.max(1, Math.floor((v || 0) * 6 / 7));
     const maxHp = q(deadUnit.maxHp);
-    const maxMp = Math.floor((deadUnit.maxMp || 0) * 3 / 4);
+    const maxMp = q(deadUnit.maxMp);
     const stats = {
       name: 'Reanimated ' + deadUnit.name,
       class: appearanceClass,
@@ -3342,9 +3342,11 @@ function main() {
   const modePlayBtn = document.getElementById('mode-play-btn');
   const modeSettingsPvp = document.getElementById('mode-settings-pvp');
   const modeSettingsPvpMap = document.getElementById('mode-settings-pvp-map');
+  const modeSettingsPvpNumUnits = document.getElementById('mode-settings-pvp-num-units');
   const modeSettingsPvpNone = document.getElementById('mode-settings-pvp-none');
   const modeSettingsOptions = document.getElementById('mode-settings-options');
   const pvpMapModeSelect = document.getElementById('pvp-map-mode');
+  const pvpNumUnitsInput = document.getElementById('pvp-num-units');
   const aiDraftSelect = document.getElementById('ai-draft-preference');
   const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
   const cvcpuNumUnitsInput = document.getElementById('cvcpu-num-units');
@@ -3388,6 +3390,11 @@ function main() {
     }
     if (modeSettingsPvp) modeSettingsPvp.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || isStorySlide() || MODES[currentSlideIndex] === 'online') ? '' : 'none';
     if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || MODES[currentSlideIndex] === 'online') ? '' : 'none';
+    if (modeSettingsPvpNumUnits) modeSettingsPvpNumUnits.style.display = MODES[currentSlideIndex] === 'pvp' ? '' : 'none';
+    if (MODES[currentSlideIndex] === 'pvp' && pvpNumUnitsInput) {
+      pvpNumUnitsInput.style.width = '11em';
+      pvpNumUnitsInput.value = String(Math.max(1, Math.min(20, draftPicksPerPlayer)));
+    }
     if (modeSettingsPvpNone) modeSettingsPvpNone.style.display = isStorySlide() ? '' : 'none';
     if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu') ? '' : 'none';
     if (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu' && cvcpuNumUnitsInput) {
@@ -3920,6 +3927,9 @@ function main() {
     if (mode === 'pvp' || mode === 'pvcpu') {
       const mapMode = (pvpMapModeSelect && pvpMapModeSelect.value) || 'long';
       rebuildWorldForPvp(mapMode);
+      if (mode === 'pvp' && pvpNumUnitsInput) {
+        draftPicksPerPlayer = Math.max(1, Math.min(20, parseInt(pvpNumUnitsInput.value, 10) || 7));
+      }
     } else if (mode === 'cvcpu') {
       if (DEV_MODE && cvcpuGridWInput && cvcpuGridHInput && cvcpuCenterPlazaInput) {
         gridW = Math.max(5, Math.min(50, parseInt(cvcpuGridWInput.value, 10) || 21));
