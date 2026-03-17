@@ -50,16 +50,16 @@ const AI_DRAFT_PREFERENCE_OPTIONS = [
   { value: 'random', label: 'Random' },
   { value: 'custom', label: 'Custom order' },
 ];
-/** When preference is 'custom', AI picks first available from this order (class keys). */
-const AI_DRAFT_CUSTOM_ORDER = ['berserker', 'knight', 'lancer', 'werewolf', 'samurai', 'ninja', 'assassin', 'ghoul', 'monk', 'hunter', 'mage', 'witch', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist'];
+/** When preference is 'custom', AI picks first available from this order (class keys). Filled after CLASS_KEYS. */
+let AI_DRAFT_CUSTOM_ORDER = [];
 
 /** Role buckets for balanced draft: each class appears in at most one. */
 const BALANCED_ROLES = {
   tank: ['knight', 'berserker', 'werewolf', 'ghoul'],
-  melee: ['assassin', 'ninja', 'samurai', 'bandit', 'lancer'],
+  melee: ['samurai', 'assassin', 'ninja', 'bandit', 'lancer'],
   support: ['paladin', 'monk', 'blacksmith', 'exorcist'],
-  ranged: ['hunter', 'ranger', 'alchemist'],
-  caster: ['mage', 'witch'],
+  ranged: ['ranger', 'hunter', 'alchemist'],
+  caster: ['mage', 'witch', 'vampire', 'necromancer'],
 };
 /** Target count per role: computed from lineup size (see getBalancedTargets). */
 const BALANCED_RATIOS = { tank: 2, melee: 2, support: 1, ranged: 1, caster: 1 };
@@ -97,7 +97,9 @@ const TileType = {
   CENTER: 7,
 };
 
-const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist'];
+const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist', 'vampire', 'necromancer'];
+
+AI_DRAFT_CUSTOM_ORDER = [...CLASS_KEYS];
 
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -123,9 +125,12 @@ const CLASSES = {
   paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
   exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 21, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
   bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 20, mp: 5,  maxMp: 5,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
-  ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 4,  range: 5 },
+  ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 6,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 22, maxHp: 22, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
+  vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 15, maxMp: 15, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 9,  range: 1 },
+  necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 17, maxMp: 17, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 5,  int: 15, range: 1 },
+  // barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 29, maxHp: 29, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 12, dex: 6,  luk: 3,  int: 3,  range: 1 },
 };
 
 const CLASS_LOOK = {
@@ -147,6 +152,8 @@ const CLASS_LOOK = {
   ranger:     { primary: 0xFFFAFA, secondary: 0xA68613, hair: 0xf4ae00, cape: 0xADFC6C, belt: 0xA68613 },
   blacksmith: { primary: 0xD3B683, secondary: 0x964B00, hair: 0xb27a01, apron: 0x964B00 },
   alchemist:  { primary: 0xFF69B4, secondary: 0xAA336A, hair: 0xFF007F, cape: 0x87CEEB },
+  vampire:    { primary: 0xFEE3D4, secondary: 0xFEE3D4, hair: 0x131312, cape: 0x131312, apron: 0x131312 },
+  necromancer:{ primary: 0x062e24, secondary: 0x062e24, hair: 0x71706E, cape: 0x062e24, belt: 0xAD8621 },
 };
 
 const CLASS_IMAGES = {
@@ -168,6 +175,8 @@ const CLASS_IMAGES = {
   ranger:     'https://i.redd.it/2nfikbmqpwoa1.jpg',
   blacksmith: 'https://images-ng.pixai.art/images/orig/489d970a-890e-4523-8f99-c0ba2d6bfeae',
   alchemist:  'https://pics.craiyon.com/2023-07-11/ddbb35d3d2614541a9ad13181838257d.webp',
+  vampire:    'https://files.idyllic.app/files/static/2567599?width=256&optimizer=image',
+  necromancer:'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/c77f367a-4886-467a-b509-a194cf9a6aca/dbq4hoj-c2811e28-2314-49ac-9c57-b2f7ab1ee170.jpg/v1/fill/w_1024,h_1434,q_75,strp/necromancer_by_johnathanchong_dbq4hoj-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTQzNCIsInBhdGgiOiIvZi9jNzdmMzY3YS00ODg2LTQ2N2EtYjUwOS1hMTk0Y2Y5YTZhY2EvZGJxNGhvai1jMjgxMWUyOC0yMzE0LTQ5YWMtOWM1Ny1iMmY3YWIxZWUxNzAuanBnIiwid2lkdGgiOiI8PTEwMjQifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.vBO5eVep2-eoiZnpDxMvlWBsJ0_zfdGT_IAaPdqEv2k',
 };
 
 const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
@@ -243,7 +252,7 @@ const CLASS_SKILLS = {
   ],
   witch: [
     { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'hex' },
-    { name: 'Drain', description: 'Deal INT-based damage to enemy and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
+    { name: 'Drain', description: 'Deal INT-based damage to HP and MP and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
     { name: 'Blind', description: 'Steal 1 DEX from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'blind' },
@@ -280,6 +289,14 @@ const CLASS_SKILLS = {
   alchemist: [
     { name: 'Poison', description: 'Poison enemy for 2 turns.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'poison' },
     { name: 'Concoct', description: 'Deal INT-based damage and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
+  ],
+  vampire: [
+    { name: 'Gaze', description: 'Reduce target\'s AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze' },
+    { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
+  ],
+  necromancer: [
+    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 1 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate' },
+    { name: 'Reanimate', description: 'Resurrect dead unit into a skeleton', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
 };
 
@@ -437,9 +454,12 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false, true);
-      applyDamage(u, d, true);
+      const dHp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const dMp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.2) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, dHp, false, true);
+      applyDamage(u, dMp, true);
+      showStatChange(t.x, t.y, `-${dMp} MP`, false);
+      showStatChange(u.x, u.y, `+${dMp} MP`, true);
     } break;
     case 'blind': {
       if (!t) break;
@@ -569,6 +589,44 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const lukVal = Math.max(1, Math.floor(d * 0.5));
       u.luk = Math.max(1, (u.luk || 0) + lukVal);
       showStatChange(u.x, u.y, `+${lukVal} LUK`, true);
+    } break;
+    case 'gaze': {
+      if (!t) break;
+      const dVal = 1;
+      t.tempDebuff = { agi: dVal, vit: dVal, duration: 4 };
+      showStatChange(t.x, t.y, `-${dVal} AGI, -${dVal} VIT`, false);
+    } break;
+    case 'bloodSuck': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const isHit = applyDamage(t, d, false, true);
+      if (isHit) applyDamage(u, d, true);
+      showStatChange(t.x, t.y, `-${d} HP`, false);
+      showStatChange(u.x, u.y, `+${d} HP`, true);
+    } break;
+    case 'debilitate': {
+      if (!t) break;
+      const dHp = 2, dVit = 1;
+      t.tempDebuff = { hp: dHp, vit: dVit, duration: 3 };
+      showStatChange(t.x, t.y, `-${dHp} HP, -${dVit} VIT`, false);
+    } break;
+    case 'reanimate': {
+      if (!ctx.units || !ctx.reanimateDeadUnit) break;
+      const deadUnits = ctx.units.filter((unit) => unit.hp <= 0);
+      if (deadUnits.length === 0) break;
+      const deadAllies = deadUnits.filter((unit) => unit.player === u.player);
+      const toReanimate = deadAllies.length > 0
+        ? deadAllies.reduce((nearest, d) => {
+            const distNearest = Math.abs(nearest.x - u.x) + Math.abs(nearest.y - u.y);
+            const distD = Math.abs(d.x - u.x) + Math.abs(d.y - u.y);
+            return distD < distNearest ? d : nearest;
+          })
+        : deadUnits.reduce((nearest, d) => {
+            const distNearest = Math.abs(nearest.x - u.x) + Math.abs(nearest.y - u.y);
+            const distD = Math.abs(d.x - u.x) + Math.abs(d.y - u.y);
+            return distD < distNearest ? d : nearest;
+          });
+      ctx.reanimateDeadUnit(u, toReanimate);
     } break;
     default: break;
   }
@@ -1834,6 +1892,23 @@ function main() {
     mesh.userData.slashMark.visible = unit.maxHp > 0 && unit.hp < unit.maxHp && unit.hp > 0;
   }
 
+  /** Make a unit mesh look dull and grayscale (e.g. for reanimated skeleton). */
+  function makeMeshGrayscale(mesh) {
+    const DULL = 0.55;
+    mesh.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const mat = child.material;
+      if (mat.color) {
+        const r = mat.color.r;
+        const g = mat.color.g;
+        const b = mat.color.b;
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const gray = Math.max(0, Math.min(1, luminance * DULL));
+        mat.color.setRGB(gray, gray, gray);
+      }
+    });
+  }
+
   const LOW_HP_VISUAL_THRESHOLD = 0.35;
   function updateUnitMeshLowHp(mesh, isLowHp) {
     if (!mesh) return;
@@ -1942,6 +2017,10 @@ function main() {
   const SPELL_EXPLOSION_MS = 350;
   const DEATH_ANIMATION_MS = 500;
   const LEVEL_UP_ANIMATION_MS = 600;
+  const SUMMON_GROW_MS = 400;
+  const SUMMON_JUMP_MS = 280;
+  const SUMMON_START_SCALE = 0.2;
+  const SUMMON_JUMP_HEIGHT = 0.18;
   let cameraTweenActive = false;
   const _startTarget = new THREE.Vector3(); 
   const _startPosition = new THREE.Vector3();
@@ -2383,6 +2462,162 @@ function main() {
         return dexB - dexA;
       })
       .map((u) => u.id);
+  }
+
+  /**
+   * Get a valid tile to place a summoned unit: prefer tile in front of summoner, else any walkable unoccupied tile at 1 distance.
+   * @param {object} summoner - unit that is summoning
+   * @returns {{ gx: number, gy: number } | null}
+   */
+  function getSummonPosition(summoner) {
+    const occupied = new Set(units.filter((u) => u.hp > 0).map((u) => u.y * world.w + u.x));
+    const isOccupied = (gx, gy) => occupied.has(gy * world.w + gx);
+    const inBounds = (gx, gy) => gx >= 0 && gx < world.w && gy >= 0 && gy < world.h;
+    const valid = (gx, gy) => inBounds(gx, gy) && isWalkable(world, gx, gy) && !isOccupied(gx, gy);
+
+    const mesh = unitMeshes.get(summoner.id);
+    const angle = mesh != null ? mesh.rotation.y : (summoner.player === 1 ? Math.PI : 0);
+    const frontGx = summoner.x - Math.round(Math.cos(angle));
+    const frontGy = summoner.y + Math.round(Math.sin(angle));
+    if (valid(frontGx, frontGy)) return { gx: frontGx, gy: frontGy };
+
+    const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    for (const [dx, dy] of dirs) {
+      const gx = summoner.x + dx;
+      const gy = summoner.y + dy;
+      if (valid(gx, gy)) return { gx, gy };
+    }
+    return null;
+  }
+
+  /**
+   * Summon a new unit. Summoned unit is placed in front of summoner (or at 1 tile distance if blocked),
+   * or at opts.position if provided (e.g. for reanimate at corpse tile).
+   * Summoned unit is added to turn order by same criteria (AGI/DEX). Summoned units die when summoner dies
+   * and do not count toward win condition.
+   * @param {object} summoner - unit performing the summon
+   * @param {object} stats - stats for the summoned unit: name, class (for appearance), hp, maxHp, mp, maxMp, str, agi, vit, dex, luk, int, range; optional hairColor
+   * @param {Array<object>} [skills] - optional array of skill definitions (same shape as CLASS_SKILLS entries) the summoned unit can use
+   * @param {{ position?: { gx: number, gy: number }, useGrayscaleAppearance?: boolean }} [opts] - optional; position forces placement at (gx, gy); useGrayscaleAppearance makes mesh dull/grayscale
+   * @returns {object | null} the summoned unit, or null if no valid tile
+   */
+  function summonUnit(summoner, stats, skills, opts) {
+    const pos = opts?.position && opts.position.gx != null && opts.position.gy != null
+      ? { gx: opts.position.gx, gy: opts.position.gy }
+      : getSummonPosition(summoner);
+    if (!pos) return null;
+
+    const appearanceClass = stats.class && CLASS_KEYS.includes(stats.class) ? stats.class : 'knight';
+    const hairColor = stats.hairColor != null ? stats.hairColor : (CLASS_LOOK[appearanceClass] || CLASS_LOOK.knight).hair;
+
+    const unit = {
+      id: nextUnitId++,
+      player: summoner.player,
+      x: pos.gx,
+      y: pos.gy,
+      level: stats.level != null ? stats.level : 1,
+      name: stats.name != null ? stats.name : 'Summoned',
+      class: appearanceClass,
+      hairColor,
+      hp: stats.hp != null ? stats.hp : 10,
+      maxHp: stats.maxHp != null ? stats.maxHp : 10,
+      mp: stats.mp != null ? stats.mp : 5,
+      maxMp: stats.maxMp != null ? stats.maxMp : 5,
+      str: stats.str != null ? stats.str : 5,
+      agi: stats.agi != null ? stats.agi : 5,
+      vit: stats.vit != null ? stats.vit : 5,
+      dex: stats.dex != null ? stats.dex : 5,
+      luk: stats.luk != null ? stats.luk : 5,
+      int: stats.int != null ? stats.int : 5,
+      range: stats.range != null ? stats.range : 1,
+      summonedBy: summoner.id,
+    };
+    if (skills != null && Array.isArray(skills) && skills.length > 0) unit.summonedSkills = skills;
+
+    units.push(unit);
+    addUnitToScene(unit);
+    const summonedMesh = unitMeshes.get(unit.id);
+    if (summonedMesh && opts?.useGrayscaleAppearance) makeMeshGrayscale(summonedMesh);
+    if (summonedMesh) {
+      const summonerMesh = unitMeshes.get(summoner.id);
+      summonedMesh.rotation.y = summonerMesh != null ? summonerMesh.rotation.y : (summoner.player === 1 ? Math.PI : 0);
+      summonedMesh.scale.setScalar(SUMMON_START_SCALE);
+      const basePos = worldPos(unit.x, unit.y);
+      const startTime = performance.now();
+      let tickCount = 0;
+      function summonTick(now) {
+        tickCount++;
+        if (tickCount % 2 === 0) requestRender();
+        const elapsed = now - startTime;
+        if (elapsed < SUMMON_GROW_MS) {
+          const t = elapsed / SUMMON_GROW_MS;
+          const easeOut = 1 - (1 - t) * (1 - t);
+          const s = SUMMON_START_SCALE + (1 - SUMMON_START_SCALE) * easeOut;
+          summonedMesh.scale.setScalar(s);
+          requestAnimationFrame(summonTick);
+          return;
+        }
+        const jumpElapsed = elapsed - SUMMON_GROW_MS;
+        if (jumpElapsed < SUMMON_JUMP_MS) {
+          const t = jumpElapsed / SUMMON_JUMP_MS;
+          const jumpT = Math.sin(t * Math.PI);
+          summonedMesh.position.y = basePos.y + SUMMON_JUMP_HEIGHT * jumpT;
+          requestAnimationFrame(summonTick);
+          return;
+        }
+        summonedMesh.scale.setScalar(1);
+        summonedMesh.position.y = basePos.y;
+        requestRender();
+      }
+      requestAnimationFrame(summonTick);
+    }
+
+    initiativeOrder = buildInitiativeOrder();
+    updateUnitTileBorders();
+    if (typeof updateTurnUI === 'function') updateTurnUI();
+    requestRender();
+    return unit;
+  }
+
+  function reanimateDeadUnit(summoner, deadUnit) {
+    const idx = units.indexOf(deadUnit);
+    if (idx === -1) return null;
+    units.splice(idx, 1);
+    const oldMesh = unitMeshes.get(deadUnit.id);
+    if (oldMesh) {
+      scene.remove(oldMesh);
+      unitMeshes.delete(deadUnit.id);
+    }
+
+    const appearanceClass = deadUnit.class && CLASS_KEYS.includes(deadUnit.class) ? deadUnit.class : 'knight';
+    const hairColor = deadUnit.hairColor != null ? deadUnit.hairColor : (CLASS_LOOK[appearanceClass] || CLASS_LOOK.knight).hair;
+    const q = (v) => Math.max(1, Math.floor((v || 0) * 3 / 4));
+    const maxHp = q(deadUnit.maxHp);
+    const maxMp = Math.floor((deadUnit.maxMp || 0) * 3 / 4);
+    const stats = {
+      name: 'Reanimated ' + deadUnit.name,
+      class: appearanceClass,
+      hairColor,
+      level: deadUnit.level,
+      hp: maxHp,
+      maxHp,
+      mp: maxMp,
+      maxMp,
+      str: q(deadUnit.str),
+      agi: q(deadUnit.agi),
+      vit: q(deadUnit.vit),
+      dex: q(deadUnit.dex),
+      luk: q(deadUnit.luk),
+      int: q(deadUnit.int),
+      range: deadUnit.range,
+    };
+    const skills = (deadUnit.summonedSkills && deadUnit.summonedSkills.length > 0)
+      ? deadUnit.summonedSkills.slice()
+      : (CLASS_SKILLS[appearanceClass] || []).slice();
+    return summonUnit(summoner, stats, skills, {
+      position: { gx: deadUnit.x, gy: deadUnit.y },
+      useGrayscaleAppearance: true,
+    });
   }
 
   function endDraftPhase() {
@@ -3004,6 +3239,8 @@ function main() {
               handleUnitDeath,
               updateUnitSlashVisibility,
               updateTurnUI,
+              units,
+              reanimateDeadUnit,
             };
             if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
               sendOnlineMessage({ type: 'requestRender' });
@@ -3031,6 +3268,8 @@ function main() {
                 handleUnitDeath,
                 updateUnitSlashVisibility,
                 updateTurnUI,
+                units,
+                reanimateDeadUnit,
               };
               if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
                 sendOnlineMessage({ type: 'requestRender' });
@@ -3108,6 +3347,7 @@ function main() {
   const pvpMapModeSelect = document.getElementById('pvp-map-mode');
   const aiDraftSelect = document.getElementById('ai-draft-preference');
   const cvcpuNumGamesInput = document.getElementById('cvcpu-num-games');
+  const cvcpuNumUnitsInput = document.getElementById('cvcpu-num-units');
   const cvcpuGridWInput = document.getElementById('cvcpu-grid-w');
   const cvcpuGridHInput = document.getElementById('cvcpu-grid-h');
   const cvcpuCenterPlazaInput = document.getElementById('cvcpu-center-plaza');
@@ -3150,6 +3390,9 @@ function main() {
     if (modeSettingsPvpMap) modeSettingsPvpMap.style.display = (currentSlideIndex === 0 || currentSlideIndex === 1 || MODES[currentSlideIndex] === 'online') ? '' : 'none';
     if (modeSettingsPvpNone) modeSettingsPvpNone.style.display = isStorySlide() ? '' : 'none';
     if (modeSettingsOptions) modeSettingsOptions.style.display = (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu') ? '' : 'none';
+    if (DEV_MODE && MODES[currentSlideIndex] === 'cvcpu' && cvcpuNumUnitsInput) {
+      cvcpuNumUnitsInput.value = String(Math.max(1, Math.min(20, draftPicksPerPlayer)));
+    }
     const playTextEl = modePlayBtn?.querySelector('.mode-play-text');
     if (modePlayBtn && playTextEl) {
       if (isStorySlide()) {
@@ -3616,6 +3859,7 @@ function main() {
           tryCollectPowerup,
           world,
           units,
+          reanimateDeadUnit,
           updateUnitPosition(u) {
             const m = unitMeshes.get(u.id);
             if (m) m.position.copy(worldPos(u.x, u.y));
@@ -3690,6 +3934,9 @@ function main() {
     if (mode === 'cvcpu') {
       cvcpuTotalGames = Math.max(1, parseInt(cvcpuNumGamesInput?.value, 10) || 1);
       cvcpuGamesPlayed = 0;
+      if (cvcpuNumUnitsInput) {
+        draftPicksPerPlayer = Math.max(1, Math.min(20, parseInt(cvcpuNumUnitsInput.value, 10) || 7));
+      }
     }
     if (modeOverlay) modeOverlay.classList.add('hidden');
     startDraftPhase();
@@ -4876,11 +5123,12 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
       const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
-      const DEBUFF_KEYS = new Set(['manaDrain', 'impale', 'poison']);
-      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
+      const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate']);
+      const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'manaDrain', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
+      const SUMMON_KEYS = new Set(['reanimate']);
 
       function getEnemyTargets(skill) {
         const targets = getSkillTargetTiles(unit, skill, units);
@@ -4928,10 +5176,11 @@ function main() {
       let chosen = null;
       let chosenTarget = null;
 
-      if (!hasLowHpEnemyReachable) {
+      const hasKillPotential = hasLowHpEnemyInRange || (!hasMoved && hasLowHpEnemyReachable)
+      if (!hasKillPotential) {
         const HEAL_HP_RATIO_THRESHOLD = 0.5;
         for (const skill of available) {
-          if (skill.disabled) continue;
+          if (skill.disabled || unit.mp < skill.cost) continue;
           if (HEAL_KEYS.has(skill.effectKey)) {
             const targets = getSkillTargetTiles(unit, skill, units);
             const lowHpTargets = targets
@@ -4945,7 +5194,18 @@ function main() {
           }
         }
       }
-      if (!chosen && !hasLowHpEnemyReachable) {
+      if (!chosen && !hasKillPotential) {
+        const deadUnits = units.filter((u) => u.hp <= 0);
+        for (const skill of available) {
+          if (skill.disabled || unit.mp < skill.cost) continue;
+          if (SUMMON_KEYS.has(skill.effectKey) && deadUnits.length > 0) {
+            chosen = skill;
+            chosenTarget = unit;
+            break;
+          }
+        }
+      }
+      if (!chosen && !hasKillPotential) {
         const hasEnemyReachableOrNearby = enemiesInRange.length > 0 || reachableTiles.some((t) => (enemiesInRangeByTile.get(t.gy * world.w + t.gx) || []).length > 0);
         if (hasEnemyReachableOrNearby) {
           const buffSkills = available.filter((s) => !s.disabled && BUFF_KEYS.has(s.effectKey)).sort((a, b) => (b.level || 1) - (a.level || 1));
@@ -4979,7 +5239,7 @@ function main() {
       }
       if (!chosen) {
         for (const skill of available) {
-          if (skill.disabled) continue;
+          if (skill.disabled || unit.mp < skill.cost) continue;
           if (DAMAGE_KEYS.has(skill.effectKey)) {
             if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
             if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
@@ -5002,9 +5262,9 @@ function main() {
           }
         }
       }
-      if (!chosen && !hasLowHpEnemyInRange) {
+      if (!chosen && !hasKillPotential) {
         for (const skill of available) {
-          if (skill.disabled) continue;
+          if (skill.disabled || unit.mp < skill.cost) continue;
           if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
             const toHit = enemyTargets.length > 0 ? enemyTargets.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null) : null;
@@ -5014,9 +5274,9 @@ function main() {
           }
         }
       }
-      if (!chosen && !hasLowHpEnemyInRange) {
+      if (!chosen && !hasKillPotential) {
         for (const skill of available) {
-          if (skill.disabled) continue;
+          if (skill.disabled || unit.mp < skill.cost) continue;
           if (DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
             const notAlreadyDebuffed = enemyTargets.filter((e) => !e.tempDebuff || e.tempDebuff.duration <= 0);
@@ -5363,11 +5623,13 @@ function main() {
   let skillTargetTiles = new Set();
 
   function getAvailableSkills(unit) {
-    if (!unit || !unit.class) return [];
-    if (!CLASS_SKILLS[unit.class]) return [];
-    return CLASS_SKILLS[unit.class].map((s) => ({
+    if (!unit) return [];
+    const skillList = unit.summonedSkills && unit.summonedSkills.length > 0
+      ? unit.summonedSkills
+      : (unit.class && CLASS_SKILLS[unit.class] ? CLASS_SKILLS[unit.class] : []);
+    return skillList.map((s) => ({
       ...s,
-      disabled: s.disabled === true || unit.level < s.level || (s.hpCost && unit.hp < s.hpCost) || (s.cost && unit.mp < s.cost)
+      disabled: s.disabled === true || unit.level < (s.level || 1) || (s.hpCost && unit.hp < s.hpCost) || (s.cost != null && unit.mp < s.cost)
     }));
   }
 
@@ -5383,14 +5645,14 @@ function main() {
       if (o.hp <= 0) continue;
       const d = manhattan(unit.x, unit.y, o.x, o.y);
       if (d > range) continue;
-      if (range > 2 && !hasLineOfSight(world, unit.x, unit.y, o.x, o.y)) continue;
+      if (range >= 2 && !hasLineOfSight(world, unit.x, unit.y, o.x, o.y)) continue;
       if (skill.target === 'enemy' && o.player !== unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
       if (skill.target === 'ally' && o.player === unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
     }
     return out;
   }
 
-  /** All tiles within skill range (for display). For enemy/ally skills with range > 2, respects line of sight. */
+  /** All tiles within skill range (for display). For enemy/ally skills with range >= 2, respects line of sight. */
   function getSkillRangeTiles(unit, skill) {
     const range = skill.range || 0;
     if (skill.target === 'self') return [{ gx: unit.x, gy: unit.y }];
@@ -5399,7 +5661,7 @@ function main() {
     distMap.forEach((d, k) => {
       const gx = k % world.w;
       const gy = (k / world.w) | 0;
-      if (range > 2 && !hasLineOfSight(world, unit.x, unit.y, gx, gy)) return;
+      if (range >= 2 && !hasLineOfSight(world, unit.x, unit.y, gx, gy)) return;
       tiles.push({ gx, gy });
     });
     return tiles;
@@ -5600,6 +5862,7 @@ function main() {
         tryCollectPowerup,
         world,
         units,
+        reanimateDeadUnit,
         updateUnitPosition(unit) {
           const mesh = unitMeshes.get(unit.id);
           if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
@@ -6044,7 +6307,17 @@ function main() {
     recordClassKill(killer?.class, unit.class);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
-      const mesh = unitMeshes.get(unit.id);
+
+    const summonedIds = units.filter((u) => u.summonedBy === unit.id && u.hp > 0).map((u) => u.id);
+    summonedIds.forEach((summonedId) => {
+      const summoned = units.find((u) => u.id === summonedId);
+      if (summoned) {
+        summoned.hp = 0;
+        handleUnitDeath(summoned, null, { skipSync: true });
+      }
+    });
+
+    const mesh = unitMeshes.get(unit.id);
     if (!mesh) {
       updateUnitTileBorders();
       checkGameOver();
@@ -6071,8 +6344,8 @@ function main() {
 
   function checkGameOver() {
     if (phase !== 'playing') return;
-    const p1Alive = units.some((u) => u.player === 1 && u.hp > 0);
-    const p2Alive = units.some((u) => u.player === 2 && u.hp > 0);
+    const p1Alive = units.some((u) => u.player === 1 && u.hp > 0 && !u.summonedBy);
+    const p2Alive = units.some((u) => u.player === 2 && u.hp > 0 && !u.summonedBy);
     if (!p1Alive) {
       showGameOver(2);
     } else if (!p2Alive) {
@@ -6083,8 +6356,8 @@ function main() {
   function endGameByTurnLimit() {
     const centerTiles = getCenterTiles();
     const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
-    const p1OnCenter = units.filter((u) => u.hp > 0 && u.player === 1 && centerKeys.has(u.y * world.w + u.x)).length;
-    const p2OnCenter = units.filter((u) => u.hp > 0 && u.player === 2 && centerKeys.has(u.y * world.w + u.x)).length;
+    const p1OnCenter = units.filter((u) => u.hp > 0 && u.player === 1 && !u.summonedBy && centerKeys.has(u.y * world.w + u.x)).length;
+    const p2OnCenter = units.filter((u) => u.hp > 0 && u.player === 2 && !u.summonedBy && centerKeys.has(u.y * world.w + u.x)).length;
     let winningPlayer = null;
     let title = '';
     if (p1OnCenter > p2OnCenter) {
@@ -6094,8 +6367,8 @@ function main() {
       winningPlayer = 2;
       title = `Time's up! ${getPlayerLabel(2)} wins! (${p2OnCenter} vs ${p1OnCenter} units on center base)`;
     } else {
-      const p1TotalHp = units.filter((u) => u.hp > 0 && u.player === 1).reduce((sum, u) => sum + u.hp, 0);
-      const p2TotalHp = units.filter((u) => u.hp > 0 && u.player === 2).reduce((sum, u) => sum + u.hp, 0);
+      const p1TotalHp = units.filter((u) => u.hp > 0 && u.player === 1 && !u.summonedBy).reduce((sum, u) => sum + u.hp, 0);
+      const p2TotalHp = units.filter((u) => u.hp > 0 && u.player === 2 && !u.summonedBy).reduce((sum, u) => sum + u.hp, 0);
       if (p1TotalHp > p2TotalHp) {
         winningPlayer = 1;
         title = `Time's up! Draw on center — ${getPlayerLabel(1)} wins on total HP (${p1TotalHp} vs ${p2TotalHp})`;
