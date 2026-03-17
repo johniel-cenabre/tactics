@@ -3135,7 +3135,7 @@ function main() {
       showFloatingCombatText(nextUnit.x, nextUnit.y, String(tempDebuffValue), false, tempDebuffName);
       updateUnitSlashVisibility(nextUnit);
       if (nextUnit.hp <= 0) {
-        handleUnitDeath(nextUnitForPoison);
+        handleUnitDeath(nextUnit);
         next = (currentTurnIndex + 1) % n;
         let steps3 = 0;
         while (steps3 < n) {
