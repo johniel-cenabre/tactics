@@ -129,7 +129,7 @@ const CLASSES = {
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 22, maxHp: 22, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
   vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 15, maxMp: 15, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 9,  range: 1 },
-  necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 17, maxMp: 17, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 5,  int: 15, range: 1 },
+  necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 19, maxMp: 19, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 11, int: 15, range: 1 },
   // barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 29, maxHp: 29, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 12, dex: 6,  luk: 3,  int: 3,  range: 1 },
 };
 
@@ -295,8 +295,8 @@ const CLASS_SKILLS = {
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
-    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 1 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate' },
-    { name: 'Reanimate', description: 'Resurrect dead unit into a skeleton', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
+    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 2 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate' },
+    { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
 };
 
@@ -606,9 +606,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'debilitate': {
       if (!t) break;
-      const dHp = 2, dVit = 1;
-      t.tempDebuff = { hp: dHp, vit: dVit, duration: 3 };
-      showStatChange(t.x, t.y, `-${dHp} HP, -${dVit} VIT`, false);
+      const d = 2;
+      t.tempDebuff = { hp: d, vit: d, duration: 3 };
+      showStatChange(t.x, t.y, `-${d} HP, -${d} VIT`, false);
     } break;
     case 'reanimate': {
       if (!ctx.units || !ctx.reanimateDeadUnit) break;
@@ -2116,6 +2116,7 @@ function main() {
 
   let aiDraftPreference = 'balanced';
   let availableClasses = new Set(CLASS_KEYS);
+  let draftClassOrder = [...CLASS_KEYS];
   let draftPickIndex = 0;
   let pendingClassKey = null;
   let draftSelectedClassKey = null;
@@ -2441,6 +2442,7 @@ function main() {
     phase = 'draft';
     draftPickIndex = 0;
     availableClasses = new Set(CLASS_KEYS);
+    draftClassOrder = shuffleArray([...CLASS_KEYS]);
     pendingClassKey = null;
     draftSelectedClassKey = null;
     placementTileKeys.clear();
@@ -2742,6 +2744,8 @@ function main() {
     if (phase === 'draft') {
       draftPanel.style.display = 'flex';
     }
+    const draftDetailEl = document.getElementById('draft-detail');
+    if (draftDetailEl) draftDetailEl.style.display = '';
     const p = getCurrentDraftPlayer();
     const isMyDraftTurn = gameMode !== 'online' || p === localPlayerNumber;
     if (isMyDraftTurn) {
@@ -2798,7 +2802,7 @@ function main() {
           el.classList.toggle('draft-class-card-selected', el.dataset.classKey === key);
         });
       }
-      shuffleArray([...CLASS_KEYS]).forEach((key) => {
+      draftClassOrder.forEach((key) => {
         const isAvailable = availableClasses.has(key);
         const c = CLASSES[key];
         const card = document.createElement('button');
@@ -2904,6 +2908,7 @@ function main() {
     const draftPanel = document.getElementById('draft-panel');
     const draftTitle = document.getElementById('draft-title');
     const draftMessage = document.getElementById('draft-message');
+    const draftDetailElAfter = document.getElementById('draft-detail');
     const draftClasses = document.getElementById('draft-classes');
     const turnEl = document.getElementById('turn-player');
     const nextIsMyDraftTurn = gameMode !== 'online' || nextP === localPlayerNumber;
@@ -2916,6 +2921,7 @@ function main() {
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(nextP)} — pick a class`;
     }
+    if (draftDetailElAfter) draftDetailElAfter.style.display = 'none';
     const DRAFT_AFTER_PLACEMENT_DELAY_MS = 1500;
     setTimeout(updateDraftUI, DRAFT_AFTER_PLACEMENT_DELAY_MS);
   }
@@ -3114,34 +3120,26 @@ function main() {
     const startingNewRound = next === 0;
     currentTurnIndex = next;
 
+    const TEMP_DEBUFF_DAMAGER = ['poison'];
+
+    const nextUid = initiativeOrder[currentTurnIndex];
+    const nextUnit = units.find((u) => u.id === nextUid);
     for (let steps2 = 0; steps2 < n; steps2++) {
-      const nextUid = initiativeOrder[currentTurnIndex];
-      const nextUnitForPoison = units.find((u) => u.id === nextUid);
-      if (!nextUnitForPoison || nextUnitForPoison.hp <= 0) break;
-      const poisonVal = nextUnitForPoison.tempDebuff && nextUnitForPoison.tempDebuff.poison != null ? nextUnitForPoison.tempDebuff.poison : 0;
-      if (poisonVal <= 0) break;
-      console.log('tempDebuff damage', { debuffKey: 'poison', damage: poisonVal });
-      nextUnitForPoison.hp = Math.max(0, nextUnitForPoison.hp - poisonVal);
-      showFloatingCombatText(nextUnitForPoison.x, nextUnitForPoison.y, String(poisonVal), false, 'poison');
-      updateUnitSlashVisibility(nextUnitForPoison);
-      if (nextUnitForPoison.hp <= 0) {
-        handleUnitDeath(nextUnitForPoison);
-        next = (currentTurnIndex + 1) % n;
-        let steps3 = 0;
-        while (steps3 < n) {
-          const uid = initiativeOrder[next];
-          const u = units.find((x) => x.id === uid);
-          if (u && u.hp > 0) break;
-          next = (next + 1) % n;
-          steps3++;
-        }
-        currentTurnIndex = next;
-        continue;
+      if (!nextUnit || nextUnit.hp <= 0) break;
+      const tempDebuffs = nextUnit.tempDebuff || {};
+      const tempDebuffName = TEMP_DEBUFF_DAMAGER.find((name) => !isNaN(tempDebuffs[name]));
+      const tempDebuffValue = tempDebuffs[tempDebuffName];
+      if (tempDebuffValue <= 0) break;
+      console.log('[DEBUFF]', `${tempDebuffName}: ${tempDebuffValue} to ${nextUnit.name}`);
+      nextUnit.hp = Math.max(0, nextUnit.hp - tempDebuffValue);
+      showFloatingCombatText(nextUnit.x, nextUnit.y, String(tempDebuffValue), false, tempDebuffName);
+      updateUnitSlashVisibility(nextUnit);
+      if (nextUnit.hp <= 0) {
+        handleUnitDeath(nextUnit);
+        break;
       }
-      break;
     }
 
-    const nextUnit = units.find((u) => u.id === initiativeOrder[currentTurnIndex]);
     currentPlayer = nextUnit ? nextUnit.player : 1;
     hasMoved = false;
     hasAttacked = false;
