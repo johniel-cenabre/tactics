@@ -279,7 +279,7 @@ const CLASS_SKILLS = {
   ],
   alchemist: [
     { name: 'Poison', description: 'Poison enemy for 2 turns.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'poison' },
-    { name: 'Concoct', description: 'Deal INT-based damage to one enemy and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
+    { name: 'Concoct', description: 'Deal INT-based damage and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
   ],
 };
 
