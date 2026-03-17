@@ -3135,9 +3135,20 @@ function main() {
       showFloatingCombatText(nextUnit.x, nextUnit.y, String(tempDebuffValue), false, tempDebuffName);
       updateUnitSlashVisibility(nextUnit);
       if (nextUnit.hp <= 0) {
-        handleUnitDeath(nextUnit);
-        break;
+        handleUnitDeath(nextUnitForPoison);
+        next = (currentTurnIndex + 1) % n;
+        let steps3 = 0;
+        while (steps3 < n) {
+          const uid = initiativeOrder[next];
+          const u = units.find((x) => x.id === uid);
+          if (u && u.hp > 0) break;
+          next = (next + 1) % n;
+          steps3++;
+        }
+        currentTurnIndex = next;
+        continue;
       }
+      break;
     }
 
     currentPlayer = nextUnit ? nextUnit.player : 1;
