@@ -127,8 +127,8 @@ const CLASSES = {
   bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 20, mp: 5,  maxMp: 5,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 6,  range: 5 },
   blacksmith: { name: 'Blacksmith', gender: 'female', hp: 22, maxHp: 22, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
-  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 12, range: 5 },
-  vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 15, maxMp: 15, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 9,  range: 1 },
+  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 11, range: 5 },
+  vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 15, maxMp: 15, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 12,  range: 1 },
   necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 19, maxMp: 19, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 11, int: 15, range: 1 },
   // barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 29, maxHp: 29, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 12, dex: 6,  luk: 3,  int: 3,  range: 1 },
 };
