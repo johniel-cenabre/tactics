@@ -615,17 +615,12 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const deadUnits = ctx.units.filter((unit) => unit.hp <= 0);
       if (deadUnits.length === 0) break;
       const deadAllies = deadUnits.filter((unit) => unit.player === u.player);
-      const toReanimate = deadAllies.length > 0
-        ? deadAllies.reduce((nearest, d) => {
-            const distNearest = Math.abs(nearest.x - u.x) + Math.abs(nearest.y - u.y);
-            const distD = Math.abs(d.x - u.x) + Math.abs(d.y - u.y);
-            return distD < distNearest ? d : nearest;
-          })
-        : deadUnits.reduce((nearest, d) => {
-            const distNearest = Math.abs(nearest.x - u.x) + Math.abs(nearest.y - u.y);
-            const distD = Math.abs(d.x - u.x) + Math.abs(d.y - u.y);
-            return distD < distNearest ? d : nearest;
-          });
+      const pool = deadAllies.length > 0 ? deadAllies : deadUnits;
+      const toReanimate = pool.reduce((best, d) => {
+        const oBest = best.deathOrder ?? 0;
+        const oD = d.deathOrder ?? 0;
+        return oD >= oBest ? d : best;
+      });
       ctx.reanimateDeadUnit(u, toReanimate);
     } break;
     default: break;
@@ -1421,6 +1416,7 @@ function main() {
 
   const units = [];
   let nextUnitId = 1;
+  let deathOrderSeq = 0;
   const unitMeshes = new Map();
   const unitNoiseBumpMap = createTilingNoiseTexture(64);
   let hw = halfW(world);
@@ -1463,6 +1459,7 @@ function main() {
     unitMeshes.clear();
     units.length = 0;
     nextUnitId = 1;
+    deathOrderSeq = 0;
     powerups.forEach((pu) => {
       powerupMeshesGroup.remove(pu.mesh);
       pu.mesh.geometry.dispose();
@@ -1496,6 +1493,7 @@ function main() {
     unitMeshes.clear();
     units.length = 0;
     nextUnitId = 1;
+    deathOrderSeq = 0;
   }
 
   function nudgeColor(hex, amount) {
@@ -2420,6 +2418,7 @@ function main() {
   }
 
   function startDraftPhase() {
+    deathOrderSeq = 0;
     powerups.forEach((pu) => {
       powerupMeshesGroup.remove(pu.mesh);
       pu.mesh.geometry.dispose();
@@ -6320,6 +6319,7 @@ function main() {
   }
 
   function handleUnitDeath(unit, killer, opts) {
+    unit.deathOrder = ++deathOrderSeq;
     if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
       sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
     }
