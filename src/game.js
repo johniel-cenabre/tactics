@@ -279,7 +279,7 @@ const CLASS_SKILLS = {
     { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
   ],
   ranger: [
-    { name: 'Wind walk', description: 'Gain +1 DEX and +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
+    { name: 'Wind walk', description: 'Gain +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
     { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 7, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
@@ -527,9 +527,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(t, d, false);
     } break;
     case 'windWalk': {
-      const bValDex = 1, bValAgi = 3;
-      u.tempBuff = { dex: bValDex, agi: bValAgi, duration: 3 };
-      showStatChange(u.x, u.y, `+${bValDex} DEX, +${bValAgi} AGI`, true);
+      const bVal = 3;
+      u.tempBuff = { agi: bVal, duration: 3 };
+      showStatChange(u.x, u.y, `+${bVal} AGI`, true);
     } break;
     case 'powerShot': {
       if (!t) break;
