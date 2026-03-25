@@ -2615,10 +2615,14 @@ function main() {
     const skills = (deadUnit.summonedSkills && deadUnit.summonedSkills.length > 0)
       ? deadUnit.summonedSkills.slice()
       : (CLASS_SKILLS[appearanceClass] || []).slice();
-    return summonUnit(summoner, stats, skills, {
-      position: { gx: deadUnit.x, gy: deadUnit.y },
-      useGrayscaleAppearance: true,
-    });
+    const occupied = new Set(units.filter((u) => u.hp > 0).map((u) => u.y * world.w + u.x));
+    const cx = deadUnit.x;
+    const cy = deadUnit.y;
+    const corpseTileFree =
+      isWalkable(world, cx, cy) && !occupied.has(cy * world.w + cx);
+    const summonOpts = { useGrayscaleAppearance: true };
+    if (corpseTileFree) summonOpts.position = { gx: cx, gy: cy };
+    return summonUnit(summoner, stats, skills, summonOpts);
   }
 
   function endDraftPhase() {
