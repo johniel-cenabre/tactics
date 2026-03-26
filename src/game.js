@@ -184,10 +184,24 @@ const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
   return acc;
 }, /** @type {Record<string, { battles: number, kills: number, deaths: number, wins: number, losses: number }>} */ ({}));
 
-function recordClassKill(killerClass, victimClass) {
+function recordClassKill(killerUnit, victimUnit) {
   if (!DEV_MODE) return;
-  if (CLASS_KEYS.includes(killerClass) && CLASS_RECORD[killerClass]) CLASS_RECORD[killerClass].kills++;
-  if (CLASS_KEYS.includes(victimClass) && CLASS_RECORD[victimClass]) CLASS_RECORD[victimClass].deaths++;
+
+  let killerClass = killerUnit?.class;
+  if (killerUnit?.summonedBy != null) {
+    const summoner = units.find((u) => u.id === killerUnit.summonedBy);
+    if (summoner?.class) killerClass = summoner.class;
+  }
+  if (CLASS_KEYS.includes(killerClass) && CLASS_RECORD[killerClass]) {
+    CLASS_RECORD[killerClass].kills++;
+  }
+
+  // Summoned-unit deaths do not affect class death records.
+  if (victimUnit?.summonedBy != null) return;
+  const victimClass = victimUnit?.class;
+  if (CLASS_KEYS.includes(victimClass) && CLASS_RECORD[victimClass]) {
+    CLASS_RECORD[victimClass].deaths++;
+  }
 }
 
 function recordGameOver(unitsList, winningPlayer) {
@@ -605,8 +619,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'debilitate': {
       if (!t) break;
       const d = 2;
-      t.tempDebuff = { hp: d, vit: d, duration: 3 };
-      u.tempBuff = { hp: d, vit: d, duration: 3 };
+      t.tempDebuff = { hp: d, maxHp: d, vit: d, duration: 3 };
+      u.tempBuff = { hp: d, maxHp: d, vit: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} HP, -${d} VIT`, false);
       showStatChange(u.x, u.y, `+${d} HP, +${d} VIT`, true);
     } break;
@@ -621,7 +635,13 @@ function applySkillEffect(effectKey, unit, target, ctx) {
         const oD = d.deathOrder ?? 0;
         return oD >= oBest ? d : best;
       });
-      ctx.reanimateDeadUnit(u, toReanimate);
+      const reanimated = ctx.reanimateDeadUnit(u, toReanimate)
+      // if (reanimated) {
+      //   const hp = Math.max(1, Math.floor(reanimated.hp * 0.3));
+      //   const vit = Math.max(1, Math.floor(reanimated.vit * 0.3));
+      //   applyDamage(u, hp, true);
+      //   showStatChange(u.x, u.y, `+${vit} VIT`, true);
+      // }
     } break;
     default: break;
   }
@@ -4968,7 +4988,11 @@ function main() {
       let bestMinDistToEnemy = -1;
       for (const t of reachableTiles) {
         const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
-        const hasEnemyInRange = enemies.some((e) => manhattanDist(t.gx, t.gy, e.x, e.y) <= range);
+        const hasEnemyInRange = enemies.some((e) => {
+          const d = manhattanDist(t.gx, t.gy, e.x, e.y);
+          if (d <= 0 || d > range) return false;
+          return hasLineOfSight(world, t.gx, t.gy, e.x, e.y);
+        });
         if (hasEnemyInRange && minDistToEnemy > bestMinDistToEnemy) {
           bestMinDistToEnemy = minDistToEnemy;
           best = t;
@@ -5225,7 +5249,8 @@ function main() {
         const deadUnits = units.filter((u) => u.hp <= 0);
         for (const skill of available) {
           if (skill.disabled || unit.mp < skill.cost) continue;
-          if (SUMMON_KEYS.has(skill.effectKey) && deadUnits.length > 0) {
+          if (skill.effectKey === 'reanimate' && !deadUnits.length) continue;
+          if (SUMMON_KEYS.has(skill.effectKey)) {
             chosen = skill;
             chosenTarget = unit;
             break;
@@ -6334,7 +6359,7 @@ function main() {
     if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
       sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
     }
-    recordClassKill(killer?.class, unit.class);
+    recordClassKill(killer, unit);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
 
