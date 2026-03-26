@@ -4798,7 +4798,11 @@ function main() {
     if (phase !== 'playing' || !isCPUPlayer(currentPlayer) || isUnitMoving || initiativeOrder.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
     const unit = units.find((u) => u.id === uid);
-    if (!unit || unit.hp <= 0) return;
+    if (!unit || unit.hp <= 0) {
+      // Recover if initiative changed mid-turn (e.g. reanimate) and current pointer is now invalid.
+      setTimeout(() => endTurn(), 0);
+      return;
+    }
 
     const unitAgi = getEffectiveStat(unit, 'agi');
     const reachableDist = getReachable(world, unit.x, unit.y, unitAgi, units, unit);
