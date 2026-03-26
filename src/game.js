@@ -295,7 +295,7 @@ const CLASS_SKILLS = {
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
-    { name: 'Debilitate', description: 'Reduce target\'s HP and VIT by 2 for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
+    { name: 'Debilitate', description: 'Steal target\'s 2 HP and 2 VIT for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
 };
@@ -601,14 +601,14 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       const isHit = applyDamage(t, d, false, true);
       if (isHit) applyDamage(u, d, true);
-      showStatChange(t.x, t.y, `-${d} HP`, false);
-      showStatChange(u.x, u.y, `+${d} HP`, true);
     } break;
     case 'debilitate': {
       if (!t) break;
       const d = 2;
       t.tempDebuff = { hp: d, vit: d, duration: 3 };
+      u.tempBuff = { hp: d, vit: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} HP, -${d} VIT`, false);
+      showStatChange(u.x, u.y, `+${d} HP, +${d} VIT`, true);
     } break;
     case 'reanimate': {
       if (!ctx.units || !ctx.reanimateDeadUnit) break;
