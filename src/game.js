@@ -224,7 +224,7 @@ const CLASS_SKILLS = {
   ],
   mage: [
     { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 7, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 1, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
+    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 2, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -267,7 +267,7 @@ const CLASS_SKILLS = {
     { name: 'Howl', description: 'Gain +2 STR and +2 AGI for 2 turns.', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'howl' },
   ],
   paladin: [
-    { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 0, hpCost: 3, target: 'ally', range: 3, level: 2, effectKey: 'sacrifice' },
+    { name: 'Sacrifice', description: 'Heal ally for -3 HP.', cost: 1, hpCost: 3, target: 'ally', range: 3, level: 2, effectKey: 'sacrifice' },
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement', type: 'spell' },
   ],
   exorcist: [
