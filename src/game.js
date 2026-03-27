@@ -247,7 +247,7 @@ function recordGameOver(unitsList, winningPlayer) {
 
 const CLASS_SKILLS = {
   knight: [
-    { name: 'Brave', description: 'Gain +3 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'brave' },
+    { name: 'Brave', description: 'Gain +1 STR and +1 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'brave' },
     { name: 'Dominate', description: 'Steal 2 STR and 1 VIT from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
@@ -327,8 +327,8 @@ const CLASS_SKILLS = {
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
-    { name: 'Rage', description: 'Gain +3 STR for -3 HP for 2 turns', cost: 0, hpCost: 3, target: 'self', range: 0, level: 1, effectKey: 'rage' },
-    { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 1 turn', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bash' },
+    { name: 'War Cry', description: 'Gain +3 VIT for -1 HP for 2 turns', cost: 2, hpCost: 1, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
+    { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'bash' },
   ],
   cannibal: [
     { name: 'Gnaw', description: 'Deal STR based damage to heal self', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'gnaw' },
@@ -677,14 +677,15 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       //   showStatChange(u.x, u.y, `+${vit} VIT`, true);
       // }
     } break;
-    case 'rage': {
+    case 'warCry': {
       const bVal = 3;
-      u.tempBuff = { str: bVal, duration: 2 };
-      showStatChange(u.x, u.y, `+${bVal} STR`, true);
+      u.tempBuff = { vit: bVal, duration: 3 };
+      showStatChange(u.x, u.y, `+${bVal} VIT`, true);
     } break;
     case 'bash': {
-      const dVal = 1;
-      t.tempDebuff = { agi: dVal, duration: 1 };
+      if (!t) break;
+      const dVal = t.agi;
+      t.tempDebuff = { agi: dVal, duration: 3 };
       showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'gnaw': {
@@ -3436,7 +3437,7 @@ function main() {
               isSkillMode = false;
               selectedSkill = null;
               skillTargetTiles = new Set();
-              if (hasMoved) endTurn();
+              if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             });
             updateTurnUI();
@@ -3465,7 +3466,7 @@ function main() {
                 isSkillMode = false;
                 selectedSkill = null;
                 skillTargetTiles = new Set();
-                if (hasMoved) endTurn();
+                if (hasMoved && unit.hp > 0) endTurn();
                 else updateTurnUI();
               });
               updateTurnUI();
@@ -4482,7 +4483,7 @@ function main() {
       isUnitMoving = false;
       if (onDone) setTimeout(() => onDone(), 0);
       if (!isReplay) {
-        if (hasMoved) setTimeout(() => endTurn(), 400);
+        if (hasMoved && unit.hp > 0) setTimeout(() => endTurn(), 400);
         else setTimeout(() => updateTurnUI(), 400);
       }
     }
@@ -4496,7 +4497,7 @@ function main() {
             isUnitMoving = false;
             if (onDone) onDone();
             if (!isReplay) {
-              if (hasMoved) endTurn();
+              if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             }
           }, 400);
@@ -4519,7 +4520,7 @@ function main() {
             isUnitMoving = false;
             if (onDone) onDone();
             if (!isReplay) {
-              if (hasMoved) endTurn();
+              if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             }
           }, 400);
@@ -5498,7 +5499,7 @@ function main() {
 
       const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck', 'gnaw', 'vodoo', 'skewer']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
-      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify', 'rage', 'foresight', 'overheal', 'rapid']);
+      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify', 'warCry', 'foresight', 'overheal', 'rapid']);
       const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate', 'bash', 'infect', 'curse']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'manaDrain', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
       const SUMMON_KEYS = new Set(['reanimate']);
@@ -5617,7 +5618,7 @@ function main() {
           if (skill.disabled || unit.mp < skill.cost) continue;
           if (DAMAGE_KEYS.has(skill.effectKey)) {
             if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
-            if (skill.effectKey === 'rage' && (unit.hp / unit.maxHp) < 0.5) continue;
+            if (skill.effectKey === 'warCry' && (unit.hp / unit.maxHp) < 0.3) continue;
             if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
             if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
             if (skill.effectKey === 'judgement' && (unit.hp / unit.maxHp) > 0.7) continue;
@@ -6219,7 +6220,7 @@ function main() {
         isSkillMode = false;
         selectedSkill = null;
         skillTargetTiles = new Set();
-        if (hasMoved) endTurn();
+        if (hasMoved && unit.hp > 0) endTurn();
         else updateTurnUI();
       });
       return;
@@ -6336,7 +6337,7 @@ function main() {
             localMoveInProgress = false;
             flushOnlineOutboundQueue();
           }
-          if (hasAttacked) setTimeout(() => endTurn(), 400);
+          if (hasAttacked && u.hp > 0) setTimeout(() => endTurn(), 400);
           else setTimeout(() => updateTurnUI(), 400);
           return;
         }
@@ -6634,6 +6635,17 @@ function main() {
         handleUnitDeath(summoned, null, { skipSync: true });
       }
     });
+
+    if (phase === 'playing' && initiativeOrder.length > 0 && unit.id === initiativeOrder[currentTurnIndex]) {
+      const deadId = unit.id;
+      queueMicrotask(() => {
+        if (phase !== 'playing' || initiativeOrder.length === 0) return;
+        if (initiativeOrder[currentTurnIndex] !== deadId) return;
+        const cur = units.find((u) => u.id === deadId);
+        if (cur && cur.hp > 0) return;
+        endTurn();
+      });
+    }
 
     const mesh = unitMeshes.get(unit.id);
     if (!mesh) {
