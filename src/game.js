@@ -198,12 +198,12 @@ const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
   return acc;
 }, /** @type {Record<string, { battles: number, kills: number, deaths: number, wins: number, losses: number }>} */ ({}));
 
-function recordClassKill(killerUnit, victimUnit) {
+function recordClassKill(killerUnit, victimUnit, unitsList) {
   if (!DEV_MODE) return;
 
   let killerClass = killerUnit?.class;
-  if (killerUnit?.summonedBy != null) {
-    const summoner = units.find((u) => u.id === killerUnit.summonedBy);
+  if (killerUnit?.summonedBy != null && Array.isArray(unitsList)) {
+    const summoner = unitsList.find((u) => u.id === killerUnit.summonedBy);
     if (summoner?.class) killerClass = summoner.class;
   }
   if (CLASS_KEYS.includes(killerClass) && CLASS_RECORD[killerClass]) {
@@ -963,7 +963,7 @@ function getKnockbackResult(world, units, attacker, target, tilesToPush) {
     const blocked = !isWalkable(world, nextGx, nextGy);
     const occupied = units.some((u) => u.hp > 0 && u.id !== target.id && u.x === nextGx && u.y === nextGy);
     if (outOfBounds || blocked || occupied) {
-      const collisionDamage = Math.max(1, tilesPushed * 3 + Math.floor((attacker.str || 0) * 0.3));
+      const collisionDamage = Math.max(1, tilesPushed * 3 + Math.ceil((attacker.str || 0) * 0.3));
       return { newGx: curGx, newGy: curGy, collisionDamage };
     }
     curGx = nextGx;
@@ -6622,7 +6622,7 @@ function main() {
     if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
       sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
     }
-    recordClassKill(killer, unit);
+    recordClassKill(killer, unit, units);
     console.log('[DEATH]', `${unit.name} (${unit.class}, P${unit.player})`, `at (${unit.x},${unit.y})`, `Lv.${unit.level}`);
     showFloatingCombatText(unit.x, unit.y, 'DEAD', false);
 
