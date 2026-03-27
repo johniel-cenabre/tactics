@@ -404,9 +404,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
   };
   switch (effectKey) {
     case 'brave': {
-      const bVal = 3;
-      u.tempBuff = { vit: bVal, duration: 3 };
-      showStatChange(u.x, u.y, `+${bVal} VIT`, true);
+      const bVal = 1;
+      u.tempBuff = { str: bVal, vit: bVal, duration: 3 };
+      showStatChange(u.x, u.y, `+${bVal} STR, +${bVal} VIT`, true);
     } break;
     case 'dominate': {
       if (!t) break;
