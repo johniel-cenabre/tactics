@@ -299,7 +299,7 @@ const CLASS_SKILLS = {
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement', type: 'spell' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 4, level: 1, effectKey: 'sanctuary' },
+    { name: 'Sanctuary', description: 'Gain +1 ALL stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 4, level: 1, effectKey: 'sanctuary' },
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
@@ -335,7 +335,7 @@ const CLASS_SKILLS = {
     { name: 'Infect', description: 'Poison enemy for 3 turns', cost: 4, target: 'enemy', range: 6, level: 3, effectKey: 'infect' },
   ],
   shaman: [
-    { name: 'Curse', description: 'Steal 2 LUK and 2 INT for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'curse', type: 'spell' },
+    { name: 'Curse', description: 'Steal 1 ALL stats for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'curse', type: 'spell' },
     { name: 'Vodoo', description: 'Deal INT+LUK-based damage to one enemy', cost: 8, hpCost: 3, target: 'enemy', range: 6, level: 2, effectKey: 'vodoo', type: 'spell' },
   ],
   oracle: [
@@ -343,8 +343,8 @@ const CLASS_SKILLS = {
     { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
-    { name: 'Rapid', description: 'Double attack for 1 turn', cost: 4, target: 'self', range: 0, level: 2, effectKey: 'rapid' },
-    { name: 'Skewer', description: 'Deal DEX-based damage to HP and AGI for 2 turns ', cost: 7, target: 'enemy', range: 5, level: 3, effectKey: 'skewer' },
+    { name: 'Skewer', description: 'Deal DEX-based damage to HP and AGI for 2 turns ', cost: 5, target: 'enemy', range: 5, level: 2, effectKey: 'skewer' },
+    { name: 'Rapid', description: 'Double attack for 1 turn', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'rapid' },
   ],
 };
 
@@ -699,9 +699,11 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
     } break;
     case 'curse': {
-      const dVal = 2;
-      t.tempDebuff = { luk: dVal, int: dVal, duration: 3 };
-      showStatChange(t.x, t.y, `-${dVal} LUK, -${dVal} INT`, false);
+      const dVal = 1;
+      t.tempDebuff = { hp: dVal, maxHp: dVal, mp: dVal, maxMp: dVal, luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
+      u.tempBuff = { hp: dVal, maxHp: dVal, luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
+      showStatChange(t.x, t.y, `-${dVal} ALL STATS`, false);
+      showStatChange(u.x, u.y, `+${dVal} ALL STATS`, true);
     } break;
     case 'vodoo': {
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') + getEffectiveStat(u, 'luk')) * 0.8) - (getEffectiveStat(t, 'int') + getEffectiveStat(t, 'luk') * 0.4));
@@ -723,15 +725,15 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       t.tempDebuff = { heal: d, duration: 3 };
       showStatChange(t.x, t.y, `Auto heal for 2 turns`, true);
     } break;
-    case 'rapid': {
-      u.tempBuff = { doubleAttack: true, duration: 2 };
-      showStatChange(u.x, u.y, `Double attack for 1 turn`, true);
-    } break;
     case 'skewer': {
       const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       t.tempDebuff = { agi: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} AGI`, false);
+    } break;
+    case 'rapid': {
+      u.tempBuff = { doubleAttack: true, duration: 2 };
+      showStatChange(u.x, u.y, `Double attack for 1 turn`, true);
     } break;
     default: break;
   }
