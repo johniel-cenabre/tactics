@@ -1,5 +1,31 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: 'Outfit', sans-serif; }
+
+/* Desktop: thinner, dark scrollbars (matches panel chrome) */
+@media (min-width: 769px) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3d444d #161b22;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #161b22;
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #3d444d;
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+  }
+  *::-webkit-scrollbar-corner {
+    background: #161b22;
+  }
+}
 #canvas-wrap {
   position: fixed;
   inset: 0;
@@ -235,7 +261,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   display: none;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
+  padding: 20px 0;
   background: rgba(22, 27, 34, 0.95);
   border: 1px solid rgba(48, 54, 61, 0.9);
   border-radius: 12px;
@@ -244,12 +270,14 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   backdrop-filter: blur(8px);
   max-width: 95vw;
   max-height: 95vh;
-  overflow-x: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  height: min(720px, 92vh);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 #draft-panel #draft-header {
   flex-shrink: 0;
+  padding: 0 20px;
 }
 #draft-panel #draft-header,
 #draft-panel #draft-body,
@@ -271,8 +299,12 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   flex-direction: row;
   gap: 20px;
   align-items: flex-start;
+  flex: 1 1 0;
   min-height: 0;
-  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px;
 }
 #draft-panel #draft-detail {
   flex: 0 0 auto;
@@ -287,7 +319,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  min-height: 320px;
+  min-height: 280px;
 }
 #draft-panel .draft-detail-placeholder {
   flex: 1;
@@ -301,7 +333,8 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 }
 #draft-panel .draft-detail-image {
   width: 100%;
-  height: 300px;
+  height: 330px;
+  flex-shrink: 0;
   object-fit: cover;
   object-position: top;
   background: #21262d;
@@ -312,6 +345,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 0 0 auto;
 }
 #draft-panel .draft-detail-name {
   font-weight: 700;
@@ -347,7 +381,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   color: #c9d1d9;
   display: flex;
   gap: 12px;
-  min-height: 40px;
 }
 #draft-panel .draft-detail-skill-name {
   font-weight: 600;
@@ -361,6 +394,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   margin-top: 2px;
 }
 #draft-panel .draft-select-btn {
+  flex-shrink: 0;
   margin: 12px 14px 14px;
   padding: 10px 20px;
   font: inherit;
@@ -383,13 +417,15 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 }
 #draft-panel #draft-classes {
   display: grid;
-  grid-template-rows: repeat(4, auto);
-  grid-auto-flow: column;
-  grid-auto-columns: 100px;
+  grid-template-columns: repeat(5, 100px);
+  grid-auto-rows: auto;
+  grid-auto-flow: row;
   justify-content: start;
-  align-content: center;
+  align-content: start;
   gap: 10px;
   min-width: 0;
+  flex: 0 0 auto;
+  padding-bottom: 4px;
 }
 #draft-panel .draft-class-card {
   flex: 0 0 auto;
@@ -1306,28 +1342,38 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     left: 50%;
     transform: translateX(-50%);
     padding: 12px 16px;
+    height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
     max-height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
+    min-height: 0;
   }
-  /* Same layout as desktop: detail left, 4-row class grid right */
+  /* Same layout as desktop: detail left, 5×5 class grid right */
   #draft-panel #draft-body {
     flex-direction: row;
     gap: 12px;
+    align-items: flex-start;
   }
   #draft-panel #draft-detail {
     width: 200px;
     flex: 0 0 auto;
   }
-  #draft-panel .draft-detail-card { min-height: 200px; }
-  #draft-panel .draft-detail-image { height: 120px; object-position: top; }
+  #draft-panel .draft-detail-card {
+    min-height: 200px;
+  }
+  #draft-panel .draft-detail-image {
+    height: 252px;
+    flex-shrink: 0;
+    object-position: top;
+  }
   #draft-panel #draft-title { font-size: 0.9rem; }
   #draft-panel #draft-classes {
-    grid-template-rows: repeat(4, auto);
-    grid-auto-columns: 72px;
+    grid-template-columns: repeat(5, 72px);
+    grid-auto-rows: auto;
+    grid-auto-flow: row;
     gap: 6px;
   }
   #draft-panel .draft-class-card { width: 72px; }
   #draft-panel .draft-class-card-image { height: 72px; object-position: top; }
-  #draft-panel .draft-class-card-name { font-size: 0.68rem; }
+  #draft-panel .draft-class-card-name { font-size: 0.55rem; }
   #draft-panel .draft-detail-stats { font-size: 0.6rem; }
   #draft-panel .draft-detail-skill-name { font-size: 0.68rem; }
   #draft-panel .draft-detail-skill-desc { font-size: 0.6rem; }

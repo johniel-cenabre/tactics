@@ -55,11 +55,11 @@ let AI_DRAFT_CUSTOM_ORDER = [];
 
 /** Role buckets for balanced draft: each class appears in at most one. */
 const BALANCED_ROLES = {
-  tank: ['knight', 'berserker', 'werewolf', 'ghoul'],
+  tank: ['knight', 'berserker', 'werewolf', 'ghoul', 'barbarian'],
   melee: ['samurai', 'assassin', 'ninja', 'bandit', 'lancer'],
-  support: ['paladin', 'monk', 'blacksmith', 'exorcist'],
-  ranged: ['ranger', 'hunter', 'alchemist'],
-  caster: ['mage', 'witch', 'vampire', 'necromancer'],
+  support: ['paladin', 'monk', 'blacksmith', 'exorcist', 'oracle'],
+  ranged: ['ranger', 'hunter', 'alchemist', 'cannibal', 'amazon'],
+  caster: ['mage', 'witch', 'vampire', 'necromancer', 'shaman'],
 };
 /** Target count per role: computed from lineup size (see getBalancedTargets). */
 const BALANCED_RATIOS = { tank: 2, melee: 2, support: 1, ranged: 1, caster: 1 };
@@ -97,7 +97,7 @@ const TileType = {
   CENTER: 7,
 };
 
-const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist', 'vampire', 'necromancer'];
+const CLASS_KEYS = ['knight', 'mage', 'monk', 'ghoul', 'lancer', 'hunter', 'assassin', 'berserker', 'witch', 'ninja', 'samurai', 'werewolf', 'paladin', 'exorcist', 'bandit', 'ranger', 'blacksmith', 'alchemist', 'vampire', 'necromancer', 'barbarian', 'cannibal', 'shaman', 'oracle', 'amazon'];
 
 AI_DRAFT_CUSTOM_ORDER = [...CLASS_KEYS];
 
@@ -110,27 +110,31 @@ function shuffleArray(arr) {
 }
 
 const CLASSES = {
-  knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 13, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 5,  agi: 4,  vit: 5,  dex: 4,  luk: 13, int: 17, range: 1 },
-  monk:       { name: 'Monk',       gender: 'male',   hp: 23, maxHp: 23, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
-  ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 21, maxHp: 21, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
+  knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 14, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
+  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 4,  agi: 3,  vit: 5,  dex: 4,  luk: 13, int: 17, range: 1 },
+  monk:       { name: 'Monk',       gender: 'male',   hp: 24, maxHp: 24, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
+  ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 23, maxHp: 23, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
   lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
   hunter:     { name: 'Hunter',     gender: 'female', hp: 18, maxHp: 18, mp: 9,  maxMp: 9,  str: 7,  agi: 5,  vit: 7,  dex: 16, luk: 12, int: 5,  range: 8 },
-  assassin:   { name: 'Assassin',   gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
-  berserker:  { name: 'Berserker',  gender: 'male',   hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 2,  range: 1 },
-  witch:      { name: 'Witch',      gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 6,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
-  ninja:      { name: 'Ninja',      gender: 'female', hp: 20, maxHp: 20, mp: 11, maxMp: 11, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
+  assassin:   { name: 'Assassin',   gender: 'female', hp: 20, maxHp: 20, mp: 10, maxMp: 10, str: 9,  agi: 14, vit: 6,  dex: 14, luk: 10, int: 4,  range: 1 },
+  berserker:  { name: 'Berserker',  gender: 'male',   hp: 30, maxHp: 30, mp: 3,  maxMp: 3,  str: 15, agi: 7,  vit: 13, dex: 8,  luk: 6,  int: 1,  range: 1 },
+  witch:      { name: 'Witch',      gender: 'female', hp: 16, maxHp: 16, mp: 24, maxMp: 24, str: 5,  agi: 6,  vit: 4,  dex: 5,  luk: 14, int: 14, range: 3 },
+  ninja:      { name: 'Ninja',      gender: 'female', hp: 21, maxHp: 21, mp: 11, maxMp: 11, str: 8,  agi: 15, vit: 7,  dex: 12, luk: 8,  int: 9,  range: 1 },
   samurai:    { name: 'Samurai',    gender: 'male',   hp: 24, maxHp: 24, mp: 8,  maxMp: 8,  str: 11, agi: 12, vit: 8,  dex: 13, luk: 7,  int: 6,  range: 1 },
   werewolf:   { name: 'Werewolf',   gender: 'male',   hp: 25, maxHp: 25, mp: 4,  maxMp: 4,  str: 14, agi: 13, vit: 11, dex: 6,  luk: 6,  int: 3,  range: 1 },
-  paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 7,  luk: 10, int: 11, range: 1 },
+  paladin:    { name: 'Paladin',    gender: 'male',   hp: 26, maxHp: 26, mp: 12, maxMp: 12, str: 10, agi: 8,  vit: 16, dex: 8,  luk: 10, int: 11, range: 1 },
   exorcist:   { name: 'Exorcist',   gender: 'male',   hp: 21, maxHp: 21, mp: 14, maxMp: 14, str: 7,  agi: 5,  vit: 9,  dex: 6,  luk: 15, int: 13, range: 1 },
-  bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 20, mp: 5,  maxMp: 5,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
+  bandit:     { name: 'Bandit',     gender: 'male',   hp: 20, maxHp: 20, mp: 6,  maxMp: 6,  str: 9,  agi: 14, vit: 6,  dex: 14, luk: 13, int: 4,  range: 1 },
   ranger:     { name: 'Ranger',     gender: 'female', hp: 19, maxHp: 19, mp: 10, maxMp: 10, str: 8,  agi: 10, vit: 8,  dex: 12, luk: 7,  int: 6,  range: 5 },
-  blacksmith: { name: 'Blacksmith', gender: 'female', hp: 22, maxHp: 22, mp: 6,  maxMp: 6,  str: 12, agi: 7,  vit: 10, dex: 11, luk: 12, int: 2,  range: 1 },
-  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 11, dex: 5,  luk: 8,  int: 11, range: 5 },
+  blacksmith: { name: 'Blacksmith', gender: 'female', hp: 25, maxHp: 25, mp: 8,  maxMp: 8,  str: 13, agi: 8,  vit: 12, dex: 11, luk: 12, int: 2,  range: 1 },
+  alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 10, dex: 5,  luk: 8,  int: 11, range: 5 },
   vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 16, maxMp: 16, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 12, range: 1 },
   necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 20, maxMp: 20, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 11, int: 15, range: 1 },
-  // barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 29, maxHp: 29, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 12, dex: 6,  luk: 3,  int: 3,  range: 1 },
+  barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 31, maxHp: 31, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 13, dex: 6,  luk: 3,  int: 2,  range: 1 },
+  cannibal:   { name: 'Cannibal',   gender: 'male',   hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 6,  agi: 11, vit: 2,  dex: 13, luk: 9,  int: 7,  range: 4 },
+  shaman:     { name: 'Shaman',     gender: 'female', hp: 16, maxHp: 16, mp: 21, maxMp: 21, str: 4,  agi: 3,  vit: 3,  dex: 3,  luk: 16, int: 16, range: 4 },
+  oracle:     { name: 'Oracle',     gender: 'female', hp: 19, maxHp: 19, mp: 19, maxMp: 19, str: 6,  agi: 7,  vit: 4,  dex: 10, luk: 14, int: 10, range: 1 },
+  amazon:     { name: 'Amazon',     gender: 'female', hp: 23, maxHp: 23, mp: 5,  maxMp: 5,  str: 12, agi: 9,  vit: 11, dex: 7,  luk: 4,  int: 3,  range: 3 },
 };
 
 const CLASS_LOOK = {
@@ -154,6 +158,11 @@ const CLASS_LOOK = {
   alchemist:  { primary: 0xFF69B4, secondary: 0xAA336A, hair: 0xFF007F, cape: 0x87CEEB },
   vampire:    { primary: 0xFEE3D4, secondary: 0xFEE3D4, hair: 0x131312, cape: 0x131312, apron: 0x131312 },
   necromancer:{ primary: 0x062e24, secondary: 0x062e24, hair: 0x71706E, cape: 0x062e24, belt: 0xAD8621 },
+  barbarian:  { primary: 0xaf6e51, secondary: 0x5C4033, hair: 0x5C4033, belt: 0xa95b0e, skin: 0xaf6e51 },
+  cannibal:   { primary: 0xaf6e51, secondary: 0x808080, hair: 0x5C4033, cape: 0xFFA500, belt: 0xFFA500, skin: 0xaf6e51 },
+  shaman:     { primary: 0x313345, secondary: 0x425d8c, hair: 0x008080, cape: 0x4E9FE5, horns: 0xFFFAFA },
+  oracle:     { primary: 0xFFFAFA, secondary: 0xFFFAFA, hair: 0x5C4033, cape: 0xFFFFFF, belt: 0xEFBF04, horns: 0xEFBF04 },
+  amazon:     { primary: 0xaf6e51, secondary: 0xaf6e51, hair: 0x000000, cape: 0x05100e, belt: 0x000000, horns: 0x000000, skin: 0xaf6e51, apron: 0x05100e },
 };
 
 const CLASS_IMAGES = {
@@ -177,6 +186,11 @@ const CLASS_IMAGES = {
   alchemist:  'https://pics.craiyon.com/2023-07-11/ddbb35d3d2614541a9ad13181838257d.webp',
   vampire:    'https://files.idyllic.app/files/static/2567599?width=256&optimizer=image',
   necromancer:'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/c77f367a-4886-467a-b509-a194cf9a6aca/dbq4hoj-c2811e28-2314-49ac-9c57-b2f7ab1ee170.jpg/v1/fill/w_1024,h_1434,q_75,strp/necromancer_by_johnathanchong_dbq4hoj-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTQzNCIsInBhdGgiOiIvZi9jNzdmMzY3YS00ODg2LTQ2N2EtYjUwOS1hMTk0Y2Y5YTZhY2EvZGJxNGhvai1jMjgxMWUyOC0yMzE0LTQ5YWMtOWM1Ny1iMmY3YWIxZWUxNzAuanBnIiwid2lkdGgiOiI8PTEwMjQifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.vBO5eVep2-eoiZnpDxMvlWBsJ0_zfdGT_IAaPdqEv2k',
+  barbarian:  'https://image.lexica.art/full_jpg/dd171d51-f518-4ae9-949b-23f5d7a157be',
+  cannibal:   'https://i.pinimg.com/736x/de/57/d1/de57d1e7aa4dd2d8f052d48b06831cbd.jpg',
+  shaman:     'https://w0.peakpx.com/wallpaper/350/203/HD-wallpaper-guy-shaman-skull-horns-anime-art-green-thumbnail.jpg',
+  oracle:     'https://images.stockcake.com/public/a/3/d/a3d08448-237f-4c23-8660-43b615c9e3c9_large/desert-oracle-enchantress-stockcake.jpg',
+  amazon:     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTnWAK4nkfgm8v-Ab35e3lkKOPOGTJzprr1w&s',
 };
 
 const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
@@ -311,6 +325,26 @@ const CLASS_SKILLS = {
   necromancer: [
     { name: 'Debilitate', description: 'Steal target\'s 2 HP and 2 VIT for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
+  ],
+  barbarian: [
+    { name: 'Rage', description: 'Gain +3 STR for -3 HP for 2 turns', cost: 0, hpCost: 3, target: 'self', range: 0, level: 1, effectKey: 'rage' },
+    { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 1 turn', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bash' },
+  ],
+  cannibal: [
+    { name: 'Gnaw', description: 'Deal STR based damage to heal self', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'gnaw' },
+    { name: 'Infect', description: 'Poison enemy for 3 turns', cost: 4, target: 'enemy', range: 6, level: 3, effectKey: 'infect' },
+  ],
+  shaman: [
+    { name: 'Curse', description: 'Steal 2 LUK and 2 INT for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'curse', type: 'spell' },
+    { name: 'Vodoo', description: 'Deal INT+LUK-based damage to one enemy', cost: 8, hpCost: 3, target: 'enemy', range: 6, level: 2, effectKey: 'vodoo', type: 'spell' },
+  ],
+  oracle: [
+    { name: 'Foresight', description: 'Gain +1 INT and +1 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
+    { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
+  ],
+  amazon: [
+    { name: 'Rapid', description: 'Double attack for 1 turn', cost: 4, target: 'self', range: 0, level: 2, effectKey: 'rapid' },
+    { name: 'Skewer', description: 'Deal DEX-based damage to HP and AGI for 2 turns ', cost: 7, target: 'enemy', range: 5, level: 3, effectKey: 'skewer' },
   ],
 };
 
@@ -642,6 +676,61 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       //   applyDamage(u, hp, true);
       //   showStatChange(u.x, u.y, `+${vit} VIT`, true);
       // }
+    } break;
+    case 'rage': {
+      const bVal = 3;
+      u.tempBuff = { str: bVal, duration: 2 };
+      showStatChange(u.x, u.y, `+${bVal} STR`, true);
+    } break;
+    case 'bash': {
+      const dVal = 1;
+      t.tempDebuff = { agi: dVal, duration: 1 };
+      showStatChange(t.x, t.y, `-${dVal} AGI`, false);
+    } break;
+    case 'gnaw': {
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false, true);
+      applyDamage(u, d, true);
+    } break;
+    case 'infect': {
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4));
+      t.tempDebuff = { poison: poisonVal, duration: 4 };
+      showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
+    } break;
+    case 'curse': {
+      const dVal = 2;
+      t.tempDebuff = { luk: dVal, int: dVal, duration: 3 };
+      showStatChange(t.x, t.y, `-${dVal} LUK, -${dVal} INT`, false);
+    } break;
+    case 'vodoo': {
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') + getEffectiveStat(u, 'luk')) * 0.8) - (getEffectiveStat(t, 'int') + getEffectiveStat(t, 'luk') * 0.4));
+      applyDamage(t, d, false, true);
+    } break;
+    case 'foresight': {
+      const bVal = 1;
+      u.tempBuff = { int: bVal, dex: bVal, duration: 3 };
+      showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX`, true);
+      if (!t) break;
+      t.tempBuff = { int: bVal, dex: bVal, duration: 3 };
+      showStatChange(t.x, t.y, `+${bVal} INT, +${bVal} DEX`, true);
+    } break;
+    case 'overheal': {
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3 + getEffectiveStat(u, 'luk') * 0.1));
+      u.tempBuff = { heal: d, duration: 3 };
+      showStatChange(u.x, u.y, `Auto heal for 2 turns`, true);
+      if (!t) break;
+      t.tempDebuff = { heal: d, duration: 3 };
+      showStatChange(t.x, t.y, `Auto heal for 2 turns`, true);
+    } break;
+    case 'rapid': {
+      u.tempBuff = { doubleAttack: true, duration: 2 };
+      showStatChange(u.x, u.y, `Double attack for 1 turn`, true);
+    } break;
+    case 'skewer': {
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      applyDamage(t, d, false, true);
+      t.tempDebuff = { agi: d, duration: 3 };
+      showStatChange(t.x, t.y, `-${d} AGI`, false);
     } break;
     default: break;
   }
@@ -1845,6 +1934,36 @@ function main() {
       addBangs(head);
     }
 
+    if (look.horns != null) {
+      const hornsMat = new THREE.MeshStandardMaterial({
+        color: darkenColor(nudgeColor(look.horns, 0.08)),
+        metalness: Math.max(0, 0.12 + metalVar()),
+        roughness: Math.max(0.4, Math.min(1, 0.62 + roughnessVar())),
+      });
+      hornsMat.bumpMap = unitNoiseBumpMap;
+      hornsMat.bumpScale = 0.1;
+      const bandMajor = headRadius * 1.12;
+      const bandTube = headRadius * 0.22;
+      const bandGeo = new THREE.TorusGeometry(bandMajor, bandTube, 8, 28);
+      const band = new THREE.Mesh(bandGeo, hornsMat);
+      band.rotation.x = Math.PI / 2;
+      band.position.y = headRadius * 0.42;
+      band.castShadow = true;
+      head.add(band);
+      const hornR = headRadius * 0.48;
+      const hornH = headRadius * 2.55;
+      const leftHorn = new THREE.Mesh(new THREE.ConeGeometry(hornR, hornH, 8), hornsMat.clone());
+      leftHorn.position.set(-headRadius * 1.02, headRadius * 0.18, headRadius * 0.02);
+      leftHorn.rotation.set(-0.42, -0.32, 0.58);
+      leftHorn.castShadow = true;
+      head.add(leftHorn);
+      const rightHorn = new THREE.Mesh(new THREE.ConeGeometry(hornR, hornH, 8), hornsMat.clone());
+      rightHorn.position.set(headRadius * 1.02, headRadius * 0.18, headRadius * 0.02);
+      rightHorn.rotation.set(-0.42, 0.32, -0.58);
+      rightHorn.castShadow = true;
+      head.add(rightHorn);
+    }
+
     group.userData.leftLeg = leftLeg;
     group.userData.rightLeg = rightLeg;
     group.userData.leftArm = leftArm;
@@ -2173,6 +2292,9 @@ function main() {
     ];
     if (unit.tempDebuff && unit.tempDebuff.poison != null) {
       statRows.push(['Poison', `${unit.tempDebuff.poison} dmg/turn`, 'stat-val-poison']);
+    }
+    if (unit.tempBuff && unit.tempBuff.heal != null) {
+      statRows.push(['Regen', `${unit.tempBuff.heal} HP/turn`, 'stat-val-buff']);
     }
     statsEl.innerHTML = statRows.map(([label, val, extraClass]) => {
       const cls = extraClass ? ` ${extraClass}` : '';
@@ -3015,6 +3137,9 @@ function main() {
         if (u.tempDebuff && u.tempDebuff.poison != null) {
           statRows.push(['Poison', `${u.tempDebuff.poison} dmg/turn`, 'stat-val-poison']);
         }
+        if (u.tempBuff && u.tempBuff.heal != null) {
+          statRows.push(['Regen', `${u.tempBuff.heal} HP/turn`, 'stat-val-buff']);
+        }
         unitStatsEl.innerHTML = statRows.map(([label, val, extraClass]) => {
           const cls = extraClass ? ` ${extraClass}` : '';
           return `<span>${label}</span><span class="stat-val${cls}">${val}</span>`;
@@ -3174,7 +3299,24 @@ function main() {
       break;
     }
 
-    currentPlayer = nextUnit ? nextUnit.player : 1;
+    const turnUid = initiativeOrder[currentTurnIndex];
+    const unitStartingTurn = units.find((u) => u.id === turnUid);
+    if (unitStartingTurn && unitStartingTurn.hp > 0) {
+      const buff = unitStartingTurn.tempBuff;
+      const healAmt = buff && buff.heal != null && !isNaN(buff.heal) ? Number(buff.heal) : 0;
+      if (healAmt > 0) {
+        const before = unitStartingTurn.hp;
+        unitStartingTurn.hp = Math.min(unitStartingTurn.maxHp, unitStartingTurn.hp + healAmt);
+        const applied = unitStartingTurn.hp - before;
+        if (applied > 0) {
+          console.log('[BUFF]', `heal: ${applied} to ${unitStartingTurn.name}`);
+          showFloatingCombatText(unitStartingTurn.x, unitStartingTurn.y, `+${applied}`, false, 'heal');
+          updateUnitSlashVisibility(unitStartingTurn);
+        }
+      }
+    }
+
+    currentPlayer = unitStartingTurn && unitStartingTurn.hp > 0 ? unitStartingTurn.player : 1;
     hasMoved = false;
     hasAttacked = false;
     selectedUnitId = initiativeOrder[currentTurnIndex];
@@ -3746,7 +3888,11 @@ function main() {
         return;
       }
       if (msg.type === 'attack') {
-        applyAttackFromRemote(msg.unitId, msg.targetId, msg.hit, msg.damage);
+        if (msg.strikes && Array.isArray(msg.strikes) && msg.strikes.length > 0) {
+          applyAttackFromRemote(msg.unitId, msg.targetId, undefined, undefined, msg.strikes);
+        } else {
+          applyAttackFromRemote(msg.unitId, msg.targetId, msg.hit, msg.damage);
+        }
         return;
       }
       if (msg.type === 'skill') {
@@ -3869,16 +4015,21 @@ function main() {
     });
   }
 
-  function applyAttackFromRemote(unitId, targetId, hit, damage) {
+  function applyAttackFromRemote(unitId, targetId, hit, damage, strikeList) {
     const unit = units.find((u) => u.id === unitId);
     const target = units.find((u) => u.id === targetId);
     if (!unit || !target || target.hp <= 0) return;
     pendingRemoteActionCount++;
-    performAttack(unit, target, hit, damage, () => {
+    const done = () => {
       requestRender();
       updateTurnUI();
       onRemoteActionDone();
-    });
+    };
+    if (strikeList && strikeList.length > 0) {
+      performAttack(unit, target, undefined, undefined, done, strikeList);
+    } else {
+      performAttack(unit, target, hit, damage, done);
+    }
   }
 
   function applySkillFromRemote(msg) {
@@ -4246,55 +4397,124 @@ function main() {
     animateStep();
   }
 
-  function performAttack(unit, target, overrideHit, overrideDamage, onDone) {
-    const isReplay = overrideHit !== undefined;
-    let isHit;
+  function computeStrikeOutcome(unit, target) {
+    const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
+    const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
+    const isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
     let damage = 0;
-    if (isReplay) {
-      isHit = overrideHit;
-      damage = (overrideDamage != null && overrideDamage > 0) ? overrideDamage : 0;
+    if (isHit) {
+      const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.2 + getEffectiveStat(unit, 'int') * 0.1) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.2);
+      damage = Math.max(1, Math.floor(rawDamage));
+    }
+    return { isHit, damage };
+  }
+
+  function performAttack(unit, target, overrideHit, overrideDamage, onDone, strikeListReplay) {
+    let strikes;
+    let isReplay;
+    if (Array.isArray(strikeListReplay) && strikeListReplay.length > 0) {
+      isReplay = true;
+      strikes = strikeListReplay.map((s) => {
+        const hit = s.isHit !== undefined ? s.isHit : s.hit;
+        return {
+          isHit: !!hit,
+          damage: hit && s.damage != null && s.damage > 0 ? s.damage : 0,
+        };
+      });
+    } else if (overrideHit !== undefined) {
+      isReplay = true;
+      const hit = !!overrideHit;
+      const dmg = hit && overrideDamage != null && overrideDamage > 0 ? overrideDamage : 0;
+      strikes = [{ isHit: hit, damage: dmg }];
     } else {
+      isReplay = false;
       if (gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOnlineMessage === 'function') {
         sendOnlineMessage({ type: 'requestRender' });
       }
-      const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
-      const evasionRoll = Math.random() * Math.max(0.001, evasionMax);
-      isHit = evasionRoll <= getEffectiveStat(unit, 'dex');
-      if (isHit) {
-        const rawDamage = (getEffectiveStat(unit, 'str') * 0.7 + getEffectiveStat(unit, 'dex') * 0.2 + getEffectiveStat(unit, 'int') * 0.1) - (getEffectiveStat(target, 'vit') * 0.3 + getEffectiveStat(target, 'luk') * 0.2);
-        damage = Math.max(1, Math.floor(rawDamage));
+      const s1 = computeStrikeOutcome(unit, target);
+      strikes = [s1];
+      if (unit.tempBuff && unit.tempBuff.doubleAttack === true && target.hp > 0) {
+        strikes.push(computeStrikeOutcome(unit, target));
       }
     }
+
     hasAttacked = true;
     selectedUnitId = null;
     isAttackMode = false;
     clearHighlights();
 
     if (!isReplay && gameMode === 'online' && unit.player === localPlayerNumber && typeof sendOrQueueOnlineMessage === 'function') {
-      sendOrQueueOnlineMessage({ type: 'attack', unitId: unit.id, targetId: target.id, hit: isHit, damage: isHit ? damage : undefined });
+      const strikePayload = strikes.map((s) => ({ hit: s.isHit, damage: s.isHit ? s.damage : undefined }));
+      sendOrQueueOnlineMessage({
+        type: 'attack',
+        unitId: unit.id,
+        targetId: target.id,
+        strikes: strikePayload,
+        hit: strikes[0].isHit,
+        damage: strikes[0].isHit ? strikes[0].damage : undefined,
+      });
     }
 
-    if (!isReplay) console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, isHit ? `${damage} dmg` : 'MISS', `| ${target.name} HP ${target.hp} → ${Math.max(0, target.hp - damage)}/${target.maxHp}`);
+    if (!isReplay) {
+      let simHp = target.hp;
+      strikes.forEach((s, i) => {
+        const hpAfter = s.isHit ? Math.max(0, simHp - s.damage) : simHp;
+        console.log('[ATTACK]', `${unit.name} (${unit.class}, P${unit.player})`, '→', `${target.name} (${target.class}, P${target.player})`, `strike ${i + 1}/${strikes.length}:`, s.isHit ? `${s.damage} dmg` : 'MISS', `| ${target.name} HP ${simHp} → ${hpAfter}/${target.maxHp}`);
+        simHp = hpAfter;
+      });
+    }
 
     const mesh = unitMeshes.get(unit.id);
+
+    function afterAnimatedStrikeSequence() {
+      renderer.shadowMap.enabled = true;
+      isUnitMoving = false;
+      if (onDone) setTimeout(() => onDone(), 0);
+      if (!isReplay) {
+        if (hasMoved) setTimeout(() => endTurn(), 400);
+        else setTimeout(() => updateTurnUI(), 400);
+      }
+    }
+
     if (!mesh || !mesh.userData.rightArm) {
       isUnitMoving = true;
-      if (isHit) {
-        target.hp = Math.max(0, target.hp - damage);
-        showFloatingCombatText(target.x, target.y, String(damage), false);
-        updateUnitSlashVisibility(target);
-        if (target.hp <= 0) handleUnitDeath(target, unit);
-      } else {
-        showFloatingCombatText(target.x, target.y, 'MISS', true);
-      }
-      setTimeout(() => {
-        isUnitMoving = false;
-        if (onDone) onDone();
-        if (!isReplay) {
-          if (hasMoved) endTurn();
-          else updateTurnUI();
+      let idx = 0;
+      function runNoMeshStrike() {
+        if (idx >= strikes.length || target.hp <= 0) {
+          setTimeout(() => {
+            isUnitMoving = false;
+            if (onDone) onDone();
+            if (!isReplay) {
+              if (hasMoved) endTurn();
+              else updateTurnUI();
+            }
+          }, 400);
+          return;
         }
-      }, 400);
+        const s = strikes[idx];
+        idx++;
+        if (s.isHit) {
+          target.hp = Math.max(0, target.hp - s.damage);
+          showFloatingCombatText(target.x, target.y, String(s.damage), false);
+          updateUnitSlashVisibility(target);
+          if (target.hp <= 0) handleUnitDeath(target, unit);
+        } else {
+          showFloatingCombatText(target.x, target.y, 'MISS', true);
+        }
+        if (idx < strikes.length && target.hp > 0) {
+          setTimeout(runNoMeshStrike, 400);
+        } else {
+          setTimeout(() => {
+            isUnitMoving = false;
+            if (onDone) onDone();
+            if (!isReplay) {
+              if (hasMoved) endTurn();
+              else updateTurnUI();
+            }
+          }, 400);
+        }
+      }
+      runNoMeshStrike();
       return;
     }
 
@@ -4309,55 +4529,170 @@ function main() {
     const isRanged = attackRange > 2;
 
     if (isRanged) {
-      const shaftGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.4, 6);
-      const projectileMat = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
-      const projectile = new THREE.Mesh(shaftGeo, projectileMat);
-      projectile.position.copy(startPos);
-      projectile.position.y += 0.6;
-      const dir = endPos.clone().sub(startPos).normalize();
-      projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-      scene.add(projectile);
-      isUnitMoving = true;
       const rightArm = mesh.userData.rightArm;
       const targetBasePos = worldPos(target.x, target.y).clone();
       const knockbackDir = endPos.clone().sub(startPos).normalize();
       const knockbackAmount = 0.4;
+
+      function runRangedStrike(strikeIndex) {
+        if (strikeIndex >= strikes.length || target.hp <= 0) {
+          if (rightArm) rightArm.rotation.y = 0;
+          afterAnimatedStrikeSequence();
+          return;
+        }
+        const isHit = strikes[strikeIndex].isHit;
+        const damage = strikes[strikeIndex].damage;
+
+        const shaftGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.4, 6);
+        const projectileMat = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
+        const projectile = new THREE.Mesh(shaftGeo, projectileMat);
+        projectile.position.copy(startPos);
+        projectile.position.y += 0.6;
+        const dir = endPos.clone().sub(startPos).normalize();
+        projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        scene.add(projectile);
+        let hitApplied = false;
+        let hitReactStartTime = null;
+        let targetDeathPending = false;
+        const projStart = projectile.position.clone();
+        const projEnd = endPos.clone();
+        projEnd.y += 0.6;
+        const startTime = performance.now();
+        let projTickCount = 0;
+
+        function projectileTick(now) {
+          projTickCount++;
+          if (projTickCount % 2 === 0) requestRender();
+          const elapsed = now - startTime;
+          const t = Math.min(1, elapsed / PROJECTILE_MS);
+          projectile.position.lerpVectors(projStart, projEnd, t);
+          if (rightArm) {
+            const armSway = Math.sin(t * Math.PI) * 1.1;
+            rightArm.rotation.y = -armSway;
+          }
+
+          if (!hitApplied && t >= 1) {
+            hitApplied = true;
+            scene.remove(projectile);
+            shaftGeo.dispose();
+            projectileMat.dispose();
+            if (isHit) {
+              target.hp = Math.max(0, target.hp - damage);
+              showFloatingCombatText(target.x, target.y, String(damage), false);
+              if (target.hp <= 0) targetDeathPending = true;
+              const targetMesh = unitMeshes.get(target.id);
+              if (targetMesh) hitReactStartTime = now;
+              else if (targetDeathPending) {
+                handleUnitDeath(target, unit);
+                targetDeathPending = false;
+              }
+              updateUnitSlashVisibility(target);
+            } else {
+              showFloatingCombatText(target.x, target.y, 'MISS', true);
+            }
+          }
+
+          if (hitReactStartTime != null && isHit) {
+            const targetMesh = unitMeshes.get(target.id);
+            if (targetMesh) {
+              const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
+              const easeOut = 1 - tReact;
+              _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
+              targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
+              if (tReact >= 1) {
+                targetMesh.position.copy(targetBasePos);
+                hitReactStartTime = null;
+                if (targetDeathPending) {
+                  handleUnitDeath(target, unit);
+                  targetDeathPending = false;
+                }
+              }
+            } else {
+              hitReactStartTime = null;
+              if (targetDeathPending) {
+                handleUnitDeath(target, unit);
+                targetDeathPending = false;
+              }
+            }
+          }
+
+          if (t < 1) {
+            requestAnimationFrame(projectileTick);
+          } else {
+            if (rightArm) rightArm.rotation.y = 0;
+            const hitReactDone = hitReactStartTime == null;
+            if (hitReactDone && targetDeathPending) {
+              handleUnitDeath(target, unit);
+              targetDeathPending = false;
+            }
+            if (hitReactDone) {
+              if (strikeIndex + 1 < strikes.length && target.hp > 0) {
+                runRangedStrike(strikeIndex + 1);
+              } else {
+                afterAnimatedStrikeSequence();
+              }
+            } else {
+              requestAnimationFrame(projectileTick);
+            }
+          }
+        }
+        requestAnimationFrame(projectileTick);
+      }
+
+      isUnitMoving = true;
+      renderer.shadowMap.enabled = false;
+      runRangedStrike(0);
+      return;
+    }
+
+    function runMeleeStrike(strikeIndex) {
+      if (strikeIndex >= strikes.length || target.hp <= 0) {
+        mesh.position.copy(startPos);
+        if (mesh.userData.rightArm) mesh.userData.rightArm.rotation.y = 0;
+        afterAnimatedStrikeSequence();
+        return;
+      }
+      const isHit = strikes[strikeIndex].isHit;
+      const damage = strikes[strikeIndex].damage;
       let hitApplied = false;
+      const startTime = performance.now();
+      const rightArm = mesh.userData.rightArm;
       let hitReactStartTime = null;
       let targetDeathPending = false;
-      const projStart = projectile.position.clone();
-      const projEnd = endPos.clone();
-      projEnd.y += 0.6;
-      const startTime = performance.now();
-      let projTickCount = 0;
+      const targetBasePos = worldPos(target.x, target.y).clone();
+      const knockbackDir = endPos.clone().sub(startPos).normalize();
+      const knockbackAmount = 0.4;
+      let attackTickCount = 0;
 
-      function projectileTick(now) {
-        projTickCount++;
-        if (projTickCount % 2 === 0) requestRender();
+      function attackTick(now) {
+        attackTickCount++;
+        if (attackTickCount % 2 === 0) requestRender();
         const elapsed = now - startTime;
-        const t = Math.min(1, elapsed / PROJECTILE_MS);
-        projectile.position.lerpVectors(projStart, projEnd, t);
-        if (rightArm) {
-          const armSway = Math.sin(t * Math.PI) * 1.1;
-          rightArm.rotation.y = -armSway;
+        const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
+        const lungeOut = t <= 0.4 ? t / 0.4 : 1;
+        const lungeBack = t > 0.4 ? (t - 0.4) / 0.6 : 0;
+        if (t <= 0.4) {
+          mesh.position.lerpVectors(startPos, lungePos, lungeOut);
+        } else {
+          mesh.position.lerpVectors(lungePos, startPos, lungeBack);
         }
+        const armSwing = t <= 0.35 ? t / 0.35 : t <= 0.7 ? (0.7 - t) / 0.35 : 0;
+        rightArm.rotation.y = -armSwing * 1.1;
 
-        if (!hitApplied && t >= 1) {
+        if (!hitApplied && t >= ATTACK_HIT_AT_T) {
           hitApplied = true;
-          scene.remove(projectile);
-          shaftGeo.dispose();
-          projectileMat.dispose();
           if (isHit) {
             target.hp = Math.max(0, target.hp - damage);
             showFloatingCombatText(target.x, target.y, String(damage), false);
             if (target.hp <= 0) targetDeathPending = true;
+            updateUnitSlashVisibility(target);
             const targetMesh = unitMeshes.get(target.id);
-            if (targetMesh) hitReactStartTime = now;
-            else if (targetDeathPending) {
+            if (targetMesh) {
+              hitReactStartTime = now;
+            } else if (targetDeathPending) {
               handleUnitDeath(target, unit);
               targetDeathPending = false;
             }
-            updateUnitSlashVisibility(target);
           } else {
             showFloatingCombatText(target.x, target.y, 'MISS', true);
           }
@@ -4388,126 +4723,32 @@ function main() {
         }
 
         if (t < 1) {
-          requestAnimationFrame(projectileTick);
+          requestAnimationFrame(attackTick);
         } else {
-          if (rightArm) rightArm.rotation.y = 0;
+          mesh.position.copy(startPos);
+          rightArm.rotation.y = 0;
           const hitReactDone = hitReactStartTime == null;
           if (hitReactDone && targetDeathPending) {
             handleUnitDeath(target, unit);
             targetDeathPending = false;
           }
           if (hitReactDone) {
-            renderer.shadowMap.enabled = true;
-            isUnitMoving = false;
-            if (onDone) setTimeout(() => onDone(), 0);
-            if (!isReplay) {
-              if (hasMoved) setTimeout(() => endTurn(), 400);
-              else setTimeout(() => updateTurnUI(), 400);
+            if (strikeIndex + 1 < strikes.length && target.hp > 0) {
+              runMeleeStrike(strikeIndex + 1);
+            } else {
+              afterAnimatedStrikeSequence();
             }
           } else {
-            requestAnimationFrame(projectileTick);
+            requestAnimationFrame(attackTick);
           }
         }
       }
-      renderer.shadowMap.enabled = false;
-      requestAnimationFrame(projectileTick);
-      return;
+      requestAnimationFrame(attackTick);
     }
 
-    let hitApplied = false;
-    const startTime = performance.now();
-    const rightArm = mesh.userData.rightArm;
-    let hitReactStartTime = null;
-    let targetDeathPending = false;
-    const targetBasePos = worldPos(target.x, target.y).clone();
-    const knockbackDir = endPos.clone().sub(startPos).normalize();
-    const knockbackAmount = 0.4;
-    let attackTickCount = 0;
-
-    function attackTick(now) {
-      attackTickCount++;
-      if (attackTickCount % 2 === 0) requestRender();
-      const elapsed = now - startTime;
-      const t = Math.min(1, elapsed / ATTACK_ANIMATION_MS);
-      const lungeOut = t <= 0.4 ? t / 0.4 : 1;
-      const lungeBack = t > 0.4 ? (t - 0.4) / 0.6 : 0;
-      if (t <= 0.4) {
-        mesh.position.lerpVectors(startPos, lungePos, lungeOut);
-      } else {
-        mesh.position.lerpVectors(lungePos, startPos, lungeBack);
-      }
-      const armSwing = t <= 0.35 ? t / 0.35 : t <= 0.7 ? (0.7 - t) / 0.35 : 0;
-      rightArm.rotation.y = -armSwing * 1.1;
-
-      if (!hitApplied && t >= ATTACK_HIT_AT_T) {
-        hitApplied = true;
-        if (isHit) {
-          target.hp = Math.max(0, target.hp - damage);
-          showFloatingCombatText(target.x, target.y, String(damage), false);
-          if (target.hp <= 0) targetDeathPending = true;
-          updateUnitSlashVisibility(target);
-          const targetMesh = unitMeshes.get(target.id);
-          if (targetMesh) {
-            hitReactStartTime = now;
-          } else if (targetDeathPending) {
-            handleUnitDeath(target, unit);
-            targetDeathPending = false;
-          }
-        } else {
-          showFloatingCombatText(target.x, target.y, 'MISS', true);
-        }
-      }
-
-      if (hitReactStartTime != null && isHit) {
-        const targetMesh = unitMeshes.get(target.id);
-        if (targetMesh) {
-          const tReact = Math.min(1, (now - hitReactStartTime) / HIT_REACT_MS);
-          const easeOut = 1 - tReact;
-          _knockbackOffset.copy(knockbackDir).multiplyScalar(knockbackAmount * easeOut);
-          targetMesh.position.copy(targetBasePos).add(_knockbackOffset);
-          if (tReact >= 1) {
-            targetMesh.position.copy(targetBasePos);
-            hitReactStartTime = null;
-            if (targetDeathPending) {
-              handleUnitDeath(target, unit);
-              targetDeathPending = false;
-            }
-          }
-        } else {
-          hitReactStartTime = null;
-          if (targetDeathPending) {
-            handleUnitDeath(target, unit);
-            targetDeathPending = false;
-          }
-        }
-      }
-
-      if (t < 1) {
-        requestAnimationFrame(attackTick);
-      } else {
-        mesh.position.copy(startPos);
-        rightArm.rotation.y = 0;
-        const hitReactDone = hitReactStartTime == null;
-        if (hitReactDone && targetDeathPending) {
-          handleUnitDeath(target, unit);
-          targetDeathPending = false;
-        }
-        if (hitReactDone) {
-          renderer.shadowMap.enabled = true;
-          isUnitMoving = false;
-          if (onDone) setTimeout(() => onDone(), 0);
-          if (!isReplay) {
-            if (hasMoved) setTimeout(() => endTurn(), 400);
-            else setTimeout(() => updateTurnUI(), 400);
-          }
-        } else {
-          requestAnimationFrame(attackTick);
-        }
-      }
-    }
     isUnitMoving = true;
     renderer.shadowMap.enabled = false;
-    requestAnimationFrame(attackTick);
+    runMeleeStrike(0);
   }
 
   function showSpellExplosion(gx, gy) {
@@ -4855,10 +5096,15 @@ function main() {
 
     /** Max range for movement: attack range or best usable enemy-targeting skill range (if enough MP). */
     const availableSkills = getAvailableSkills(unit);
-    const availableForMove = availableSkills.filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
+    const aiSkipSkillsForDoubleAttack = unit.tempBuff && unit.tempBuff.doubleAttack === true;
+    const availableForMove = aiSkipSkillsForDoubleAttack
+      ? []
+      : availableSkills.filter((s) => !s.disabled && unit.mp >= s.cost && s.target === 'enemy');
     const maxSkillRange = availableForMove.length > 0 ? Math.max(...availableForMove.map((s) => s.range || 0)) : 0;
     const effectiveRange = Math.max(unit.range != null ? unit.range : 1, maxSkillRange);
     const isRangedUnit = unit.level >= 2 && effectiveRange >= 2;
+    /** Ranged kiting / post-attack ranged heuristics only when skills can extend threat; basic-only turns should close for double attack. */
+    const isRangedUnitForAi = aiSkipSkillsForDoubleAttack ? false : isRangedUnit;
 
     const enemies = units.filter((u) => u.hp > 0 && u.player !== unit.player);
     const allies = units.filter((u) => u.hp > 0 && u.player === unit.player && u.id !== unit.id);
@@ -5001,6 +5247,72 @@ function main() {
       return best;
     }
 
+    /** Step toward a tile from which the unit can basic-attack an enemy within attackRange (Manhattan + LOS). Returns true if a move was started. */
+    function attemptMoveWithinAttackRange(attackRange) {
+      if (hasAttacked || enemies.length === 0 || hasMoved || reachableTiles.length === 0) return false;
+      function pathToTileInAttackRangeOf(enemy, requireReachableInOneTurn) {
+        let bestPath = null;
+        const r = attackRange;
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            if (Math.abs(dx) + Math.abs(dy) > r) continue;
+            const tx = enemy.x + dx;
+            const ty = enemy.y + dy;
+            if (tx < 0 || tx >= world.w || ty < 0 || ty >= world.h) continue;
+            if (!isWalkable(world, tx, ty)) continue;
+            if (!hasLineOfSight(world, tx, ty, enemy.x, enemy.y)) continue;
+            const occupied = units.some((u) => u.hp > 0 && u.x === tx && u.y === ty);
+            if (occupied) continue;
+            const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
+            const steps = path ? path.length - 1 : Infinity;
+            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unitAgi);
+            if (ok && (!bestPath || path.length < bestPath.length)) bestPath = path;
+          }
+        }
+        return bestPath;
+      }
+      const pathable = [];
+      for (const e of enemies) {
+        const path = pathToTileInAttackRangeOf(e, true);
+        if (path) pathable.push({ enemy: e, path });
+      }
+      if (pathable.length > 0) {
+        const weakPathable = pathable.filter(
+          (p) => p.enemy.maxHp > 0 && (p.enemy.hp / p.enemy.maxHp) < lowHpThreshold
+        );
+        const candidates = weakPathable.length > 0 ? weakPathable : pathable;
+        if (weakPathable.length > 0) {
+          candidates.sort((a, b) => a.enemy.hp - b.enemy.hp || a.path.length - b.path.length);
+        } else {
+          candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
+        }
+        const chosen = candidates[0];
+        const toward = farthestReachableOnPath(chosen.path, unitAgi);
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return true;
+        }
+      }
+      let bestPath = null;
+      let bestLen = Infinity;
+      for (const e of enemies) {
+        const path = pathToTileInAttackRangeOf(e, false);
+        if (path && path.length < bestLen) {
+          bestLen = path.length;
+          bestPath = path;
+        }
+      }
+      if (bestPath) {
+        const toward = farthestReachableOnPath(bestPath, unitAgi);
+        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
+          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
+          return true;
+        }
+      }
+      return false;
+    }
+
     const enemiesInRangeByTile = new Map();
     for (const t of reachableTiles) {
       const k = t.gy * world.w + t.gx;
@@ -5020,7 +5332,7 @@ function main() {
         return;
       }
       /** When kiting (ranged unit with enemies), prioritize powerup over center or enemy base. */
-      if (isRangedUnit && enemies.length > 0 && powerups.size > 0 && reachableTiles.length > 0) {
+      if (isRangedUnitForAi && enemies.length > 0 && powerups.size > 0 && reachableTiles.length > 0) {
         const powerupTiles = [];
         powerups.forEach((_, key) => {
           powerupTiles.push({ gx: key % world.w, gy: Math.floor(key / world.w) });
@@ -5168,15 +5480,15 @@ function main() {
     }
 
     /** CPU skill usage: prioritize killing (damage on low-HP enemy) > damage in range > heal at 50% HP > buff when available > debuff. */
-    if (!hasAttacked) {
+    if (!hasAttacked && !aiSkipSkillsForDoubleAttack) {
       const available = availableSkills;
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck', 'gnaw', 'vodoo', 'skewer']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
-      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify']);
-      const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate']);
+      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify', 'rage', 'foresight', 'overheal', 'rapid']);
+      const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate', 'bash', 'infect', 'curse']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'manaDrain', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
       const SUMMON_KEYS = new Set(['reanimate']);
 
@@ -5294,6 +5606,7 @@ function main() {
           if (skill.disabled || unit.mp < skill.cost) continue;
           if (DAMAGE_KEYS.has(skill.effectKey)) {
             if (skill.effectKey === 'feast' && (unit.hp / unit.maxHp) > 0.7) continue;
+            if (skill.effectKey === 'rage' && (unit.hp / unit.maxHp) < 0.5) continue;
             if (skill.effectKey === 'berserk' && (unit.hp / unit.maxHp) < 0.25) continue;
             if (skill.effectKey === 'shuriken' && enemiesInRange.length > 0) continue;
             if (skill.effectKey === 'judgement' && (unit.hp / unit.maxHp) > 0.7) continue;
@@ -5364,6 +5677,8 @@ function main() {
       performAttack(unit, target);
       return;
     }
+
+    if (aiSkipSkillsForDoubleAttack && attemptMoveWithinAttackRange(unit.range != null ? unit.range : 1)) return;
 
     /** Prioritize moving toward a powerup over center/enemy base when no very low HP enemies are reachable or in range. */
     if (!hasMoved && !hasLowHpEnemyReachable && powerups.size > 0 && reachableTiles.length > 0) {
@@ -5566,7 +5881,7 @@ function main() {
       }
     }
 
-    if (isRangedUnit && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
+    if (isRangedUnitForAi && enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
       if (!hasLowHpEnemyReachable && powerups.size > 0) {
         const powerupTiles = [];
         powerups.forEach((_, key) => {
@@ -5593,70 +5908,7 @@ function main() {
       }
     }
 
-    if (enemies.length > 0 && !hasMoved && reachableTiles.length > 0) {
-      const attackRange = effectiveRange;
-      function pathToTileInAttackRangeOf(enemy, requireReachableInOneTurn) {
-        let bestPath = null;
-        for (let dy = -attackRange; dy <= attackRange; dy++) {
-          for (let dx = -attackRange; dx <= attackRange; dx++) {
-            if (dx === 0 && dy === 0) continue;
-            if (Math.abs(dx) + Math.abs(dy) > attackRange) continue;
-            const tx = enemy.x + dx;
-            const ty = enemy.y + dy;
-            if (tx < 0 || tx >= world.w || ty < 0 || ty >= world.h) continue;
-            if (!isWalkable(world, tx, ty)) continue;
-            if (!hasLineOfSight(world, tx, ty, enemy.x, enemy.y)) continue;
-            const occupied = units.some((u) => u.hp > 0 && u.x === tx && u.y === ty);
-            if (occupied) continue;
-            const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
-            const steps = path ? path.length - 1 : Infinity;
-            const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unitAgi);
-            if (ok && (!bestPath || path.length < bestPath.length)) bestPath = path;
-          }
-        }
-        return bestPath;
-      }
-      const pathable = [];
-      for (const e of enemies) {
-        const path = pathToTileInAttackRangeOf(e, true);
-        if (path) pathable.push({ enemy: e, path });
-      }
-      if (pathable.length > 0) {
-        const weakPathable = pathable.filter(
-          (p) => p.enemy.maxHp > 0 && (p.enemy.hp / p.enemy.maxHp) < lowHpThreshold
-        );
-        const candidates = weakPathable.length > 0 ? weakPathable : pathable;
-        if (weakPathable.length > 0) {
-          candidates.sort((a, b) => a.enemy.hp - b.enemy.hp || a.path.length - b.path.length);
-        } else {
-          candidates.sort((a, b) => a.path.length - b.path.length || a.enemy.hp - b.enemy.hp);
-        }
-        const chosen = candidates[0];
-        const toward = farthestReachableOnPath(chosen.path, unitAgi);
-        if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-          performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
-          return;
-        }
-      }
-      if (pathable.length === 0) {
-        let bestPath = null;
-        let bestLen = Infinity;
-        for (const e of enemies) {
-          const path = pathToTileInAttackRangeOf(e, false);
-          if (path && path.length < bestLen) {
-            bestLen = path.length;
-            bestPath = path;
-          }
-        }
-        if (bestPath) {
-          const toward = farthestReachableOnPath(bestPath, unitAgi);
-          if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-            performMove(unit, toward.gx, toward.gy, () => setTimeout(runPlayingAI, 600));
-            return;
-          }
-        }
-      }
-    }
+    if (!aiSkipSkillsForDoubleAttack && attemptMoveWithinAttackRange(effectiveRange)) return;
 
     setTimeout(() => endTurn(), 400);
   }
