@@ -58,7 +58,7 @@ const BALANCED_ROLES = {
   tank: ['knight', 'berserker', 'werewolf', 'ghoul', 'barbarian'],
   melee: ['samurai', 'assassin', 'ninja', 'bandit', 'lancer'],
   support: ['paladin', 'monk', 'blacksmith', 'exorcist', 'oracle'],
-  ranged: ['ranger', 'hunter', 'alchemist', 'cannibal', 'amazon'],
+  ranged: ['ranger', 'amazon', 'hunter', 'alchemist', 'cannibal'],
   caster: ['mage', 'witch', 'vampire', 'necromancer', 'shaman'],
 };
 /** Target count per role: computed from lineup size (see getBalancedTargets). */
@@ -130,7 +130,7 @@ const CLASSES = {
   alchemist:  { name: 'Alchemist',  gender: 'female', hp: 17, maxHp: 17, mp: 13, maxMp: 13, str: 6,  agi: 6,  vit: 10, dex: 5,  luk: 8,  int: 11, range: 5 },
   vampire:    { name: 'Vampire',    gender: 'female', hp: 18, maxHp: 18, mp: 16, maxMp: 16, str: 11, agi: 12, vit: 3,  dex: 4,  luk: 3,  int: 12, range: 1 },
   necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 20, maxMp: 20, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 11, int: 15, range: 1 },
-  barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 31, maxHp: 31, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 13, dex: 6,  luk: 3,  int: 2,  range: 1 },
+  barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 31, maxHp: 31, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 15, dex: 6,  luk: 3,  int: 2,  range: 1 },
   cannibal:   { name: 'Cannibal',   gender: 'male',   hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 6,  agi: 11, vit: 2,  dex: 13, luk: 9,  int: 7,  range: 4 },
   shaman:     { name: 'Shaman',     gender: 'female', hp: 16, maxHp: 16, mp: 21, maxMp: 21, str: 4,  agi: 3,  vit: 3,  dex: 3,  luk: 16, int: 16, range: 4 },
   oracle:     { name: 'Oracle',     gender: 'female', hp: 19, maxHp: 19, mp: 19, maxMp: 19, str: 6,  agi: 7,  vit: 4,  dex: 10, luk: 14, int: 10, range: 1 },
@@ -299,7 +299,7 @@ const CLASS_SKILLS = {
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement', type: 'spell' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 3, level: 1, effectKey: 'sanctuary' },
+    { name: 'Sanctuary', description: 'Gain +1 all stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 4, level: 1, effectKey: 'sanctuary' },
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
@@ -311,7 +311,7 @@ const CLASS_SKILLS = {
     { name: 'Power Shot', description: 'Deal knockback damage to one enemy.', cost: 7, target: 'enemy', range: 7, level: 3, effectKey: 'powerShot' },
   ],
   blacksmith: [
-    { name: 'Forge', description: 'Gain +2 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 1, effectKey: 'forge' },
+    { name: 'Forge', description: 'Gain +2 STR for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'forge' },
     { name: 'Fortify', description: 'Gain +2 STR and +2 VIT for both ally and self for 2 turns.', cost: 5, target: 'ally', range: 2, level: 3, effectKey: 'fortify' },
   ],
   alchemist: [
@@ -693,7 +693,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, d, true);
     } break;
     case 'infect': {
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3));
       t.tempDebuff = { poison: poisonVal, duration: 4 };
       showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
     } break;
@@ -2715,7 +2715,18 @@ function main() {
       requestAnimationFrame(summonTick);
     }
 
+    const actorIdPreservingTurn =
+      phase === 'playing' &&
+      initiativeOrder.length > 0 &&
+      currentTurnIndex >= 0 &&
+      currentTurnIndex < initiativeOrder.length
+        ? initiativeOrder[currentTurnIndex]
+        : null;
     initiativeOrder = buildInitiativeOrder();
+    if (actorIdPreservingTurn != null) {
+      const newIdx = initiativeOrder.indexOf(actorIdPreservingTurn);
+      if (newIdx >= 0) currentTurnIndex = newIdx;
+    }
     updateUnitTileBorders();
     if (typeof updateTurnUI === 'function') updateTurnUI();
     requestRender();
@@ -2742,9 +2753,9 @@ function main() {
       class: appearanceClass,
       hairColor,
       level: deadUnit.level,
-      hp: maxHp,
+      hp: q(deadUnit.maxHp),
       maxHp,
-      mp: maxMp,
+      mp: q(deadUnit.maxMp),
       maxMp,
       str: q(deadUnit.str),
       agi: q(deadUnit.agi),
