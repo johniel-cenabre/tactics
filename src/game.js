@@ -5596,15 +5596,14 @@ function main() {
               }
             }
             if (skill.target === 'ally') {
-              if (skill.effectKey === 'forge' && hasActiveBuff) continue;
-              if (skill.effectKey === 'fortify' && hasActiveBuff) continue;
-              if (skill.effectKey === 'mantra' && hasActiveBuff) continue;
-              if (skill.effectKey === 'sanctuary' && hasActiveBuff) continue;
+              if (skill.effectKey === 'overheal' && (unit.hp / unit.maxHp) > 0.7) continue;
               const targets = getSkillTargetTiles(unit, skill, units);
               const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
               if (allyTargets.length > 0) {
+                if (allyTargets.length < 2 && hasActiveBuff) continue;
                 const withoutBuff = allyTargets.filter((a) => !a.tempBuff || a.tempBuff.duration <= 0);
                 const toBuff = (withoutBuff.length > 0 ? withoutBuff : allyTargets).sort((a, b) => a.hp - b.hp)[0];
+                if (skill.effectKey === 'overheal' && (toBuff.hp / toBuff.maxHp) > 0.7) continue;
                 chosen = skill;
                 chosenTarget = toBuff;
                 break;
