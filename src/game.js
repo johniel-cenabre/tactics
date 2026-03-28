@@ -1309,7 +1309,6 @@ function buildTileMesh(world) {
     metalness: baseMetalness,
     bumpMap: noiseBumpMap,
     bumpScale: 0.12,
-    vertexColors: true,
   });
   const instancedGround = new THREE.InstancedMesh(groundGeo, groundMat, totalTiles);
   instancedGround.userData.tileGridGround = true;
