@@ -68,16 +68,6 @@ const CLASS_DRAFT_ROLE = {};
 for (const [role, list] of Object.entries(BALANCED_ROLES)) {
   for (const ck of list) CLASS_DRAFT_ROLE[ck] = role;
 }
-const DRAFT_VARIANCE_STAT_KEYS = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
-/** Precomputed stat variance per class (balanced draft tie-break). */
-const CLASS_STAT_VARIANCE = {};
-for (const key of CLASS_KEYS) {
-  const c = CLASSES[key];
-  if (!c) continue;
-  const values = DRAFT_VARIANCE_STAT_KEYS.map((s) => c[s] ?? 0);
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  CLASS_STAT_VARIANCE[key] = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
-}
 function getBalancedTargets(lineupSize) {
   const n = Math.max(1, lineupSize);
   const keys = Object.keys(BALANCED_RATIOS);
@@ -151,6 +141,17 @@ const CLASSES = {
   oracle:     { name: 'Oracle',     gender: 'female', hp: 19, maxHp: 19, mp: 19, maxMp: 19, str: 6,  agi: 7,  vit: 4,  dex: 10, luk: 14, int: 10, range: 1 },
   amazon:     { name: 'Amazon',     gender: 'female', hp: 23, maxHp: 23, mp: 5,  maxMp: 5,  str: 12, agi: 9,  vit: 11, dex: 7,  luk: 4,  int: 3,  range: 3 },
 };
+
+const DRAFT_VARIANCE_STAT_KEYS = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
+/** Precomputed stat variance per class (balanced draft tie-break). */
+const CLASS_STAT_VARIANCE = {};
+for (const key of CLASS_KEYS) {
+  const c = CLASSES[key];
+  if (!c) continue;
+  const values = DRAFT_VARIANCE_STAT_KEYS.map((s) => c[s] ?? 0);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  CLASS_STAT_VARIANCE[key] = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+}
 
 const CLASS_LOOK = {
   knight:     { primary: 0x696969, secondary: 0x8B4513, hair: 0xb27a01, cape: 0x333333, belt: 0x8B4513 },
