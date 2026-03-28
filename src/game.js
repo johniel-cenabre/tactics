@@ -63,6 +63,21 @@ const BALANCED_ROLES = {
 };
 /** Target count per role: computed from lineup size (see getBalancedTargets). */
 const BALANCED_RATIOS = { tank: 2, melee: 2, support: 1, ranged: 1, caster: 1 };
+/** classKey → role bucket (for draft AI). */
+const CLASS_DRAFT_ROLE = {};
+for (const [role, list] of Object.entries(BALANCED_ROLES)) {
+  for (const ck of list) CLASS_DRAFT_ROLE[ck] = role;
+}
+const DRAFT_VARIANCE_STAT_KEYS = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
+/** Precomputed stat variance per class (balanced draft tie-break). */
+const CLASS_STAT_VARIANCE = {};
+for (const key of CLASS_KEYS) {
+  const c = CLASSES[key];
+  if (!c) continue;
+  const values = DRAFT_VARIANCE_STAT_KEYS.map((s) => c[s] ?? 0);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  CLASS_STAT_VARIANCE[key] = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+}
 function getBalancedTargets(lineupSize) {
   const n = Math.max(1, lineupSize);
   const keys = Object.keys(BALANCED_RATIOS);
@@ -343,7 +358,7 @@ const CLASS_SKILLS = {
     { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
-    { name: 'Skewer', description: 'Deal DEX-based damage to HP and AGI for 2 turns ', cost: 5, target: 'enemy', range: 5, level: 2, effectKey: 'skewer' },
+    { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 5, target: 'enemy', range: 5, level: 2, effectKey: 'skewer' },
     { name: 'Rapid', description: 'Double attack for 1 turn', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'rapid' },
   ],
 };
@@ -365,13 +380,25 @@ function formatStatWithBuffs(unit, key) {
   return html;
 }
 
+const SKILL_EFFECT_DISPLAY_NAMES = {
+  brave: 'Brave', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', manaDrain: 'Mana Drain', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl',
+};
+const skillEffectTitleCache = new Map();
+function getSkillEffectDisplayTitle(effectKey) {
+  let t = skillEffectTitleCache.get(effectKey);
+  if (t !== undefined) return t;
+  t = SKILL_EFFECT_DISPLAY_NAMES[effectKey]
+    ?? effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  skillEffectTitleCache.set(effectKey, t);
+  return t;
+}
+
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
-  const SKILL_DISPLAY_NAMES = { brave: 'Brave', dominate: 'Dominate', arcaneBolt: 'Arcane Bolt', manaDrain: 'Mana Drain', mantra: 'Mantra', chakra: 'Chakra', weaken: 'Weaken', feast: 'Feast', impale: 'Impale', pierce: 'Pierce', focus: 'Focus', snipe: 'Snipe', execute: 'Execute', cripple: 'Cripple', berserk: 'Berserk', bloodlust: 'Bloodlust', hex: 'Hex', drain: 'Drain', shuriken: 'Shuriken', blind: 'Blind', iaido: 'Iaido', chokuto: 'Chokuto', bite: 'Bite', howl: 'Howl' };
-  const skillDisplayName = SKILL_DISPLAY_NAMES[effectKey] || effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  const skillDisplayName = getSkillEffectDisplayTitle(effectKey);
   if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(u.x, u.y, skillDisplayName, false, 'skill-name');
-  const skillName = effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  const skillName = skillDisplayName;
   const targetDesc = t ? `${t.name} (${t.class}, P${t.player})` : 'self';
   let skillDamage = null;
   const applyDamage = (victim, d, isHeal, isSpell) => {
@@ -591,6 +618,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
           const oldGy = t.y;
           t.x = knock.newGx;
           t.y = knock.newGy;
+          if (ctx.updateUnitTileIndex) ctx.updateUnitTileIndex(t, oldGx, oldGy);
           if (knock.collisionDamage > 0) {
             console.log('[KNOCKBACK]', `${knock.collisionDamage} dmg to ${t.name}`);
             ctx.updateUnitPosition(t);
@@ -660,16 +688,30 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'reanimate': {
       if (!ctx.units || !ctx.reanimateDeadUnit) break;
-      const deadUnits = ctx.units.filter((unit) => unit.hp <= 0);
-      if (deadUnits.length === 0) break;
-      const deadAllies = deadUnits.filter((unit) => unit.player === u.player);
-      const pool = deadAllies.length > 0 ? deadAllies : deadUnits;
-      const toReanimate = pool.reduce((best, d) => {
-        const oBest = best.deathOrder ?? 0;
+      const list = ctx.units;
+      let bestAll = null;
+      let oBestAll = -1;
+      let bestAlly = null;
+      let oBestAlly = -1;
+      let hadDeadAlly = false;
+      for (let i = 0; i < list.length; i++) {
+        const d = list[i];
+        if (d.hp > 0) continue;
         const oD = d.deathOrder ?? 0;
-        return oD >= oBest ? d : best;
-      });
-      const reanimated = ctx.reanimateDeadUnit(u, toReanimate)
+        if (oD >= oBestAll) {
+          oBestAll = oD;
+          bestAll = d;
+        }
+        if (d.player === u.player) {
+          hadDeadAlly = true;
+          if (oD >= oBestAlly) {
+            oBestAlly = oD;
+            bestAlly = d;
+          }
+        }
+      }
+      const pick = hadDeadAlly ? bestAlly : bestAll;
+      if (pick) ctx.reanimateDeadUnit(u, pick);
       // if (reanimated) {
       //   const hp = Math.max(1, Math.floor(reanimated.hp * 0.3));
       //   const vit = Math.max(1, Math.floor(reanimated.vit * 0.3));
@@ -726,8 +768,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `Auto heal for 2 turns`, true);
     } break;
     case 'skewer': {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.6) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      applyDamage(t, d, false, true);
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       t.tempDebuff = { agi: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} AGI`, false);
     } break;
@@ -900,7 +941,14 @@ function createWorld(seed) {
     }
   }
 
-  return { w, h, path, height, type, topBaseX, topBaseY, botBaseX, botBaseY };
+  const centerTiles = [];
+  for (let gy = 0; gy < h; gy++) {
+    for (let gx = 0; gx < w; gx++) {
+      if (type[gy][gx] === TileType.CENTER) centerTiles.push({ gx, gy });
+    }
+  }
+
+  return { w, h, path, height, type, topBaseX, topBaseY, botBaseX, botBaseY, centerTiles };
 }
 
 function getBaseTiles(world, player, occupiedKeys) {
@@ -917,6 +965,7 @@ function getBaseTiles(world, player, occupiedKeys) {
 }
 
 function getCenterTilesForSort(world) {
+  if (world.centerTiles && world.centerTiles.length > 0) return world.centerTiles;
   const out = [];
   for (let gy = 0; gy < world.h; gy++)
     for (let gx = 0; gx < world.w; gx++)
@@ -1019,13 +1068,14 @@ function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
   const dist = new Map();
   dist.set(key(startX, startY), 0);
   const queue = [{ x: startX, y: startY, d: 0 }];
+  let qh = 0;
   const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
   const blockEnemies = units != null && movingUnit != null;
   const enemyOccupiedKeys = blockEnemies
     ? new Set(units.filter((u) => u.hp > 0 && u.player !== movingUnit.player).map((u) => u.y * world.w + u.x))
     : null;
-  while (queue.length) {
-    const { x, y, d } = queue.shift();
+  while (qh < queue.length) {
+    const { x, y, d } = queue[qh++];
     if (d >= maxMoves) continue;
     for (const [dx, dy] of dirs) {
       const nx = x + dx;
@@ -1066,6 +1116,7 @@ function getPath(world, startX, startY, endX, endY, units, movingUnit) {
   );
   const parent = new Map();
   const queue = [{ x: startX, y: startY }];
+  let qh = 0;
   parent.set(key(startX, startY), null);
   const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
@@ -1074,8 +1125,8 @@ function getPath(world, startX, startY, endX, endY, units, movingUnit) {
     return !enemyOccupiedKeys.has(key(x, y));
   }
 
-  while (queue.length) {
-    const { x, y } = queue.shift();
+  while (qh < queue.length) {
+    const { x, y } = queue[qh++];
     if (x === endX && y === endY) {
       const pathArr = [];
       let cur = { x: endX, y: endY };
@@ -1092,6 +1143,62 @@ function getPath(world, startX, startY, endX, endY, units, movingUnit) {
       if (parent.has(k)) continue;
       if (!canPass(nx, ny)) continue;
       parent.set(k, { x, y });
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  return null;
+}
+
+/**
+ * Shortest path from start to any tile in targets (each { gx, gy }). Same passability rules as getPath.
+ * @returns {{ path: Array<{x:number,y:number}>, target: { gx: number, gy: number } } | null}
+ */
+function getPathToNearestOfTargets(world, startX, startY, targets, units, movingUnit) {
+  if (!targets || targets.length === 0) return null;
+  const key = (x, y) => y * world.w + x;
+  const sk = key(startX, startY);
+  const targetKeys = new Set();
+  for (let i = 0; i < targets.length; i++) {
+    const g = targets[i];
+    if (g && g.gx != null && g.gy != null) targetKeys.add(key(g.gx, g.gy));
+  }
+  if (targetKeys.size === 0) return null;
+  if (targetKeys.has(sk)) {
+    return { path: [{ x: startX, y: startY }], target: { gx: startX, gy: startY } };
+  }
+  const enemyOccupiedKeys = new Set(
+    units.filter((u) => u.hp > 0 && u.player !== movingUnit.player).map((u) => u.y * world.w + u.x)
+  );
+  const parent = new Map();
+  const queue = [{ x: startX, y: startY }];
+  let qh = 0;
+  parent.set(sk, null);
+  const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+  function canPass(x, y) {
+    if (!isWalkable(world, x, y)) return false;
+    return !enemyOccupiedKeys.has(key(x, y));
+  }
+  while (qh < queue.length) {
+    const { x, y } = queue[qh++];
+    const k = key(x, y);
+    if (targetKeys.has(k)) {
+      const pathArr = [];
+      let cur = { x, y };
+      while (cur) {
+        pathArr.unshift(cur);
+        cur = parent.get(key(cur.x, cur.y));
+      }
+      return { path: pathArr, target: { gx: x, gy: y } };
+    }
+    for (let di = 0; di < dirs.length; di++) {
+      const dx = dirs[di][0];
+      const dy = dirs[di][1];
+      const nx = x + dx;
+      const ny = y + dy;
+      const nk = key(nx, ny);
+      if (parent.has(nk)) continue;
+      if (!canPass(nx, ny)) continue;
+      parent.set(nk, { x, y });
       queue.push({ x: nx, y: ny });
     }
   }
@@ -1171,7 +1278,7 @@ function buildTileMesh(world) {
   }
 
   const rootRadius = 0.12;
-  function addCrisscrossLines(px, pz, surfaceY, parentGroup) {
+  function addCrisscrossLines(px, pz, surfaceY, parentGroup, gx, gy) {
     const y = surfaceY + 0.02;
     const points = [
       [px - rootRadius, y, pz - rootRadius], [px + rootRadius, y, pz + rootRadius],
@@ -1190,26 +1297,43 @@ function buildTileMesh(world) {
     lineGeo.computeBoundingSphere();
     const lineMat = new THREE.LineBasicMaterial({ color: 0x0d0d0d, linewidth: 1 });
     const lines = new THREE.LineSegments(lineGeo, lineMat);
+    lines.userData = { gx, gy };
     parentGroup.add(lines);
   }
 
+  const totalTiles = world.w * world.h;
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: baseRoughness,
+    metalness: baseMetalness,
+    bumpMap: noiseBumpMap,
+    bumpScale: 0.12,
+    vertexColors: true,
+  });
+  const instancedGround = new THREE.InstancedMesh(groundGeo, groundMat, totalTiles);
+  instancedGround.userData.tileGridGround = true;
+  instancedGround.castShadow = true;
+  instancedGround.receiveShadow = true;
+  instancedGround.frustumCulled = false;
+  const _dummy = new THREE.Object3D();
+  const _instColor = new THREE.Color();
+  let instanceIndex = 0;
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
       const t = world.type[y][x];
       const elev = world.height[y][x];
-      let color = colors[t];
+      const color = colors[t];
       const topY = BASE_HEIGHT + elev * 0.35;
-      const surfaceY = topY / 2 + BASE_HEIGHT / 2;
-      const mat = new THREE.MeshStandardMaterial({
-        roughness: Math.max(0.7, Math.min(1, baseRoughness + (Math.random() - 0.5) * 0.18)),
-        metalness: Math.max(0, Math.min(0.1, baseMetalness + (Math.random() - 0.5) * 0.04)),
-      });
       const r = ((color >> 16) & 0xff) / 255;
       const g = ((color >> 8) & 0xff) / 255;
       const b = (color & 0xff) / 255;
-      let fr = r, fg = g, fb = b;
+      let fr = r;
+      let fg = g;
+      let fb = b;
       if (t === TileType.PATH || t === TileType.TREE || t === TileType.ROCK) {
-        const dirtR = 0.42, dirtG = 0.26, dirtB = 0.14;
+        const dirtR = 0.42;
+        const dirtG = 0.26;
+        const dirtB = 0.14;
         const mix = Math.random() * 0.45;
         fr = r * (1 - mix) + dirtR * mix;
         fg = g * (1 - mix) + dirtG * mix;
@@ -1221,31 +1345,40 @@ function buildTileMesh(world) {
         fb *= 0.5;
       }
       const variation = 1 + (Math.random() - 0.5) * 0.12;
-      mat.color.setRGB(
+      _instColor.setRGB(
         Math.min(1, fr * variation),
         Math.min(1, fg * variation),
-        Math.min(1, fb * variation)
+        Math.min(1, fb * variation),
       );
-      mat.bumpMap = noiseBumpMap;
-      mat.bumpScale = 0.12;
-      const mesh = new THREE.Mesh(groundGeo, mat);
-      mesh.position.set(
+      instancedGround.setColorAt(instanceIndex, _instColor);
+      _dummy.position.set(
         x * TILE_SIZE - hw + TILE_SIZE / 2,
         topY / 2,
-        y * TILE_SIZE - hh + TILE_SIZE / 2
+        y * TILE_SIZE - hh + TILE_SIZE / 2,
       );
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.userData = { gx: x, gy: y, type: t };
-      group.add(mesh);
+      _dummy.updateMatrix();
+      instancedGround.setMatrixAt(instanceIndex, _dummy.matrix);
+      instanceIndex++;
+    }
+  }
+  instancedGround.instanceMatrix.needsUpdate = true;
+  if (instancedGround.instanceColor) instancedGround.instanceColor.needsUpdate = true;
+  group.add(instancedGround);
 
+  for (let y = 0; y < world.h; y++) {
+    for (let x = 0; x < world.w; x++) {
+      const t = world.type[y][x];
+      const elev = world.height[y][x];
+      const topY = BASE_HEIGHT + elev * 0.35;
+      const surfaceY = topY / 2 + BASE_HEIGHT / 2;
       const px = x * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
 
-      if (t === TileType.TREE) addCrisscrossLines(px, pz, surfaceY, group);
+      if (t === TileType.TREE) addCrisscrossLines(px, pz, surfaceY, group, x, y);
 
       if (t === TileType.TREE) {
         const treeGroup = new THREE.Group();
+        treeGroup.userData = { gx: x, gy: y };
         treeGroup.position.set(px, surfaceY, pz);
 
         const atEdge = x === 0 || x === world.w - 1 || y === 0 || y === world.h - 1;
@@ -1339,6 +1472,7 @@ function buildTileMesh(world) {
         water.rotation.x = -Math.PI / 2;
         water.position.set(px, surfaceY + 0.02, pz);
         water.receiveShadow = true;
+        water.userData = { gx: x, gy: y };
         group.add(water);
       } else if (t === TileType.ROCK) {
         const rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.9 });
@@ -1356,6 +1490,7 @@ function buildTileMesh(world) {
           );
         rock.rotation.set(Math.random(), Math.random(), Math.random());
         rock.castShadow = true;
+        rock.userData = { gx: x, gy: y };
         group.add(rock);
         };
         const s1 = 0.32 + Math.random() * 0.14;
@@ -1471,7 +1606,7 @@ function main() {
     for (let gx = 0; gx < world.w; gx++) {
       const gy = centerY;
       if (world.type[gy][gx] !== TileType.PATH) continue;
-      const occupied = units.some((u) => u.hp > 0 && u.x === gx && u.y === gy);
+      const occupied = getUnitAtTile(gx, gy) != null;
       if (occupied) continue;
       const key = gy * world.w + gx;
       if (powerups.has(key)) continue;
@@ -1527,6 +1662,40 @@ function main() {
   }
 
   const units = [];
+  let deadCorpseCount = 0;
+  const unitById = new Map();
+  function clearUnitIdIndex() {
+    unitById.clear();
+  }
+  function registerUnitInIdIndex(u) {
+    unitById.set(u.id, u);
+  }
+  function unregisterUnitId(id) {
+    unitById.delete(id);
+  }
+  function getUnitById(id) {
+    return unitById.get(id);
+  }
+  /** Living units only: grid key -> unit (one unit per tile). */
+  const unitAtTileKey = new Map();
+  function clearUnitTileIndex() {
+    unitAtTileKey.clear();
+  }
+  function updateUnitTileIndex(unit, prevGx, prevGy) {
+    if (prevGx != null && prevGy != null) {
+      const ok = prevGy * world.w + prevGx;
+      if (unitAtTileKey.get(ok) === unit) unitAtTileKey.delete(ok);
+    }
+    if (unit.hp > 0) {
+      unitAtTileKey.set(unit.y * world.w + unit.x, unit);
+    }
+  }
+  function getUnitAtTile(gx, gy) {
+    const k = gy * world.w + gx;
+    const u = unitAtTileKey.get(k);
+    if (!u || u.hp <= 0 || u.x !== gx || u.y !== gy) return null;
+    return u;
+  }
   let nextUnitId = 1;
   let deathOrderSeq = 0;
   const unitMeshes = new Map();
@@ -1570,8 +1739,11 @@ function main() {
     });
     unitMeshes.clear();
     units.length = 0;
+    clearUnitIdIndex();
+    clearUnitTileIndex();
     nextUnitId = 1;
     deathOrderSeq = 0;
+    deadCorpseCount = 0;
     powerups.forEach((pu) => {
       powerupMeshesGroup.remove(pu.mesh);
       pu.mesh.geometry.dispose();
@@ -1604,8 +1776,11 @@ function main() {
     });
     unitMeshes.clear();
     units.length = 0;
+    clearUnitIdIndex();
+    clearUnitTileIndex();
     nextUnitId = 1;
     deathOrderSeq = 0;
+    deadCorpseCount = 0;
   }
 
   function nudgeColor(hex, amount) {
@@ -2172,7 +2347,8 @@ function main() {
     let unit = null;
     if (phase === 'playing' && initiativeOrder.length > 0) {
       const uid = initiativeOrder[currentTurnIndex];
-      unit = units.find((u) => u.id === uid && u.hp > 0);
+      const uCur = getUnitById(uid);
+      unit = uCur && uCur.hp > 0 ? uCur : null;
     }
     if (!unit) unit = units.find((u) => u.player === currentPlayer && u.hp > 0);
     if (!unit) return;
@@ -2258,9 +2434,14 @@ function main() {
   let availableClasses = new Set(CLASS_KEYS);
   let draftClassOrder = [...CLASS_KEYS];
   let draftPickIndex = 0;
+  /** Completed class picks per player (O(1) draft pick label). */
+  const draftPickCountByPlayer = { 1: 0, 2: 0 };
   let pendingClassKey = null;
   let draftSelectedClassKey = null;
+  let draftClassSelectedCardEl = null;
   let placementTileKeys = new Set();
+  /** Same order as pickClass / showPlacementHighlights (AI reuses without re-sorting). */
+  let placementTilesSorted = [];
   let initiativeOrder = [];
   let currentTurnIndex = 0;
   let selectedUnitId = null;
@@ -2421,7 +2602,7 @@ function main() {
       return;
     }
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     if (!unit || unit.hp <= 0) {
       turnPointerMesh.visible = false;
       turnPointerMesh.removeFromParent();
@@ -2490,7 +2671,7 @@ function main() {
   function updateFacingFromPointer(clientX, clientY) {
     if (!isChoosingFacing || initiativeOrder.length === 0 || allowedFacingAngles.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     const mesh = unitMeshes.get(uid);
     if (!unit || !mesh) return;
     pointerToNdc(clientX, clientY);
@@ -2499,9 +2680,7 @@ function main() {
     if (intersects.length === 0) return;
     let point = null;
     for (const hit of intersects) {
-      let o = hit.object;
-      while (o && (o.userData.gx == null || o.userData.gy == null)) o = o.parent;
-      if (o && o.userData.gx != null) {
+      if (tileHitFromIntersect(hit)) {
         point = hit.point;
         break;
       }
@@ -2518,7 +2697,7 @@ function main() {
   function showFacingArrow() {
     if (initiativeOrder.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     const mesh = unitMeshes.get(uid);
     if (!unit || !mesh) return;
     const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
@@ -2555,15 +2734,12 @@ function main() {
 
   function getCurrentPlayerPickCount() {
     const p = getCurrentDraftPlayer();
-    let count = 0;
-    for (let i = 0; i < draftPickIndex; i++) {
-      if (DRAFT_ORDER[i] === p) count++;
-    }
-    return count + 1;
+    return draftPickCountByPlayer[p] + 1;
   }
 
   function startDraftPhase() {
     deathOrderSeq = 0;
+    deadCorpseCount = 0;
     powerups.forEach((pu) => {
       powerupMeshesGroup.remove(pu.mesh);
       pu.mesh.geometry.dispose();
@@ -2585,11 +2761,15 @@ function main() {
     DRAFT_ORDER = order;
     phase = 'draft';
     draftPickIndex = 0;
+    draftPickCountByPlayer[1] = 0;
+    draftPickCountByPlayer[2] = 0;
     availableClasses = new Set(CLASS_KEYS);
     draftClassOrder = shuffleArray([...CLASS_KEYS]);
     pendingClassKey = null;
     draftSelectedClassKey = null;
+    draftClassSelectedCardEl = null;
     placementTileKeys.clear();
+    placementTilesSorted = [];
     clearHighlights();
     updateDraftUI();
     document.getElementById('turn-menu').style.display = 'none';
@@ -2681,6 +2861,8 @@ function main() {
     if (skills != null && Array.isArray(skills) && skills.length > 0) unit.summonedSkills = skills;
 
     units.push(unit);
+    registerUnitInIdIndex(unit);
+    updateUnitTileIndex(unit, null, null);
     addUnitToScene(unit);
     const summonedMesh = unitMeshes.get(unit.id);
     if (summonedMesh && opts?.useGrayscaleAppearance) makeMeshGrayscale(summonedMesh);
@@ -2739,7 +2921,9 @@ function main() {
   function reanimateDeadUnit(summoner, deadUnit) {
     const idx = units.indexOf(deadUnit);
     if (idx === -1) return null;
+    unregisterUnitId(deadUnit.id);
     units.splice(idx, 1);
+    deadCorpseCount = Math.max(0, deadCorpseCount - 1);
     const oldMesh = unitMeshes.get(deadUnit.id);
     if (oldMesh) {
       scene.remove(oldMesh);
@@ -2804,11 +2988,13 @@ function main() {
     turnCount = 0;
     initiativeOrder = buildInitiativeOrder();
     currentTurnIndex = 0;
-    while (currentTurnIndex < initiativeOrder.length && units.find((u) => u.id === initiativeOrder[currentTurnIndex]).hp <= 0) {
+    while (currentTurnIndex < initiativeOrder.length) {
+      const u0 = getUnitById(initiativeOrder[currentTurnIndex]);
+      if (u0 && u0.hp > 0) break;
       currentTurnIndex++;
     }
     if (currentTurnIndex >= initiativeOrder.length) currentTurnIndex = 0;
-    const currentUnit = units.find((u) => u.id === initiativeOrder[currentTurnIndex]);
+    const currentUnit = getUnitById(initiativeOrder[currentTurnIndex]);
     currentPlayer = currentUnit ? currentUnit.player : 1;
     hasMoved = false;
     hasAttacked = false;
@@ -2910,6 +3096,7 @@ function main() {
     if (isMyDraftTurn) {
       draftTitle.textContent = `${getPlayerLabel(p)}: Pick a class (${getCurrentPlayerPickCount()}/${draftPicksPerPlayer})`;
       draftMessage.textContent = '';
+      draftClassSelectedCardEl = null;
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
       const detailPlaceholder = document.getElementById('draft-detail-placeholder');
@@ -2957,9 +3144,12 @@ function main() {
             if (k && availableClasses.has(k)) pickClass(k);
           };
         }
-        draftClasses.querySelectorAll('.draft-class-card').forEach((el) => {
-          el.classList.toggle('draft-class-card-selected', el.dataset.classKey === key);
-        });
+        const nextSel = key ? draftClasses.querySelector(`button.draft-class-card[data-class-key="${key}"]`) : null;
+        if (draftClassSelectedCardEl !== nextSel) {
+          if (draftClassSelectedCardEl) draftClassSelectedCardEl.classList.remove('draft-class-card-selected');
+          draftClassSelectedCardEl = nextSel;
+          if (draftClassSelectedCardEl) draftClassSelectedCardEl.classList.add('draft-class-card-selected');
+        }
       }
       draftClassOrder.forEach((key) => {
         const isAvailable = availableClasses.has(key);
@@ -2975,13 +3165,25 @@ function main() {
             <div class="draft-class-card-name">${c.name}</div>
           </div>
         `;
-        if (isAvailable) card.addEventListener('click', () => { draftSelectedClassKey = key; updateDraftDetailCard(); });
+        if (isAvailable) {
+          card.addEventListener('click', () => {
+            draftSelectedClassKey = key;
+            if (draftClassSelectedCardEl && draftClassSelectedCardEl !== card) {
+              draftClassSelectedCardEl.classList.remove('draft-class-card-selected');
+            }
+            draftClassSelectedCardEl = card;
+            card.classList.add('draft-class-card-selected');
+            updateDraftDetailCard();
+          });
+        }
+        if (draftSelectedClassKey === key) draftClassSelectedCardEl = card;
         draftClasses.appendChild(card);
       });
       updateDraftDetailCard();
     } else {
       draftTitle.textContent = `${getPlayerLabel(p)} is picking a class`;
       draftMessage.textContent = '';
+      draftClassSelectedCardEl = null;
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(p)} — pick a class`;
       const detailPlaceholder = document.getElementById('draft-detail-placeholder');
@@ -3004,6 +3206,7 @@ function main() {
     const occupied = new Set(units.map((u) => u.y * world.w + u.x));
     const tiles = getBaseTiles(world, p, occupied);
     const tilesSorted = sortTilesByDistanceToCenter(world, tiles);
+    placementTilesSorted = tilesSorted;
     placementTileKeys = new Set(tilesSorted.map((t) => t.gy * world.w + t.gx));
     showPlacementHighlights(tilesSorted);
     updateDraftUI();
@@ -3040,6 +3243,8 @@ function main() {
       range: template.range,
     };
     units.push(unit);
+    registerUnitInIdIndex(unit);
+    updateUnitTileIndex(unit, null, null);
     addUnitToScene(unit);
     const mesh = unitMeshes.get(unit.id);
     if (mesh) {
@@ -3048,6 +3253,7 @@ function main() {
     availableClasses.delete(pendingClassKey);
     pendingClassKey = null;
     placementTileKeys.clear();
+    placementTilesSorted = [];
     clearHighlights();
     if (gameMode === 'online' && p === localPlayerNumber && typeof sendOnlineMessage === 'function') {
       sendOnlineMessage({ type: 'draftPlace', gx, gy });
@@ -3057,6 +3263,7 @@ function main() {
       placementCardEl.style.display = 'none';
       placementCardEl.innerHTML = '';
     }
+    draftPickCountByPlayer[p]++;
     draftPickIndex++;
     if (draftPickIndex >= 2 * draftPicksPerPlayer) {
       endDraftPhase();
@@ -3077,6 +3284,7 @@ function main() {
         ? `${getPlayerLabel(nextP)}: Pick a class (${nextPickCount}/${draftPicksPerPlayer})`
         : `${getPlayerLabel(nextP)} is picking a class`;
       if (draftMessage) draftMessage.textContent = nextIsMyDraftTurn ? 'Get ready…' : '';
+      draftClassSelectedCardEl = null;
       draftClasses.innerHTML = '';
       turnEl.textContent = `Draft: ${getPlayerLabel(nextP)} — pick a class`;
     }
@@ -3118,16 +3326,18 @@ function main() {
 
     if (phase === 'playing' && initiativeOrder.length > 0) {
       const currentUid = initiativeOrder[currentTurnIndex];
-      const currentUnitAlive = units.find((u) => u.id === currentUid && u.hp > 0);
+      const cu = getUnitById(currentUid);
+      const currentUnitAlive = cu && cu.hp > 0 ? cu : null;
       if (gameMode === 'online' && currentUnitAlive && currentUnitAlive.player !== localPlayerNumber) {
         selectedUnitId = null;
-      } else if (currentUnitAlive && (selectedUnitId == null || !units.find((u) => u.id === selectedUnitId && u.hp > 0))) {
-        selectedUnitId = currentUid;
+      } else if (currentUnitAlive) {
+        const selU = selectedUnitId != null ? getUnitById(selectedUnitId) : null;
+        if (selectedUnitId == null || !selU || selU.hp <= 0) selectedUnitId = currentUid;
       }
     }
 
     if (selectedUnitId != null) {
-      const u = units.find((x) => x.id === selectedUnitId);
+      const u = getUnitById(selectedUnitId);
       if (u && u.hp > 0) {
         unitInfo.classList.remove('no-unit');
         const lowHp = u.maxHp > 0 && (u.hp / u.maxHp) < 0.25;
@@ -3180,7 +3390,7 @@ function main() {
     if (selectedUnitId != null) {
       turnEl.textContent = `${getPlayerLabel(currentPlayer)} — Unit ${unitNameEl.innerHTML} active`;
     } else {
-      const currentUnit = initiativeOrder.length ? units.find((u) => u.id === initiativeOrder[currentTurnIndex]) : null;
+      const currentUnit = initiativeOrder.length ? getUnitById(initiativeOrder[currentTurnIndex]) : null;
       turnEl.textContent = currentUnit ? `${currentUnit.name} (${getPlayerLabel(currentPlayer)})` : getPlayerLabel(currentPlayer);
     }
     menuLabel.textContent = getPlayerLabel(currentPlayer);
@@ -3200,7 +3410,8 @@ function main() {
     } else if (phase === 'playing') {
       btnAttack.disabled = hasAttacked;
       const currentUid = initiativeOrder.length ? initiativeOrder[currentTurnIndex] : null;
-      const currentUnit = currentUid ? units.find((u) => u.id === currentUid && u.hp > 0) : null;
+      const cuTurn = currentUid ? getUnitById(currentUid) : null;
+      const currentUnit = cuTurn && cuTurn.hp > 0 ? cuTurn : null;
       const isHumanTurn = gameMode !== 'cvcpu' && (gameMode !== 'pvcpu' || currentPlayer === 1) && (gameMode !== 'online' || currentPlayer === localPlayerNumber);
       const availableSkills = isHumanTurn && currentUnit && !hasAttacked ? getAvailableSkills(currentUnit) : [];
       btnSkill.disabled = hasAttacked || !isHumanTurn || availableSkills.length === 0;
@@ -3249,7 +3460,7 @@ function main() {
     const n = initiativeOrder.length;
     if (n === 0) return;
     const currentUid = initiativeOrder[currentTurnIndex];
-    const currentUnit = units.find((u) => u.id === currentUid);
+    const currentUnit = getUnitById(currentUid);
     if (currentUnit && currentUnit.tempDebuff) currentUnit.tempDebuff.duration--;
     if (currentUnit && currentUnit.tempDebuff && currentUnit.tempDebuff.duration <= 0) currentUnit.tempDebuff = undefined;
     if (currentUnit && currentUnit.tempBuff) currentUnit.tempBuff.duration--;
@@ -3274,7 +3485,7 @@ function main() {
     let steps = 0;
     while (steps < n) {
       const uid = initiativeOrder[next];
-      const u = units.find((x) => x.id === uid);
+      const u = getUnitById(uid);
       if (u && u.hp > 0) break;
       next = (next + 1) % n;
       steps++;
@@ -3285,7 +3496,7 @@ function main() {
     const TEMP_DEBUFF_DAMAGER = ['poison'];
 
     const nextUid = initiativeOrder[currentTurnIndex];
-    const nextUnit = units.find((u) => u.id === nextUid);
+    const nextUnit = getUnitById(nextUid);
     for (let steps2 = 0; steps2 < n; steps2++) {
       if (!nextUnit || nextUnit.hp <= 0) break;
       const tempDebuffs = nextUnit.tempDebuff || {};
@@ -3302,7 +3513,7 @@ function main() {
         let steps3 = 0;
         while (steps3 < n) {
           const uid = initiativeOrder[next];
-          const u = units.find((x) => x.id === uid);
+          const u = getUnitById(uid);
           if (u && u.hp > 0) break;
           next = (next + 1) % n;
           steps3++;
@@ -3314,7 +3525,7 @@ function main() {
     }
 
     const turnUid = initiativeOrder[currentTurnIndex];
-    const unitStartingTurn = units.find((u) => u.id === turnUid);
+    const unitStartingTurn = getUnitById(turnUid);
     if (unitStartingTurn && unitStartingTurn.hp > 0) {
       const buff = unitStartingTurn.tempBuff;
       const healAmt = buff && buff.heal != null && !isNaN(buff.heal) ? Number(buff.heal) : 0;
@@ -3351,12 +3562,12 @@ function main() {
     if (phase !== 'playing' || initiativeOrder.length === 0) return;
     if (gameMode === 'online') {
       const uid = initiativeOrder[currentTurnIndex];
-      const unit = units.find((u) => u.id === uid);
+      const unit = getUnitById(uid);
       if (!unit || unit.player !== localPlayerNumber) return;
     }
     hideUnitPreviewCard();
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     if (!unit || unit.hp <= 0) return;
     const range = unit.range != null ? unit.range : 1;
     selectedUnitId = uid;
@@ -3376,7 +3587,8 @@ function main() {
     e.stopPropagation();
     if (isUnitMoving || hasAttacked) return;
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = uid ? units.find((u) => u.id === uid && u.hp > 0) : null;
+    const uSkill = uid ? getUnitById(uid) : null;
+    const unit = uSkill && uSkill.hp > 0 ? uSkill : null;
     if (!unit || unit.player !== currentPlayer) return;
     if (gameMode === 'online' && unit.player !== localPlayerNumber) return;
     let overlay = document.getElementById('skill-list-overlay');
@@ -3503,7 +3715,7 @@ function main() {
     if (isChoosingFacing) return;
     if (phase !== 'playing' || initiativeOrder.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     if (!unit || unit.hp <= 0) return;
     if (gameMode === 'online' && unit.player !== localPlayerNumber) return;
     isChoosingFacing = true;
@@ -3922,8 +4134,8 @@ function main() {
         return;
       }
       if (msg.type === 'unitDeath') {
-        const unit = units.find((u) => u.id === msg.unitId);
-        const killer = msg.killerId != null ? units.find((u) => u.id === msg.killerId) : null;
+        const unit = getUnitById(msg.unitId);
+        const killer = msg.killerId != null ? getUnitById(msg.killerId) : null;
         if (unit) {
           unit.hp = 0;
           handleUnitDeath(unit, killer, { skipSync: true });
@@ -4012,14 +4224,14 @@ function main() {
   }
 
   function flushOnlineOutboundQueue() {
-    while (onlineOutboundQueue.length > 0) {
-      const obj = onlineOutboundQueue.shift();
-      sendOnlineMessage(obj);
+    for (let i = 0; i < onlineOutboundQueue.length; i++) {
+      sendOnlineMessage(onlineOutboundQueue[i]);
     }
+    onlineOutboundQueue.length = 0;
   }
 
   function applyMoveFromRemote(unitId, toGx, toGy) {
-    const unit = units.find((u) => u.id === unitId);
+    const unit = getUnitById(unitId);
     if (!unit || unit.hp <= 0) return;
     pendingRemoteActionCount++;
     performMove(unit, toGx, toGy, () => {
@@ -4030,8 +4242,8 @@ function main() {
   }
 
   function applyAttackFromRemote(unitId, targetId, hit, damage, strikeList) {
-    const unit = units.find((u) => u.id === unitId);
-    const target = units.find((u) => u.id === targetId);
+    const unit = getUnitById(unitId);
+    const target = getUnitById(targetId);
     if (!unit || !target || target.hp <= 0) return;
     pendingRemoteActionCount++;
     const done = () => {
@@ -4047,8 +4259,8 @@ function main() {
   }
 
   function applySkillFromRemote(msg) {
-    const unit = units.find((u) => u.id === msg.unitId);
-    const target = msg.targetId != null ? units.find((u) => u.id === msg.targetId) : null;
+    const unit = getUnitById(msg.unitId);
+    const target = msg.targetId != null ? getUnitById(msg.targetId) : null;
     if (!unit) return;
     pendingRemoteActionCount++;
     if (msg.effectKey && unit.mp >= (CLASS_SKILLS[unit.class] || []).find((s) => s.effectKey === msg.effectKey)?.cost) {
@@ -4064,6 +4276,7 @@ function main() {
           world,
           units,
           reanimateDeadUnit,
+          updateUnitTileIndex,
           updateUnitPosition(u) {
             const m = unitMeshes.get(u.id);
             if (m) m.position.copy(worldPos(u.x, u.y));
@@ -4187,95 +4400,73 @@ function main() {
       return ordered[0] ?? available[0] ?? null;
     }
 
-    const statKeys = ['hp', 'maxHp', 'mp', 'str', 'agi', 'vit', 'dex', 'luk', 'int'];
-    function variance(key) {
-      const c = CLASSES[key];
-      if (!c) return Infinity;
-      const values = statKeys.map((s) => c[s] ?? 0);
-      const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      return values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+    function pickBest2(getterA, getterB) {
+      let best = available[0];
+      let va = getterA(best);
+      let vb = getterB(best);
+      for (let i = 1; i < available.length; i++) {
+        const k = available[i];
+        const a = getterA(k);
+        const b = getterB(k);
+        if (a > va || (a === va && b > vb)) {
+          best = k;
+          va = a;
+          vb = b;
+        }
+      }
+      return best;
     }
 
     if (preference === 'tanky') {
-      const sorted = [...available].sort((a, b) => {
-        const hpA = CLASSES[a]?.hp ?? 0;
-        const hpB = CLASSES[b]?.hp ?? 0;
-        if (hpB !== hpA) return hpB - hpA;
-        return (CLASSES[b]?.vit ?? 0) - (CLASSES[a]?.vit ?? 0);
-      });
-      return sorted[0] ?? null;
+      return pickBest2((k) => CLASSES[k]?.hp ?? 0, (k) => CLASSES[k]?.vit ?? 0);
     }
     if (preference === 'aggressive') {
-      const sorted = [...available].sort((a, b) => {
-        const strA = CLASSES[a]?.str ?? 0;
-        const strB = CLASSES[b]?.str ?? 0;
-        if (strB !== strA) return strB - strA;
-        return (CLASSES[b]?.agi ?? 0) - (CLASSES[a]?.agi ?? 0);
-      });
-      return sorted[0] ?? null;
+      return pickBest2((k) => CLASSES[k]?.str ?? 0, (k) => CLASSES[k]?.agi ?? 0);
     }
     if (preference === 'scout') {
-      const sorted = [...available].sort((a, b) => {
-        const agiA = CLASSES[a]?.agi ?? 0;
-        const agiB = CLASSES[b]?.agi ?? 0;
-        if (agiB !== agiA) return agiB - agiA;
-        return (CLASSES[b]?.dex ?? 0) - (CLASSES[a]?.dex ?? 0);
-      });
-      return sorted[0] ?? null;
+      return pickBest2((k) => CLASSES[k]?.agi ?? 0, (k) => CLASSES[k]?.dex ?? 0);
     }
     if (preference === 'ranged') {
-      const sorted = [...available].sort((a, b) => {
-        const rangeA = CLASSES[a]?.range ?? 0;
-        const rangeB = CLASSES[b]?.range ?? 0;
-        if (rangeB !== rangeA) return rangeB - rangeA;
-        return (CLASSES[b]?.dex ?? 0) - (CLASSES[a]?.dex ?? 0);
-      });
-      return sorted[0] ?? null;
+      return pickBest2((k) => CLASSES[k]?.range ?? 0, (k) => CLASSES[k]?.dex ?? 0);
     }
     if (preference === 'caster') {
-      const sorted = [...available].sort((a, b) => {
-        const intA = CLASSES[a]?.int ?? 0;
-        const intB = CLASSES[b]?.int ?? 0;
-        if (intB !== intA) return intB - intA;
-        return (CLASSES[b]?.mp ?? 0) - (CLASSES[a]?.mp ?? 0);
-      });
-      return sorted[0] ?? null;
+      return pickBest2((k) => CLASSES[k]?.int ?? 0, (k) => CLASSES[k]?.mp ?? 0);
     }
 
     // balanced (default): pick to build a balanced lineup (tank / melee / support / ranged / caster mix)
     const p = getCurrentDraftPlayer();
     const n = draftPicksPerPlayer;
     const targets = getBalancedTargets(n);
-    const myClasses = units.filter((u) => u.player === p).map((u) => u.class);
-    const roleCounts = {};
-    for (const k of Object.keys(BALANCED_ROLES)) roleCounts[k] = 0;
-    for (const c of myClasses) {
-      for (const k of Object.keys(BALANCED_ROLES)) {
-        if (BALANCED_ROLES[k].includes(c)) {
-          roleCounts[k]++;
-          break;
-        }
+    const roleCounts = { tank: 0, melee: 0, support: 0, ranged: 0, caster: 0 };
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (u.player !== p) continue;
+      const role = CLASS_DRAFT_ROLE[u.class];
+      if (role) roleCounts[role]++;
+    }
+    const deficit = (rk) => Math.max(0, (targets[rk] ?? 0) - (roleCounts[rk] ?? 0));
+    const scoreBalanced = (classKey) => {
+      const role = CLASS_DRAFT_ROLE[classKey];
+      const def = role != null ? deficit(role) : 0;
+      const hp = CLASSES[classKey]?.hp ?? 0;
+      const negVar = -(CLASS_STAT_VARIANCE[classKey] ?? Infinity);
+      return { def, hp, negVar };
+    };
+    const betterBalanced = (A, B) => {
+      if (A.def !== B.def) return A.def > B.def;
+      if (A.hp !== B.hp) return A.hp > B.hp;
+      return A.negVar > B.negVar;
+    };
+    let best = available[0];
+    let sb = scoreBalanced(best);
+    for (let i = 1; i < available.length; i++) {
+      const sk = scoreBalanced(available[i]);
+      if (betterBalanced(sk, sb)) {
+        best = available[i];
+        sb = sk;
       }
     }
-    const deficit = (key) => Math.max(0, (targets[key] ?? 0) - (roleCounts[key] ?? 0));
-    const getRole = (classKey) => {
-      for (const [role, list] of Object.entries(BALANCED_ROLES)) {
-        if (list.includes(classKey)) return role;
-      }
-      return null;
-    };
-    const sorted = [...available].sort((a, b) => {
-      const roleA = getRole(a);
-      const roleB = getRole(b);
-      const defA = roleA != null ? deficit(roleA) : 0;
-      const defB = roleB != null ? deficit(roleB) : 0;
-      if (defB !== defA) return defB - defA;
-      const hpA = CLASSES[a]?.hp ?? 0;
-      const hpB = CLASSES[b]?.hp ?? 0;
-      if (hpB !== hpA) return hpB - hpA;
-      return variance(a) - variance(b);
-    });
-    return sorted[0] ?? null;
+    return best;
   }
 
   function runDraftAI() {
@@ -4286,11 +4477,12 @@ function main() {
       setTimeout(runDraftAI, 500);
       return;
     }
-    const tileCoords = Array.from(placementTileKeys).map((k) => ({
-      gx: k % world.w,
-      gy: Math.floor(k / world.w),
-    }));
-    const sorted = sortTilesByDistanceToCenter(world, tileCoords);
+    const sorted = placementTilesSorted.length > 0
+      ? placementTilesSorted
+      : sortTilesByDistanceToCenter(
+          world,
+          Array.from(placementTileKeys, (k) => ({ gx: k % world.w, gy: (k / world.w) | 0 })),
+        );
     if (sorted.length > 0) {
       const { gx, gy } = sorted[0];
       placeUnit(gx, gy);
@@ -4298,6 +4490,7 @@ function main() {
   }
 
   function getCenterTiles() {
+    if (world.centerTiles && world.centerTiles.length > 0) return world.centerTiles;
     const out = [];
     for (let gy = 0; gy < world.h; gy++)
       for (let gx = 0; gx < world.w; gx++)
@@ -4363,8 +4556,11 @@ function main() {
 
     function animateStep() {
       if (stepIndex >= path.length) {
+        const px = unit.x;
+        const py = unit.y;
         unit.x = path[path.length - 1].x;
         unit.y = path[path.length - 1].y;
+        updateUnitTileIndex(unit, px, py);
         tryCollectPowerup(unit);
         isUnitMoving = false;
         resetWalkPose(mesh);
@@ -5072,7 +5268,7 @@ function main() {
   function runPlayingAI() {
     if (phase !== 'playing' || !isCPUPlayer(currentPlayer) || isUnitMoving || initiativeOrder.length === 0) return;
     const uid = initiativeOrder[currentTurnIndex];
-    const unit = units.find((u) => u.id === uid);
+    const unit = getUnitById(uid);
     if (!unit || unit.hp <= 0) {
       // Recover if initiative changed mid-turn (e.g. reanimate) and current pointer is now invalid.
       setTimeout(() => endTurn(), 0);
@@ -5141,7 +5337,12 @@ function main() {
       let best = null;
       let bestMinDist = Infinity;
       for (const t of tiles) {
-        const minDistToTarget = Math.min(...targets.map((g) => manhattanDist(t.gx, t.gy, g.gx, g.gy)));
+        let minDistToTarget = Infinity;
+        for (let gi = 0; gi < targets.length; gi++) {
+          const g = targets[gi];
+          const d = manhattanDist(t.gx, t.gy, g.gx, g.gy);
+          if (d < minDistToTarget) minDistToTarget = d;
+        }
         if (minDistToTarget < bestMinDist) { bestMinDist = minDistToTarget; best = t; }
       }
       return best;
@@ -5151,8 +5352,8 @@ function main() {
     function getEnemiesInRangeFrom(fromGx, fromGy) {
       const range = effectiveRange;
       const list = [];
-      for (const o of units) {
-        if (o.hp <= 0 || o.player === unit.player) continue;
+      for (let ei = 0; ei < enemies.length; ei++) {
+        const o = enemies[ei];
         const d = manhattanDist(fromGx, fromGy, o.x, o.y);
         if (d <= range && d > 0 && hasLineOfSight(world, fromGx, fromGy, o.x, o.y)) {
           list.push({ target: o, dist: d });
@@ -5188,18 +5389,9 @@ function main() {
 
     /** Find the shortest path from unit to any target; return { path, target } or null. */
     function getPathToNearestTarget(targets) {
-      let bestPath = null;
-      let bestTarget = null;
-      let bestLen = Infinity;
-      for (const g of targets) {
-        const path = getPath(world, unit.x, unit.y, g.gx, g.gy, units, unit);
-        if (path && path.length > 1 && path.length < bestLen) {
-          bestLen = path.length;
-          bestPath = path;
-          bestTarget = g;
-        }
-      }
-      return bestPath && bestTarget ? { path: bestPath, target: bestTarget } : null;
+      const result = getPathToNearestOfTargets(world, unit.x, unit.y, targets, units, unit);
+      if (!result || result.path.length <= 1) return null;
+      return result;
     }
 
     function safestReachableTile(tiles) {
@@ -5209,7 +5401,12 @@ function main() {
       let best = null;
       let bestMinDist = -1;
       for (const t of set) {
-        const minDist = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
+        let minDist = Infinity;
+        for (let ei = 0; ei < enemies.length; ei++) {
+          const e = enemies[ei];
+          const d = manhattanDist(t.gx, t.gy, e.x, e.y);
+          if (d < minDist) minDist = d;
+        }
         if (minDist > bestMinDist) { bestMinDist = minDist; best = t; }
       }
       return best;
@@ -5224,10 +5421,19 @@ function main() {
       let best = null;
       let bestScore = -Infinity;
       for (const t of set) {
-        const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
-        const minDistToAlly = allies.length > 0
-          ? Math.min(...allies.map((a) => manhattanDist(t.gx, t.gy, a.x, a.y)))
-          : 999;
+        let minDistToEnemy = Infinity;
+        for (let ei = 0; ei < enemies.length; ei++) {
+          const d = manhattanDist(t.gx, t.gy, enemies[ei].x, enemies[ei].y);
+          if (d < minDistToEnemy) minDistToEnemy = d;
+        }
+        let minDistToAlly = 999;
+        if (allies.length > 0) {
+          minDistToAlly = Infinity;
+          for (let ai = 0; ai < allies.length; ai++) {
+            const d = manhattanDist(t.gx, t.gy, allies[ai].x, allies[ai].y);
+            if (d < minDistToAlly) minDistToAlly = d;
+          }
+        }
         let score;
         if (isHighHp) {
           const behindAllies = minDistToAlly < minDistToEnemy;
@@ -5247,12 +5453,21 @@ function main() {
       let best = null;
       let bestMinDistToEnemy = -1;
       for (const t of reachableTiles) {
-        const minDistToEnemy = Math.min(...enemies.map((e) => manhattanDist(t.gx, t.gy, e.x, e.y)));
-        const hasEnemyInRange = enemies.some((e) => {
+        let minDistToEnemy = Infinity;
+        for (let ei = 0; ei < enemies.length; ei++) {
+          const d = manhattanDist(t.gx, t.gy, enemies[ei].x, enemies[ei].y);
+          if (d < minDistToEnemy) minDistToEnemy = d;
+        }
+        let hasEnemyInRange = false;
+        for (let ei = 0; ei < enemies.length; ei++) {
+          const e = enemies[ei];
           const d = manhattanDist(t.gx, t.gy, e.x, e.y);
-          if (d <= 0 || d > range) return false;
-          return hasLineOfSight(world, t.gx, t.gy, e.x, e.y);
-        });
+          if (d <= 0 || d > range) continue;
+          if (hasLineOfSight(world, t.gx, t.gy, e.x, e.y)) {
+            hasEnemyInRange = true;
+            break;
+          }
+        }
         if (hasEnemyInRange && minDistToEnemy > bestMinDistToEnemy) {
           bestMinDistToEnemy = minDistToEnemy;
           best = t;
@@ -5264,6 +5479,11 @@ function main() {
     /** Step toward a tile from which the unit can basic-attack an enemy within attackRange (Manhattan + LOS). Returns true if a move was started. */
     function attemptMoveWithinAttackRange(attackRange) {
       if (hasAttacked || enemies.length === 0 || hasMoved || reachableTiles.length === 0) return false;
+      const livingOccupiedKeys = new Set();
+      for (let ui = 0; ui < units.length; ui++) {
+        const uu = units[ui];
+        if (uu.hp > 0) livingOccupiedKeys.add(uu.y * world.w + uu.x);
+      }
       function pathToTileInAttackRangeOf(enemy, requireReachableInOneTurn) {
         let bestPath = null;
         const r = attackRange;
@@ -5276,8 +5496,7 @@ function main() {
             if (tx < 0 || tx >= world.w || ty < 0 || ty >= world.h) continue;
             if (!isWalkable(world, tx, ty)) continue;
             if (!hasLineOfSight(world, tx, ty, enemy.x, enemy.y)) continue;
-            const occupied = units.some((u) => u.hp > 0 && u.x === tx && u.y === ty);
-            if (occupied) continue;
+            if (livingOccupiedKeys.has(ty * world.w + tx)) continue;
             const path = getPath(world, unit.x, unit.y, tx, ty, units, unit);
             const steps = path ? path.length - 1 : Infinity;
             const ok = path && path.length > 1 && (!requireReachableInOneTurn || steps <= unitAgi);
@@ -5328,9 +5547,18 @@ function main() {
     }
 
     const enemiesInRangeByTile = new Map();
+    const erScratch = [];
     for (const t of reachableTiles) {
       const k = t.gy * world.w + t.gx;
-      if (!enemiesInRangeByTile.has(k)) enemiesInRangeByTile.set(k, getEnemiesInRangeFrom(t.gx, t.gy));
+      erScratch.length = 0;
+      for (let ei = 0; ei < enemies.length; ei++) {
+        const o = enemies[ei];
+        const d = manhattanDist(t.gx, t.gy, o.x, o.y);
+        if (d <= effectiveRange && d > 0 && hasLineOfSight(world, t.gx, t.gy, o.x, o.y)) {
+          erScratch.push({ target: o, dist: d });
+        }
+      }
+      enemiesInRangeByTile.set(k, erScratch.length > 0 ? erScratch.slice() : []);
     }
     const hasLowHpEnemyInRange = enemiesInRange.some((e) => e.target.maxHp > 0 && (e.target.hp / e.target.maxHp) < lowHpThreshold);
     const hasLowHpEnemyReachable =
@@ -5520,6 +5748,7 @@ function main() {
         world,
         units,
         reanimateDeadUnit,
+        updateUnitTileIndex,
         updateUnitPosition(unit) {
           const mesh = unitMeshes.get(unit.id);
           if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
@@ -5602,9 +5831,9 @@ function main() {
               const targets = getSkillTargetTiles(unit, skill, units);
               const allyTargets = targets.filter((t) => t.targetUnit != null).map((t) => t.targetUnit);
               if (allyTargets.length > 0) {
-                if (allyTargets.length < 2 && hasActiveBuff) continue;
                 const withoutBuff = allyTargets.filter((a) => !a.tempBuff || a.tempBuff.duration <= 0);
                 const toBuff = (withoutBuff.length > 0 ? withoutBuff : allyTargets).sort((a, b) => a.hp - b.hp)[0];
+                if (toBuff.tempBuff && toBuff.tempBuff.duration > 0) continue;
                 if (skill.effectKey === 'overheal' && (toBuff.hp / toBuff.maxHp) > 0.7) continue;
                 chosen = skill;
                 chosenTarget = toBuff;
@@ -5944,52 +6173,75 @@ function main() {
     const skillList = unit.summonedSkills && unit.summonedSkills.length > 0
       ? unit.summonedSkills
       : (unit.class && CLASS_SKILLS[unit.class] ? CLASS_SKILLS[unit.class] : []);
-    const hasDeadUnits = units.some((u) => u.hp <= 0);
     return skillList.map((s) => ({
       ...s,
       disabled: s.disabled === true || unit.level < (s.level || 1) || (s.hpCost && unit.hp < s.hpCost) || (s.cost != null && unit.mp < s.cost)
-        || (s.effectKey === 'reanimate' && !hasDeadUnits),
+        || (s.effectKey === 'reanimate' && deadCorpseCount <= 0),
     }));
   }
 
   function getSkillTargetTiles(unit, skill, unitsList) {
     const out = [];
-    const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
     const range = skill.range || 0;
+    const ux = unit.x;
+    const uy = unit.y;
     if (skill.target === 'self') {
-      out.push({ gx: unit.x, gy: unit.y, targetUnit: null });
+      out.push({ gx: ux, gy: uy, targetUnit: null });
       return out;
     }
     for (const o of unitsList) {
       if (o.hp <= 0) continue;
-      const d = manhattan(unit.x, unit.y, o.x, o.y);
+      const d = Math.abs(ux - o.x) + Math.abs(uy - o.y);
       if (d > range) continue;
-      if (range >= 2 && !hasLineOfSight(world, unit.x, unit.y, o.x, o.y)) continue;
-      if (skill.target === 'enemy' && o.player !== unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
-      if (skill.target === 'ally' && o.player === unit.player) out.push({ gx: o.x, gy: o.y, targetUnit: o });
+      if (skill.target === 'enemy') {
+        if (o.player === unit.player) continue;
+      } else if (skill.target === 'ally') {
+        if (o.player !== unit.player) continue;
+      }
+      if (range >= 2 && !hasLineOfSight(world, ux, uy, o.x, o.y)) continue;
+      out.push({ gx: o.x, gy: o.y, targetUnit: o });
     }
     return out;
   }
 
-  /** All tiles within skill range (for display). For enemy/ally skills with range >= 2, respects line of sight. */
-  function getSkillRangeTiles(unit, skill) {
+  /** Visits each tile in skill range (Manhattan + LOS when range >= 2). Self is a single tile. */
+  function forEachSkillRangeTile(unit, skill, fn) {
     const range = skill.range || 0;
-    if (skill.target === 'self') return [{ gx: unit.x, gy: unit.y }];
+    if (skill.target === 'self') {
+      fn(unit.x, unit.y);
+      return;
+    }
     const distMap = getTilesInManhattanRange(world, unit.x, unit.y, range);
-    const tiles = [];
     distMap.forEach((d, k) => {
       const gx = k % world.w;
       const gy = (k / world.w) | 0;
       if (range >= 2 && !hasLineOfSight(world, unit.x, unit.y, gx, gy)) return;
-      tiles.push({ gx, gy });
+      fn(gx, gy);
     });
+  }
+
+  /** All tiles within skill range (for display). For enemy/ally skills with range >= 2, respects line of sight. */
+  function getSkillRangeTiles(unit, skill) {
+    const tiles = [];
+    forEachSkillRangeTile(unit, skill, (gx, gy) => tiles.push({ gx, gy }));
     return tiles;
   }
 
   function showSkillTargetTiles(unit, skill) {
-    const targets = getSkillTargetTiles(unit, skill, units);
-    skillTargetTiles = new Set(targets.map((t) => `${t.gx},${t.gy}`));
-    const tilesToShow = skill.target === 'self' ? targets : getSkillRangeTiles(unit, skill);
+    const tilesToShow = [];
+    if (skill.target === 'self') {
+      skillTargetTiles = new Set([`${unit.x},${unit.y}`]);
+      tilesToShow.push({ gx: unit.x, gy: unit.y });
+    } else {
+      skillTargetTiles = new Set();
+      forEachSkillRangeTile(unit, skill, (gx, gy) => {
+        tilesToShow.push({ gx, gy });
+        const occ = getUnitAtTile(gx, gy);
+        if (!occ) return;
+        if (skill.target === 'enemy' && occ.player !== unit.player) skillTargetTiles.add(`${gx},${gy}`);
+        if (skill.target === 'ally' && occ.player === unit.player) skillTargetTiles.add(`${gx},${gy}`);
+      });
+    }
     clearHighlights();
     tilesToShow.forEach(({ gx, gy }) => {
       const topY = BASE_HEIGHT + world.height[gy][gx] * 0.35;
@@ -6102,6 +6354,19 @@ function main() {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
+  function tileHitFromIntersect(hit) {
+    const o = hit.object;
+    if (o.isInstancedMesh && o.userData.tileGridGround) {
+      const id = hit.instanceId;
+      if (id == null || id < 0) return null;
+      return { gx: id % world.w, gy: (id / world.w) | 0 };
+    }
+    let cur = o;
+    while (cur && (cur.userData.gx == null || cur.userData.gy == null)) cur = cur.parent;
+    if (cur && cur.userData.gx != null) return { gx: cur.userData.gx, gy: cur.userData.gy };
+    return null;
+  }
+
   function pointerToNdc(clientX, clientY) {
     const rect = container.getBoundingClientRect();
     pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -6116,18 +6381,17 @@ function main() {
     raycaster.setFromCamera(pointer, camera);
     const intersects = raycaster.intersectObjects(tilesGroup.children, true);
     if (intersects.length === 0) return;
-    let obj = null;
+    let gx;
+    let gy;
     for (const hit of intersects) {
-      let o = hit.object;
-      while (o && (o.userData.gx == null || o.userData.gy == null)) o = o.parent;
-      if (o && o.userData.gx != null) {
-        obj = o;
+      const tile = tileHitFromIntersect(hit);
+      if (tile) {
+        gx = tile.gx;
+        gy = tile.gy;
         break;
       }
     }
-    if (!obj || obj.userData.gx == null) return;
-    const gx = obj.userData.gx;
-    const gy = obj.userData.gy;
+    if (gx == null || gy == null) return;
 
     if (phase === 'draft' && pendingClassKey) {
       const k = gy * world.w + gx;
@@ -6142,7 +6406,8 @@ function main() {
 
     if (isSkillMode && selectedSkill) {
       const uid = initiativeOrder[currentTurnIndex];
-      const unit = units.find((u) => u.id === uid && u.hp > 0);
+      const uCast = getUnitById(uid);
+      const unit = uCast && uCast.hp > 0 ? uCast : null;
       if (unit && gx === unit.x && gy === unit.y) {
         isSkillMode = false;
         selectedSkill = null;
@@ -6166,7 +6431,7 @@ function main() {
         updateTurnUI();
         return;
       }
-      let targetUnit = units.find((u) => u.x === gx && u.y === gy && u.hp > 0);
+      let targetUnit = getUnitAtTile(gx, gy);
       if (selectedSkill.target === 'enemy' && (!targetUnit || targetUnit.player === unit.player)) return;
       if (selectedSkill.target === 'ally' && targetUnit && targetUnit.player !== unit.player) return;
       if (selectedSkill.target === 'self' && (gx !== unit.x || gy !== unit.y)) return;
@@ -6182,6 +6447,7 @@ function main() {
         world,
         units,
         reanimateDeadUnit,
+        updateUnitTileIndex,
         updateUnitPosition(unit) {
           const mesh = unitMeshes.get(unit.id);
           if (mesh) mesh.position.copy(worldPos(unit.x, unit.y));
@@ -6229,7 +6495,7 @@ function main() {
 
     if (isChoosingFacing) {
       const uid = initiativeOrder[currentTurnIndex];
-      const unit = units.find((u) => u.id === uid);
+      const unit = getUnitById(uid);
       if (gameMode === 'online' && unit && unit.player !== localPlayerNumber) return;
       const mesh = unitMeshes.get(uid);
       if (unit && mesh && allowedFacingAngles.length > 0) {
@@ -6245,11 +6511,11 @@ function main() {
     }
 
     if (selectedUnitId != null && isAttackMode) {
-      const u = units.find((x) => x.id === selectedUnitId);
+      const u = getUnitById(selectedUnitId);
       if (!u || u.player !== currentPlayer) return;
       if (gameMode === 'online' && u.player !== localPlayerNumber) return;
       const k = gy * world.w + gx;
-      const target = units.find((o) => o.x === gx && o.y === gy && o.hp > 0);
+      const target = getUnitAtTile(gx, gy);
       if (target && target.id === initiativeOrder[currentTurnIndex] && target.player === currentPlayer && (gameMode !== 'online' || target.player === localPlayerNumber)) {
         isAttackMode = false;
         selectedUnitId = target.id;
@@ -6270,7 +6536,7 @@ function main() {
       return;
     }
 
-    const unitAt = units.find((u) => u.x === gx && u.y === gy && u.hp > 0);
+    const unitAt = getUnitAtTile(gx, gy);
     if (unitAt) {
       if (unitAt.id === initiativeOrder[currentTurnIndex] && unitAt.player === currentPlayer && (gameMode !== 'online' || unitAt.player === localPlayerNumber)) {
         hideUnitPreviewCard();
@@ -6298,12 +6564,13 @@ function main() {
 
     if (selectedUnitId != null) {
       if (isAttackMode) return;
-      const u = units.find((x) => x.id === selectedUnitId);
+      const u = getUnitById(selectedUnitId);
       if (!u || u.player !== currentPlayer) return;
       if (gameMode === 'online' && u.player !== localPlayerNumber) return;
       const k = gy * world.w + gx;
       if (!reachable.has(k) || reachable.get(k) === 0) return;
-      const occupied = units.some((o) => o.id !== u.id && o.x === gx && o.y === gy && o.hp > 0);
+      const occ = getUnitAtTile(gx, gy);
+      const occupied = occ != null && occ.id !== u.id;
       if (occupied) return;
       if (isUnitMoving) return;
       if (hasMoved) return;
@@ -6325,8 +6592,11 @@ function main() {
 
       function animateStep() {
         if (stepIndex >= path.length) {
+          const px = u.x;
+          const py = u.y;
           u.x = path[path.length - 1].x;
           u.y = path[path.length - 1].y;
+          updateUnitTileIndex(u, px, py);
           tryCollectPowerup(u);
           isUnitMoving = false;
           resetWalkPose(mesh);
@@ -6620,6 +6890,8 @@ function main() {
   }
 
   function handleUnitDeath(unit, killer, opts) {
+    updateUnitTileIndex(unit, unit.x, unit.y);
+    deadCorpseCount++;
     unit.deathOrder = ++deathOrderSeq;
     if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
       sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
@@ -6630,7 +6902,7 @@ function main() {
 
     const summonedIds = units.filter((u) => u.summonedBy === unit.id && u.hp > 0).map((u) => u.id);
     summonedIds.forEach((summonedId) => {
-      const summoned = units.find((u) => u.id === summonedId);
+      const summoned = getUnitById(summonedId);
       if (summoned) {
         summoned.hp = 0;
         handleUnitDeath(summoned, null, { skipSync: true });
@@ -6642,7 +6914,7 @@ function main() {
       queueMicrotask(() => {
         if (phase !== 'playing' || initiativeOrder.length === 0) return;
         if (initiativeOrder[currentTurnIndex] !== deadId) return;
-        const cur = units.find((u) => u.id === deadId);
+        const cur = getUnitById(deadId);
         if (cur && cur.hp > 0) return;
         endTurn();
       });
