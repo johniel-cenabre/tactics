@@ -4,6 +4,7 @@
  */
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 let gridW = 35;
 let gridH = 25;
@@ -1206,6 +1207,32 @@ function getPathToNearestOfTargets(world, startX, startY, targets, units, moving
   return null;
 }
 
+function tileWorldHalfExtents(w) {
+  return { hw: (w.w * TILE_SIZE) / 2, hh: (w.h * TILE_SIZE) / 2 };
+}
+
+/** World hit point → grid tile (merged outside terrain; bases stay on instanced path). */
+function worldPointToTileCoords(world, p) {
+  const { hw, hh } = tileWorldHalfExtents(world);
+  const gx = Math.floor((p.x + hw) / TILE_SIZE);
+  const gy = Math.floor((p.z + hh) / TILE_SIZE);
+  if (gx < 0 || gx >= world.w || gy < 0 || gy >= world.h) return null;
+  return { gx, gy };
+}
+
+function applySolidVertexColors(geometry, cr, cg, cb) {
+  const pos = geometry.getAttribute('position');
+  if (!pos) return;
+  const n = pos.count;
+  const arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    arr[i * 3] = cr;
+    arr[i * 3 + 1] = cg;
+    arr[i * 3 + 2] = cb;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+}
+
 const colors = {
   [TileType.PATH]: 0x2d6b2d,
   [TileType.GRASS]: 0x2d4a2d,
@@ -1254,6 +1281,7 @@ function buildTileMesh(world) {
   const baseRoughness = 0.88;
   const baseMetalness = 0.02;
   const treeGroups = [];
+  group.userData.swayingFoliage = [];
 
   function addGrassTufts(baseX, baseZ, surfaceY, numTufts, maxHeight) {
     const grassMat = new THREE.MeshStandardMaterial({ color: 0x3a6a2a, roughness: 0.9 });
@@ -1279,30 +1307,32 @@ function buildTileMesh(world) {
   }
 
   const rootRadius = 0.12;
-  function addCrisscrossLines(px, pz, surfaceY, parentGroup, gx, gy) {
-    const y = surfaceY + 0.02;
+  function buildCrisscrossLineGeometry(px, pz, surfaceY) {
+    const ly = surfaceY + 0.02;
     const points = [
-      [px - rootRadius, y, pz - rootRadius], [px + rootRadius, y, pz + rootRadius],
-      [px - rootRadius, y, pz + rootRadius], [px + rootRadius, y, pz - rootRadius],
-      [px - rootRadius + 0.06, y, pz - rootRadius + 0.06], [px + rootRadius - 0.06, y, pz + rootRadius - 0.06],
-      [px - rootRadius + 0.06, y, pz + rootRadius - 0.06], [px + rootRadius - 0.06, y, pz - rootRadius + 0.06],
+      [px - rootRadius, ly, pz - rootRadius], [px + rootRadius, ly, pz + rootRadius],
+      [px - rootRadius, ly, pz + rootRadius], [px + rootRadius, ly, pz - rootRadius],
+      [px - rootRadius + 0.06, ly, pz - rootRadius + 0.06], [px + rootRadius - 0.06, ly, pz + rootRadius - 0.06],
+      [px - rootRadius + 0.06, ly, pz + rootRadius - 0.06], [px + rootRadius - 0.06, ly, pz - rootRadius + 0.06],
     ];
     const vertices = new Float32Array(points.length * 3);
-    points.forEach((p, i) => {
-      vertices[i * 3] = p[0];
-      vertices[i * 3 + 1] = p[1];
-      vertices[i * 3 + 2] = p[2];
-    });
+    for (let i = 0; i < points.length; i++) {
+      vertices[i * 3] = points[i][0];
+      vertices[i * 3 + 1] = points[i][1];
+      vertices[i * 3 + 2] = points[i][2];
+    }
     const lineGeo = new THREE.BufferGeometry();
     lineGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    lineGeo.computeBoundingSphere();
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x0d0d0d, linewidth: 1 });
-    const lines = new THREE.LineSegments(lineGeo, lineMat);
-    lines.userData = { gx, gy };
-    parentGroup.add(lines);
+    return lineGeo;
   }
 
-  const totalTiles = world.w * world.h;
+  let insideCount = 0;
+  for (let y = 0; y < world.h; y++) {
+    for (let x = 0; x < world.w; x++) {
+      if (world.path[y][x]) insideCount++;
+    }
+  }
+
   const groundMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     roughness: baseRoughness,
@@ -1310,13 +1340,27 @@ function buildTileMesh(world) {
     bumpMap: noiseBumpMap,
     bumpScale: 0.12,
   });
-  const instancedGround = new THREE.InstancedMesh(groundGeo, groundMat, totalTiles);
+  const instancedGround = new THREE.InstancedMesh(groundGeo, groundMat, insideCount);
   instancedGround.userData.tileGridGround = true;
+  instancedGround.userData.insideTileGx = new Uint16Array(insideCount);
+  instancedGround.userData.insideTileGy = new Uint16Array(insideCount);
   instancedGround.castShadow = true;
   instancedGround.receiveShadow = true;
   instancedGround.frustumCulled = false;
+
+  const outsideGroundGeoms = [];
+  const outsideWaterGeoms = [];
+  const outsideRockGeoms = [];
+  const outsideLineGeoms = [];
+
   const _dummy = new THREE.Object3D();
   const _instColor = new THREE.Color();
+  const _m4 = new THREE.Matrix4();
+  const _quat = new THREE.Quaternion();
+  const _euler = new THREE.Euler();
+  const _vec3 = new THREE.Vector3();
+  const _scaleOne = new THREE.Vector3(1, 1, 1);
+
   let instanceIndex = 0;
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
@@ -1324,20 +1368,23 @@ function buildTileMesh(world) {
       const elev = world.height[y][x];
       const color = colors[t];
       const topY = BASE_HEIGHT + elev * 0.35;
-      const r = ((color >> 16) & 0xff) / 255;
-      const g = ((color >> 8) & 0xff) / 255;
-      const b = (color & 0xff) / 255;
-      let fr = r;
-      let fg = g;
-      let fb = b;
+      const surfaceY = topY / 2 + BASE_HEIGHT / 2;
+      const px = x * TILE_SIZE - hw + TILE_SIZE / 2;
+      const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
+      const cr = ((color >> 16) & 0xff) / 255;
+      const cg = ((color >> 8) & 0xff) / 255;
+      const cb = (color & 0xff) / 255;
+      let fr = cr;
+      let fg = cg;
+      let fb = cb;
       if (t === TileType.PATH || t === TileType.TREE || t === TileType.ROCK) {
         const dirtR = 0.42;
         const dirtG = 0.26;
         const dirtB = 0.14;
         const mix = Math.random() * 0.45;
-        fr = r * (1 - mix) + dirtR * mix;
-        fg = g * (1 - mix) + dirtG * mix;
-        fb = b * (1 - mix) + dirtB * mix;
+        fr = cr * (1 - mix) + dirtR * mix;
+        fg = cg * (1 - mix) + dirtG * mix;
+        fb = cb * (1 - mix) + dirtB * mix;
       }
       if (t === TileType.TREE || t === TileType.ROCK) {
         fr *= 0.5;
@@ -1345,36 +1392,165 @@ function buildTileMesh(world) {
         fb *= 0.5;
       }
       const variation = 1 + (Math.random() - 0.5) * 0.12;
-      _instColor.setRGB(
-        Math.min(1, fr * variation),
-        Math.min(1, fg * variation),
-        Math.min(1, fb * variation),
-      );
-      instancedGround.setColorAt(instanceIndex, _instColor);
-      _dummy.position.set(
-        x * TILE_SIZE - hw + TILE_SIZE / 2,
-        topY / 2,
-        y * TILE_SIZE - hh + TILE_SIZE / 2,
-      );
-      _dummy.updateMatrix();
-      instancedGround.setMatrixAt(instanceIndex, _dummy.matrix);
-      instanceIndex++;
+      const ffr = Math.min(1, fr * variation);
+      const ffg = Math.min(1, fg * variation);
+      const ffb = Math.min(1, fb * variation);
+
+      const onWalkablePath = world.path[y][x];
+
+      if (onWalkablePath) {
+        instancedGround.userData.insideTileGx[instanceIndex] = x;
+        instancedGround.userData.insideTileGy[instanceIndex] = y;
+        _instColor.setRGB(ffr, ffg, ffb);
+        instancedGround.setColorAt(instanceIndex, _instColor);
+        _dummy.position.set(
+          x * TILE_SIZE - hw + TILE_SIZE / 2,
+          topY / 2,
+          y * TILE_SIZE - hh + TILE_SIZE / 2,
+        );
+        _dummy.updateMatrix();
+        instancedGround.setMatrixAt(instanceIndex, _dummy.matrix);
+        instanceIndex++;
+      } else {
+        const gg = groundGeo.clone();
+        _dummy.position.set(
+          x * TILE_SIZE - hw + TILE_SIZE / 2,
+          topY / 2,
+          y * TILE_SIZE - hh + TILE_SIZE / 2,
+        );
+        _dummy.updateMatrix();
+        gg.applyMatrix4(_dummy.matrix);
+        applySolidVertexColors(gg, ffr, ffg, ffb);
+        outsideGroundGeoms.push(gg);
+
+        if (t === TileType.TREE) {
+          outsideLineGeoms.push(buildCrisscrossLineGeometry(px, pz, surfaceY));
+        } else if (t === TileType.WATER) {
+          const wc = colors[TileType.WATER];
+          const wr = ((wc >> 16) & 0xff) / 255;
+          const wg = ((wc >> 8) & 0xff) / 255;
+          const wb = (wc & 0xff) / 255;
+          const wVariation = 1 + (Math.random() - 0.5) * 0.12;
+          const wfr = Math.min(1, wr * wVariation);
+          const wfg = Math.min(1, wg * wVariation);
+          const wfb = Math.min(1, wb * wVariation);
+          const wgPl = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+          wgPl.rotateX(-Math.PI / 2);
+          _dummy.position.set(px, surfaceY + 0.02, pz);
+          _dummy.rotation.set(0, 0, 0);
+          _dummy.scale.set(1, 1, 1);
+          _dummy.updateMatrix();
+          wgPl.applyMatrix4(_dummy.matrix);
+          applySolidVertexColors(wgPl, wfr, wfg, wfb);
+          outsideWaterGeoms.push(wgPl);
+        } else if (t === TileType.ROCK) {
+          const pushRockGeom = (size, offX, offZ) => {
+            const rg = new THREE.DodecahedronGeometry(size, 0);
+            const rx = Math.random() * Math.PI * 2;
+            const ry = Math.random() * Math.PI * 2;
+            const rz = Math.random() * Math.PI * 2;
+            _euler.set(rx, ry, rz);
+            _quat.setFromEuler(_euler);
+            _vec3.set(px + offX, surfaceY + size - 0.2, pz + offZ);
+            _m4.compose(_vec3, _quat, _scaleOne);
+            rg.applyMatrix4(_m4);
+            outsideRockGeoms.push(rg);
+          };
+          pushRockGeom(0.32 + Math.random() * 0.14, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15);
+          pushRockGeom(0.2 + Math.random() * 0.12, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.25);
+          pushRockGeom(0.12 + Math.random() * 0.12, (Math.random() - 0.5) * 0.28, (Math.random() - 0.5) * 0.28);
+        }
+      }
     }
   }
+
   instancedGround.instanceMatrix.needsUpdate = true;
   if (instancedGround.instanceColor) instancedGround.instanceColor.needsUpdate = true;
   group.add(instancedGround);
 
+  function disposeGeoms(arr) {
+    for (let i = 0; i < arr.length; i++) arr[i].dispose();
+  }
+
+  if (outsideGroundGeoms.length > 0) {
+    const mergedG = mergeGeometries(outsideGroundGeoms);
+    disposeGeoms(outsideGroundGeoms);
+    if (mergedG) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        roughness: baseRoughness,
+        metalness: baseMetalness,
+        bumpMap: noiseBumpMap,
+        bumpScale: 0.12,
+      });
+      const mesh = new THREE.Mesh(mergedG, mat);
+      mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      mesh.frustumCulled = false;
+      mesh.userData.mergedOutsidePick = true;
+      group.add(mesh);
+    }
+  }
+
+  if (outsideLineGeoms.length > 0) {
+    const mergedL = mergeGeometries(outsideLineGeoms);
+    disposeGeoms(outsideLineGeoms);
+    if (mergedL) {
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x0d0d0d, linewidth: 1 });
+      const lines = new THREE.LineSegments(mergedL, lineMat);
+      lines.frustumCulled = false;
+      lines.userData.mergedOutsidePick = true;
+      group.add(lines);
+    }
+  }
+
+  if (outsideRockGeoms.length > 0) {
+    const mergedR = mergeGeometries(outsideRockGeoms);
+    disposeGeoms(outsideRockGeoms);
+    if (mergedR) {
+      const rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.9 });
+      rockMat.bumpMap = noiseBumpMap;
+      rockMat.bumpScale = 0.2;
+      const rockMesh = new THREE.Mesh(mergedR, rockMat);
+      rockMesh.castShadow = true;
+      rockMesh.frustumCulled = false;
+      rockMesh.userData.mergedOutsidePick = true;
+      group.add(rockMesh);
+    }
+  }
+
+  if (outsideWaterGeoms.length > 0) {
+    const mergedW = mergeGeometries(outsideWaterGeoms);
+    disposeGeoms(outsideWaterGeoms);
+    if (mergedW) {
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        roughness: 0.08,
+        metalness: 0.45,
+        transparent: true,
+        opacity: 0.94,
+        bumpMap: noiseBumpMap,
+        bumpScale: 0.03,
+      });
+      const waterMesh = new THREE.Mesh(mergedW, waterMat);
+      waterMesh.receiveShadow = true;
+      waterMesh.frustumCulled = false;
+      waterMesh.userData.mergedOutsidePick = true;
+      group.add(waterMesh);
+    }
+  }
+
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
+      if (world.path[y][x]) continue;
       const t = world.type[y][x];
       const elev = world.height[y][x];
       const topY = BASE_HEIGHT + elev * 0.35;
       const surfaceY = topY / 2 + BASE_HEIGHT / 2;
       const px = x * TILE_SIZE - hw + TILE_SIZE / 2;
       const pz = y * TILE_SIZE - hh + TILE_SIZE / 2;
-
-      if (t === TileType.TREE) addCrisscrossLines(px, pz, surfaceY, group, x, y);
 
       if (t === TileType.TREE) {
         const treeGroup = new THREE.Group();
@@ -1419,86 +1595,48 @@ function buildTileMesh(world) {
         const bottomH = coneH * 0.5;
         const middleH = coneH * 0.45;
         const topH = coneH * 0.4;
+        const foliageGroup = new THREE.Group();
+        foliageGroup.position.set(0, trunkH, 0);
         const bottomCone = new THREE.Mesh(
           new THREE.ConeGeometry(coneRad, bottomH, 8),
           foliageMat
         );
-        bottomCone.position.set(0, trunkH + bottomH / 2, 0);
+        bottomCone.position.set(0, bottomH / 2, 0);
         bottomCone.castShadow = true;
         bottomCone.raycast = function () {};
-        treeGroup.add(bottomCone);
+        foliageGroup.add(bottomCone);
         const middleCone = new THREE.Mesh(
           new THREE.ConeGeometry(coneRad * 0.75, middleH, 8),
           foliageMat
         );
-        middleCone.position.set(0, trunkH + bottomH - overlap + middleH / 2, 0);
+        middleCone.position.set(0, bottomH - overlap + middleH / 2, 0);
         middleCone.castShadow = true;
         middleCone.raycast = function () {};
-        treeGroup.add(middleCone);
+        foliageGroup.add(middleCone);
         const topCone = new THREE.Mesh(
           new THREE.ConeGeometry(coneRad * 0.5, topH, 8),
           foliageMat
         );
-        topCone.position.set(0, trunkH + bottomH - overlap + middleH - overlap + topH / 2, 0);
+        topCone.position.set(0, bottomH - overlap + middleH - overlap + topH / 2, 0);
         topCone.castShadow = true;
         topCone.raycast = function () {};
-        treeGroup.add(topCone);
+        foliageGroup.add(topCone);
+        treeGroup.add(foliageGroup);
+
+        const cx = (world.w - 1) * 0.5;
+        const cy = (world.h - 1) * 0.5;
+        const centerRadiusTiles = Math.max(3.5, Math.min(world.w, world.h) * 0.24);
+        const distSq = (x - cx) ** 2 + (y - cy) ** 2;
+        const treeNearMapCenter = distSq <= centerRadiusTiles * centerRadiusTiles;
+        if (treeNearMapCenter && Math.random() < 2 / 3) {
+          group.userData.swayingFoliage.push({
+            group: foliageGroup,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
 
         group.add(treeGroup);
         treeGroups.push(treeGroup);
-      } else if (t === TileType.WATER) {
-        const wc = colors[TileType.WATER];
-        const wr = ((wc >> 16) & 0xff) / 255;
-        const wg = ((wc >> 8) & 0xff) / 255;
-        const wb = (wc & 0xff) / 255;
-        const wVariation = 1 + (Math.random() - 0.5) * 0.12;
-        const waterMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color().setRGB(
-            Math.min(1, wr * wVariation),
-            Math.min(1, wg * wVariation),
-            Math.min(1, wb * wVariation)
-          ),
-          roughness: 0.08,
-          metalness: 0.45,
-            transparent: true,
-          opacity: 0.94,
-          bumpMap: noiseBumpMap,
-          bumpScale: 0.03,
-        });
-        const water = new THREE.Mesh(
-          new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE),
-          waterMat
-        );
-        water.rotation.x = -Math.PI / 2;
-        water.position.set(px, surfaceY + 0.02, pz);
-        water.receiveShadow = true;
-        water.userData = { gx: x, gy: y };
-        group.add(water);
-      } else if (t === TileType.ROCK) {
-        const rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.9 });
-        rockMat.bumpMap = noiseBumpMap;
-        rockMat.bumpScale = 0.2;
-        const addRock = (size, offX, offZ) => {
-        const rock = new THREE.Mesh(
-            new THREE.DodecahedronGeometry(size, 0),
-            rockMat
-          );
-          rock.position.set(
-            px + offX,
-            surfaceY + size - 0.2,
-            pz + offZ
-          );
-        rock.rotation.set(Math.random(), Math.random(), Math.random());
-        rock.castShadow = true;
-        rock.userData = { gx: x, gy: y };
-        group.add(rock);
-        };
-        const s1 = 0.32 + Math.random() * 0.14;
-        const s2 = 0.2 + Math.random() * 0.12;
-        const s3 = 0.12 + Math.random() * 0.12;
-        addRock(s1, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15);
-        addRock(s2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.25);
-        addRock(s3, (Math.random() - 0.5) * 0.28, (Math.random() - 0.5) * 0.28);
       }
     }
   }
@@ -6359,7 +6497,13 @@ function main() {
     if (o.isInstancedMesh && o.userData.tileGridGround) {
       const id = hit.instanceId;
       if (id == null || id < 0) return null;
-      return { gx: id % world.w, gy: (id / world.w) | 0 };
+      const gxa = o.userData.insideTileGx;
+      const gya = o.userData.insideTileGy;
+      if (gxa && gya && id < gxa.length) return { gx: gxa[id], gy: gya[id] };
+      return null;
+    }
+    if (o.userData.mergedOutsidePick) {
+      return worldPointToTileCoords(world, hit.point);
     }
     let cur = o;
     while (cur && (cur.userData.gx == null || cur.userData.gy == null)) cur = cur.parent;
@@ -7083,6 +7227,17 @@ function main() {
 
   function animate(now = 0) {
     requestAnimationFrame(animate);
+    const swayList = tilesGroup.userData && tilesGroup.userData.swayingFoliage;
+    if (swayList && swayList.length > 0) {
+      const tw = now * 0.0017;
+      for (let i = 0; i < swayList.length; i++) {
+        const { group: fol, phase } = swayList[i];
+        fol.rotation.z = Math.sin(tw + phase) * 0.14;
+        fol.rotation.x = Math.sin(tw * 0.79 + phase * 1.55) * 0.09;
+        fol.rotation.y = Math.sin(tw * 0.62 + phase * 0.9) * 0.055;
+      }
+      needsRender = true;
+    }
     if (lastInteractionTime === 0) lastInteractionTime = now;
     const isIdle = (now - lastInteractionTime > 500);
     animate.frameCount = (typeof animate.frameCount === 'number' ? animate.frameCount : 0) + 1;
