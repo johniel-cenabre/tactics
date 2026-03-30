@@ -269,7 +269,7 @@ const CLASS_SKILLS = {
   ],
   mage: [
     { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 7, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
-    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 2, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
+    { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 3, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
   ],
   monk: [
     { name: 'Mantra', description: 'Gain LUK based on INT for both ally and self for 2 turns.', cost: 4, target: 'ally', range: 1, level: 2, effectKey: 'mantra' },
@@ -296,8 +296,8 @@ const CLASS_SKILLS = {
     { name: 'Bloodlust', description: 'Gain STR and VIT based on lost HP for 1 turn.', cost: 5, target: 'self', range: 0, level: 3, effectKey: 'bloodlust' },
   ],
   witch: [
-    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'hex', type: 'spell' },
-    { name: 'Drain', description: 'Deal INT-based damage to HP and MP and heal self.', cost: 6, target: 'enemy', range: 5, level: 2, effectKey: 'drain', type: 'spell' },
+    { name: 'Hex', description: 'Steal 1 INT from an enemy.', cost: 5, target: 'enemy', range: 4, level: 1, effectKey: 'hex', type: 'spell' },
+    { name: 'Drain', description: 'Deal INT-based damage to HP and MP and heal self.', cost: 8, target: 'enemy', range: 4, level: 2, effectKey: 'drain', type: 'spell' },
   ],
   ninja: [
     { name: 'Blind', description: 'Steal 1 DEX from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'blind' },
@@ -352,15 +352,15 @@ const CLASS_SKILLS = {
     { name: 'Infect', description: 'Poison enemy for 3 turns', cost: 4, target: 'enemy', range: 6, level: 3, effectKey: 'infect' },
   ],
   shaman: [
-    { name: 'Curse', description: 'Steal 1 ALL stats for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'curse', type: 'spell' },
-    { name: 'Vodoo', description: 'Deal INT+LUK-based damage to one enemy', cost: 8, hpCost: 3, target: 'enemy', range: 6, level: 2, effectKey: 'vodoo', type: 'spell' },
+    { name: 'Vodoo', description: 'Mirror damage for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'vodoo', type: 'spell' },
+    { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
   ],
   oracle: [
-    { name: 'Foresight', description: 'Gain +1 INT and +1 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
+    { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
     { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
-    { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 5, target: 'enemy', range: 5, level: 2, effectKey: 'skewer' },
+    { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 5, target: 'enemy', range: 3, level: 2, effectKey: 'skewer' },
     { name: 'Rapid', description: 'Double attack for 1 turn', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'rapid' },
   ],
 };
@@ -395,6 +395,32 @@ function getSkillEffectDisplayTitle(effectKey) {
   return t;
 }
 
+/**
+ * Vodoo (skill): caster keeps tempBuff.vodoo = cursed enemy unit id. When that caster loses HP from a hit,
+ * linked enemy loses the same amount. Does not recurse (mirror damage does not trigger further vodoo).
+ */
+function applyVodooMirrorHpLoss(damagedUnit, hpLost, ctx) {
+  if (!damagedUnit || hpLost <= 0) return;
+  const list = ctx && ctx.units;
+  if (!list || !list.length) return;
+  const tb = damagedUnit.tempBuff;
+  if (!tb || tb.vodoo == null || tb.duration != null && tb.duration <= 0) return;
+  const victimId = damagedUnit.id;
+  for (let i = 0; i < list.length; i++) {
+    const w = list[i];
+    if (!w || w.hp <= 0 || w.id === victimId) continue;
+    if (tb.vodoo === w.id) {
+      const deathFn = ctx.handleUnitDeath || ctx.vodooMirrorDeath;
+      w.hp = Math.max(0, w.hp - hpLost);
+      console.log('[DEBUFF]', `vodoo: ${hpLost} to ${w.name}`);
+      if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(w.x, w.y, String(hpLost), false, 'vodoo');
+      if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(w);
+      if (w.hp <= 0 && deathFn) deathFn(w, damagedUnit);
+      break;
+    }
+  }
+}
+
 function applySkillEffect(effectKey, unit, target, ctx) {
   const u = unit;
   const t = target;
@@ -420,6 +446,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
         if (victim !== u) skillDamage = d;
         if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, String(d), false);
         if (ctx.updateUnitSlashVisibility) ctx.updateUnitSlashVisibility(victim);
+        applyVodooMirrorHpLoss(victim, d, ctx);
         if (victim.hp <= 0 && ctx.handleUnitDeath) ctx.handleUnitDeath(victim, u);
       } else {
         if (ctx.showFloatingCombatText) ctx.showFloatingCombatText(victim.x, victim.y, 'MISS', true);
@@ -531,12 +558,12 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const dHp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
-      const dMp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.2) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.2)));
+      const dHp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const dMp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.2) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, dHp, false, true);
-      applyDamage(u, dMp, true);
+      applyDamage(u, dHp + dMp, true);
+      t.mp = Math.max(1, (t.mp || 0) - dMp);
       showStatChange(t.x, t.y, `-${dMp} MP`, false);
-      showStatChange(u.x, u.y, `+${dMp} MP`, true);
     } break;
     case 'blind': {
       if (!t) break;
@@ -656,7 +683,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'poison': {
       if (!t) break;
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3 - getEffectiveStat(t, 'luk') * 0.2));
       t.tempDebuff = { poison: poisonVal, duration: 3 };
       showStatChange(t.x, t.y, `Poisoned for 2 turns`, false);
     } break;
@@ -738,23 +765,25 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, d, true);
     } break;
     case 'infect': {
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4) - getEffectiveStat(t, 'luk') * 0.2);
       t.tempDebuff = { poison: poisonVal, duration: 4 };
       showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
     } break;
-    case 'curse': {
-      const dVal = 1;
-      t.tempDebuff = { hp: dVal, maxHp: dVal, mp: dVal, maxMp: dVal, luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
-      u.tempBuff = { hp: dVal, maxHp: dVal, luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
-      showStatChange(t.x, t.y, `-${dVal} ALL STATS`, false);
-      showStatChange(u.x, u.y, `+${dVal} ALL STATS`, true);
-    } break;
     case 'vodoo': {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'int') + getEffectiveStat(u, 'luk')) * 0.8) - (getEffectiveStat(t, 'int') + getEffectiveStat(t, 'luk') * 0.4));
+      if (!t) break;
+      u.tempBuff = { vodoo: t.id, duration: 3 };
+      showStatChange(t.x, t.y, `Vodoo for 2 turns`, false);
+    } break;
+    case 'malediction': {
+      if (!t) break;
+      const d = Math.max(1, Math.floor(((getEffectiveStat(u, 'int') * 0.4 + getEffectiveStat(u, 'luk') * 0.3)) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const dVal = Math.max(1, Math.ceil(d * 0.3));
+      t.tempDebuff = { luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
       applyDamage(t, d, false, true);
+      showStatChange(t.x, t.y, `-${dVal} ALL STATS`, false);
     } break;
     case 'foresight': {
-      const bVal = 1;
+      const bVal = 2;
       u.tempBuff = { int: bVal, dex: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX`, true);
       if (!t) break;
@@ -1065,7 +1094,11 @@ function hasLineOfSight(world, ax, ay, bx, by) {
   return true;
 }
 
+/** Minimum tiles a unit can move in one turn (applied in getReachable). */
+const MIN_REACHABLE_MOVES = 4;
+
 function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
+  maxMoves = Math.max(MIN_REACHABLE_MOVES, maxMoves);
   const key = (x, y) => y * world.w + x;
   const dist = new Map();
   dist.set(key(startX, startY), 0);
@@ -1404,8 +1437,8 @@ function buildTileMesh(world) {
         _instColor.setRGB(ffr, ffg, ffb);
         instancedGround.setColorAt(instanceIndex, _instColor);
         _dummy.position.set(
-          x * TILE_SIZE - hw + TILE_SIZE / 2,
-          topY / 2,
+        x * TILE_SIZE - hw + TILE_SIZE / 2,
+        topY / 2,
           y * TILE_SIZE - hh + TILE_SIZE / 2,
         );
         _dummy.updateMatrix();
@@ -2411,9 +2444,7 @@ function main() {
     unit.dex = boostStat(unit.dex);
     unit.luk = boostStat(unit.luk);
     unit.int = boostStat(unit.int);
-    if (unit.range > 2) {
-    unit.range = boostStat(unit.range);
-    }
+    if (unit.range > 3) unit.range = boostStat(unit.range);
     console.log('[LEVEL UP]', `${unit.name} (${unit.class}, P${unit.player})`, `→ Lv.${unit.level}`, `| HP ${unit.hp}/${unit.maxHp} MP ${unit.mp}/${unit.maxMp} STR ${unit.str} VIT ${unit.vit}`);
     showLevelUpAnimation(unit);
   }
@@ -2582,6 +2613,8 @@ function main() {
   let placementTilesSorted = [];
   let initiativeOrder = [];
   let currentTurnIndex = 0;
+  /** Debounce CPU auto-play so stacked updateTurnUI calls do not queue multiple runPlayingAI timers (skipped turns). */
+  let cvCpuAiTimeoutId = null;
   let selectedUnitId = null;
   let reachable = new Map();
   let previewUnitId = null;
@@ -2962,7 +2995,7 @@ function main() {
    * @param {object} summoner - unit performing the summon
    * @param {object} stats - stats for the summoned unit: name, class (for appearance), hp, maxHp, mp, maxMp, str, agi, vit, dex, luk, int, range; optional hairColor
    * @param {Array<object>} [skills] - optional array of skill definitions (same shape as CLASS_SKILLS entries) the summoned unit can use
-   * @param {{ position?: { gx: number, gy: number }, useGrayscaleAppearance?: boolean }} [opts] - optional; position forces placement at (gx, gy); useGrayscaleAppearance makes mesh dull/grayscale
+   * @param {{ position?: { gx: number, gy: number }, useGrayscaleAppearance?: boolean, ownerPlayer?: number, omitSummonedBy?: boolean }} [opts] - optional; position forces placement at (gx, gy); useGrayscaleAppearance makes mesh dull/grayscale; ownerPlayer sets team (e.g. reanimation keeps dead unit's player); omitSummonedBy skips summon link (reanimation copies are normal roster units)
    * @returns {object | null} the summoned unit, or null if no valid tile
    */
   function summonUnit(summoner, stats, skills, opts) {
@@ -2973,10 +3006,11 @@ function main() {
 
     const appearanceClass = stats.class && CLASS_KEYS.includes(stats.class) ? stats.class : 'knight';
     const hairColor = stats.hairColor != null ? stats.hairColor : (CLASS_LOOK[appearanceClass] || CLASS_LOOK.knight).hair;
+    const unitPlayer = opts?.ownerPlayer != null ? opts.ownerPlayer : summoner.player;
 
     const unit = {
       id: nextUnitId++,
-      player: summoner.player,
+      player: unitPlayer,
       x: pos.gx,
       y: pos.gy,
       level: stats.level != null ? stats.level : 1,
@@ -2994,8 +3028,8 @@ function main() {
       luk: stats.luk != null ? stats.luk : 5,
       int: stats.int != null ? stats.int : 5,
       range: stats.range != null ? stats.range : 1,
-      summonedBy: summoner.id,
     };
+    if (!opts?.omitSummonedBy) unit.summonedBy = summoner.id;
     if (skills != null && Array.isArray(skills) && skills.length > 0) unit.summonedSkills = skills;
 
     units.push(unit);
@@ -3006,7 +3040,9 @@ function main() {
     if (summonedMesh && opts?.useGrayscaleAppearance) makeMeshGrayscale(summonedMesh);
     if (summonedMesh) {
       const summonerMesh = unitMeshes.get(summoner.id);
-      summonedMesh.rotation.y = summonerMesh != null ? summonerMesh.rotation.y : (summoner.player === 1 ? Math.PI : 0);
+      summonedMesh.rotation.y = opts?.ownerPlayer != null
+        ? (unitPlayer === 1 ? Math.PI : 0)
+        : (summonerMesh != null ? summonerMesh.rotation.y : (summoner.player === 1 ? Math.PI : 0));
       summonedMesh.scale.setScalar(SUMMON_START_SCALE);
       const basePos = worldPos(unit.x, unit.y);
       const startTime = performance.now();
@@ -3098,7 +3134,11 @@ function main() {
     const cy = deadUnit.y;
     const corpseTileFree =
       isWalkable(world, cx, cy) && !occupied.has(cy * world.w + cx);
-    const summonOpts = { useGrayscaleAppearance: true };
+    const summonOpts = {
+      useGrayscaleAppearance: true,
+      ownerPlayer: deadUnit.player,
+      omitSummonedBy: true,
+    };
     if (corpseTileFree) summonOpts.position = { gx: cx, gy: cy };
     return summonUnit(summoner, stats, skills, summonOpts);
   }
@@ -3145,6 +3185,7 @@ function main() {
       }
       document.getElementById('turn-menu').style.display = 'flex';
       updateUnitTileBorders();
+      logNextUnitTurn();
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer(true);
@@ -3576,7 +3617,26 @@ function main() {
       const turnsLeftEl = cache.turnsLeftEl || (cache.turnsLeftEl = document.getElementById('turns-left'));
       if (turnsLeftEl) turnsLeftEl.style.display = 'none';
     }
-    if (phase === 'playing' && isCPUPlayer(currentPlayer) && !isUnitMoving) setTimeout(runPlayingAI, 700);
+    if (phase === 'playing' && isCPUPlayer(currentPlayer) && !isUnitMoving) {
+      if (cvCpuAiTimeoutId != null) clearTimeout(cvCpuAiTimeoutId);
+      cvCpuAiTimeoutId = setTimeout(() => {
+        cvCpuAiTimeoutId = null;
+        runPlayingAI();
+      }, 700);
+    } else if (cvCpuAiTimeoutId != null) {
+      clearTimeout(cvCpuAiTimeoutId);
+      cvCpuAiTimeoutId = null;
+    }
+  }
+
+  /** Log the unit whose turn is now active (after initiative index / order are final). */
+  function logNextUnitTurn() {
+    if (phase !== 'playing' || initiativeOrder.length === 0) return;
+    const idx = currentTurnIndex;
+    if (idx < 0 || idx >= initiativeOrder.length) return;
+    const u = getUnitById(initiativeOrder[idx]);
+    if (!u || u.hp <= 0) return;
+    console.log('[NEXT TURN]', `${u.name} (P${u.player} ${u.class}) id=${u.id} | order ${idx + 1}/${initiativeOrder.length} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
   }
 
   function endTurn() {
@@ -3599,6 +3659,12 @@ function main() {
     if (n === 0) return;
     const currentUid = initiativeOrder[currentTurnIndex];
     const currentUnit = getUnitById(currentUid);
+    if (currentUnit) {
+      const hpBit = currentUnit.hp > 0 ? `HP ${currentUnit.hp}/${currentUnit.maxHp}` : 'dead';
+      console.log('[END TURN]', `${currentUnit.name} (P${currentUnit.player} ${currentUnit.class}) id=${currentUnit.id} | order ${currentTurnIndex + 1}/${n} | ${hpBit} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
+    } else {
+      console.log('[END TURN]', `missing unit id=${currentUid} | order ${currentTurnIndex + 1}/${n} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
+    }
     if (currentUnit && currentUnit.tempDebuff) currentUnit.tempDebuff.duration--;
     if (currentUnit && currentUnit.tempDebuff && currentUnit.tempDebuff.duration <= 0) currentUnit.tempDebuff = undefined;
     if (currentUnit && currentUnit.tempBuff) currentUnit.tempBuff.duration--;
@@ -3619,7 +3685,8 @@ function main() {
       endGameByTurnLimit();
       return;
     }
-    let next = (currentTurnIndex + 1) % n;
+    const prevTurnIndex = currentTurnIndex;
+    let next = (prevTurnIndex + 1) % n;
     let steps = 0;
     while (steps < n) {
       const uid = initiativeOrder[next];
@@ -3628,7 +3695,8 @@ function main() {
       next = (next + 1) % n;
       steps++;
     }
-    const startingNewRound = next === 0;
+    /** Re-sort initiative when the turn order wraps (not only when next slot is index 0 — that misses wrap if slot 0 is dead). */
+    const startingNewRound = n > 0 && next <= prevTurnIndex;
     currentTurnIndex = next;
 
     const TEMP_DEBUFF_DAMAGER = ['poison'];
@@ -3689,6 +3757,7 @@ function main() {
       currentTurnIndex = 0;
     }
 
+    logNextUnitTurn();
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer();
@@ -3789,7 +3858,8 @@ function main() {
               isSkillMode = false;
               selectedSkill = null;
               skillTargetTiles = new Set();
-              if (hasMoved && unit.hp > 0) endTurn();
+              if (unit.hp <= 0) updateTurnUI();
+              else if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             });
             updateTurnUI();
@@ -3818,7 +3888,8 @@ function main() {
                 isSkillMode = false;
                 selectedSkill = null;
                 skillTargetTiles = new Set();
-                if (hasMoved && unit.hp > 0) endTurn();
+                if (unit.hp <= 0) updateTurnUI();
+                else if (hasMoved && unit.hp > 0) endTurn();
                 else updateTurnUI();
               });
               updateTurnUI();
@@ -4310,7 +4381,7 @@ function main() {
     playerNames[1] = localName;
     sendOnlineMessage({ type: 'start', mapSeed: seed, mapMode, playerName: localName });
     hideOnlineConnectOverlay();
-    startDraftPhase();
+  startDraftPhase();
   }
 
   function handleOnlineMessage(msg, isHost) {
@@ -4758,6 +4829,15 @@ function main() {
   }
 
   function performAttack(unit, target, overrideHit, overrideDamage, onDone, strikeListReplay) {
+    const vodooCtx = {
+      units,
+      showFloatingCombatText,
+      updateUnitSlashVisibility,
+      handleUnitDeath,
+    };
+    function mirrorVodooHp(victim, hpLost) {
+      applyVodooMirrorHpLoss(victim, hpLost, vodooCtx);
+    }
     let strikes;
     let isReplay;
     if (Array.isArray(strikeListReplay) && strikeListReplay.length > 0) {
@@ -4814,14 +4894,22 @@ function main() {
 
     const mesh = unitMeshes.get(unit.id);
 
+    /** If the attacker died during the strike (e.g. vodoo mirror), handleUnitDeath already queued endTurn — do not endTurn again or the next unit's turn is skipped. */
+    function scheduleAfterAttackSequence() {
+      if (isReplay) return;
+      if (unit.hp <= 0) {
+        setTimeout(() => updateTurnUI(), 400);
+        return;
+      }
+      if (hasMoved && unit.hp > 0) endTurn();
+      else setTimeout(() => updateTurnUI(), 400);
+    }
+
     function afterAnimatedStrikeSequence() {
       renderer.shadowMap.enabled = true;
       isUnitMoving = false;
       if (onDone) setTimeout(() => onDone(), 0);
-      if (!isReplay) {
-        if (hasMoved && unit.hp > 0) setTimeout(() => endTurn(), 400);
-        else setTimeout(() => updateTurnUI(), 400);
-      }
+      scheduleAfterAttackSequence();
     }
 
     if (!mesh || !mesh.userData.rightArm) {
@@ -4833,7 +4921,8 @@ function main() {
             isUnitMoving = false;
             if (onDone) onDone();
             if (!isReplay) {
-              if (hasMoved && unit.hp > 0) endTurn();
+              if (unit.hp <= 0) updateTurnUI();
+              else if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             }
           }, 400);
@@ -4845,18 +4934,20 @@ function main() {
           target.hp = Math.max(0, target.hp - s.damage);
           showFloatingCombatText(target.x, target.y, String(s.damage), false);
           updateUnitSlashVisibility(target);
+          mirrorVodooHp(target, s.damage);
           if (target.hp <= 0) handleUnitDeath(target, unit);
         } else {
           showFloatingCombatText(target.x, target.y, 'MISS', true);
         }
-        if (idx < strikes.length && target.hp > 0) {
+        if (idx < strikes.length && target.hp > 0 && unit.hp > 0) {
           setTimeout(runNoMeshStrike, 400);
         } else {
           setTimeout(() => {
             isUnitMoving = false;
             if (onDone) onDone();
             if (!isReplay) {
-              if (hasMoved && unit.hp > 0) endTurn();
+              if (unit.hp <= 0) updateTurnUI();
+              else if (hasMoved && unit.hp > 0) endTurn();
               else updateTurnUI();
             }
           }, 400);
@@ -4883,7 +4974,7 @@ function main() {
       const knockbackAmount = 0.4;
 
       function runRangedStrike(strikeIndex) {
-        if (strikeIndex >= strikes.length || target.hp <= 0) {
+        if (strikeIndex >= strikes.length || target.hp <= 0 || unit.hp <= 0) {
           if (rightArm) rightArm.rotation.y = 0;
           afterAnimatedStrikeSequence();
           return;
@@ -4927,6 +5018,7 @@ function main() {
             if (isHit) {
               target.hp = Math.max(0, target.hp - damage);
               showFloatingCombatText(target.x, target.y, String(damage), false);
+              mirrorVodooHp(target, damage);
               if (target.hp <= 0) targetDeathPending = true;
               const targetMesh = unitMeshes.get(target.id);
               if (targetMesh) hitReactStartTime = now;
@@ -4974,7 +5066,7 @@ function main() {
               targetDeathPending = false;
             }
             if (hitReactDone) {
-              if (strikeIndex + 1 < strikes.length && target.hp > 0) {
+              if (strikeIndex + 1 < strikes.length && target.hp > 0 && unit.hp > 0) {
                 runRangedStrike(strikeIndex + 1);
               } else {
                 afterAnimatedStrikeSequence();
@@ -4994,7 +5086,7 @@ function main() {
     }
 
     function runMeleeStrike(strikeIndex) {
-      if (strikeIndex >= strikes.length || target.hp <= 0) {
+      if (strikeIndex >= strikes.length || target.hp <= 0 || unit.hp <= 0) {
         mesh.position.copy(startPos);
         if (mesh.userData.rightArm) mesh.userData.rightArm.rotation.y = 0;
         afterAnimatedStrikeSequence();
@@ -5032,6 +5124,7 @@ function main() {
           if (isHit) {
             target.hp = Math.max(0, target.hp - damage);
             showFloatingCombatText(target.x, target.y, String(damage), false);
+            mirrorVodooHp(target, damage);
             if (target.hp <= 0) targetDeathPending = true;
             updateUnitSlashVisibility(target);
             const targetMesh = unitMeshes.get(target.id);
@@ -5081,7 +5174,7 @@ function main() {
             targetDeathPending = false;
           }
           if (hitReactDone) {
-            if (strikeIndex + 1 < strikes.length && target.hp > 0) {
+            if (strikeIndex + 1 < strikes.length && target.hp > 0 && unit.hp > 0) {
               runMeleeStrike(strikeIndex + 1);
             } else {
               afterAnimatedStrikeSequence();
@@ -5192,7 +5285,7 @@ function main() {
       let hitApplied = false;
       let hitReactStartTime = null;
       let targetDeathPending = false;
-      const ctxNoDeath = { ...ctx, handleUnitDeath: undefined };
+      const ctxNoDeath = { ...ctx, handleUnitDeath: undefined, vodooMirrorDeath: handleUnitDeath };
       const startTime = performance.now();
       let skillTickCount = 0;
       function meleeSkillTick(now) {
@@ -5409,11 +5502,11 @@ function main() {
     const unit = getUnitById(uid);
     if (!unit || unit.hp <= 0) {
       // Recover if initiative changed mid-turn (e.g. reanimate) and current pointer is now invalid.
-      setTimeout(() => endTurn(), 0);
+      endTurn();
       return;
     }
 
-    const unitAgi = getEffectiveStat(unit, 'agi');
+    const unitAgi = Math.max(MIN_REACHABLE_MOVES, getEffectiveStat(unit, 'agi'));
     const reachableDist = getReachable(world, unit.x, unit.y, unitAgi, units, unit);
     const otherOccupiedKeys = new Set(
       units.filter((u) => u.hp > 0 && u.id !== unit.id).map((u) => u.y * world.w + u.x)
@@ -5708,7 +5801,7 @@ function main() {
 
     if (hasAttacked) {
       if (hasMoved) {
-        setTimeout(() => endTurn(), 400);
+        endTurn();
         return;
       }
       /** When kiting (ranged unit with enemies), prioritize powerup over center or enemy base. */
@@ -5721,12 +5814,12 @@ function main() {
         if (pathToPowerupResult) {
           const toward = farthestUnoccupiedOnPath(pathToPowerupResult.path, unitAgi);
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-            performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+            performMove(unit, toward.gx, toward.gy, () => endTurn());
             return;
           }
           const fallback = farthestReachableTowardTargets(reachableTiles, powerupTiles);
           if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
-            performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+            performMove(unit, fallback.gx, fallback.gy, () => endTurn());
             return;
           }
         }
@@ -5740,31 +5833,31 @@ function main() {
           if (otherCenterTiles.length > 0) {
             const awayFromEnemy = safestReachableTile(otherCenterTiles);
             if (awayFromEnemy && (awayFromEnemy.gx !== unit.x || awayFromEnemy.gy !== unit.y)) {
-              performMove(unit, awayFromEnemy.gx, awayFromEnemy.gy, () => setTimeout(endTurn, 400));
+              performMove(unit, awayFromEnemy.gx, awayFromEnemy.gy, () => endTurn());
               return;
             }
           }
-          setTimeout(() => endTurn(), 400);
+          endTurn();
           return;
         }
         if (onCenter) {
-          setTimeout(() => endTurn(), 400);
+          endTurn();
           return;
         }
         if (reachableTiles.length > 0) {
           const result = pathToCenterResult;
           const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
           if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-            performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+            performMove(unit, toward.gx, toward.gy, () => endTurn());
             return;
           }
           const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
           if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
-            performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+            performMove(unit, fallback.gx, fallback.gy, () => endTurn());
             return;
           }
         }
-        setTimeout(() => endTurn(), 400);
+        endTurn();
         return;
       }
       /** When not low HP (and turnsLeft > 20): level 2 prioritizes enemy base (level up), then center; others prioritize center. */
@@ -5775,12 +5868,12 @@ function main() {
             const result = pathToEnemyBaseResult;
             const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+              performMove(unit, toward.gx, toward.gy, () => endTurn());
               return;
             }
             const fallback = farthestReachableTowardTargets(reachableTiles, baseTargets);
             if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
-              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+              performMove(unit, fallback.gx, fallback.gy, () => endTurn());
               return;
             }
           }
@@ -5791,12 +5884,12 @@ function main() {
             const result = pathToCenterResult;
             const toward = result ? farthestUnoccupiedOnPath(result.path, unitAgi) : null;
             if (toward && (toward.gx !== unit.x || toward.gy !== unit.y)) {
-              performMove(unit, toward.gx, toward.gy, () => setTimeout(endTurn, 400));
+              performMove(unit, toward.gx, toward.gy, () => endTurn());
               return;
             }
             const fallback = farthestReachableTowardTargets(reachableTiles, centerTargets);
             if (fallback && (fallback.gx !== unit.x || fallback.gy !== unit.y)) {
-              performMove(unit, fallback.gx, fallback.gy, () => setTimeout(endTurn, 400));
+              performMove(unit, fallback.gx, fallback.gy, () => endTurn());
               return;
             }
           }
@@ -5820,10 +5913,10 @@ function main() {
       }
       if (!retreat && retreatTileSet.length > 0) retreat = safestReachableTile(retreatTileSet);
       if (retreat && (retreat.gx !== unit.x || retreat.gy !== unit.y)) {
-        performMove(unit, retreat.gx, retreat.gy, () => setTimeout(endTurn, 400));
+        performMove(unit, retreat.gx, retreat.gy, () => endTurn());
         return;
       }
-      setTimeout(() => endTurn(), 400);
+      endTurn();
       return;
     }
 
@@ -5855,7 +5948,7 @@ function main() {
         performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
         return;
       }
-      setTimeout(() => endTurn(), 400);
+      endTurn();
       return;
     }
 
@@ -5865,10 +5958,10 @@ function main() {
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
       const lowHpEnemyThreshold = 0.35;
 
-      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck', 'gnaw', 'vodoo', 'skewer']);
+      const DAMAGE_KEYS = new Set(['arcaneBolt', 'feast', 'pierce', 'snipe', 'berserk', 'drain', 'shuriken', 'chokuto', 'bite', 'execute', 'judgement', 'exorcise', 'ambush', 'powerShot', 'concoct', 'bloodSuck', 'gnaw', 'malediction', 'skewer']);
       const HEAL_KEYS = new Set(['chakra', 'sacrifice']);
-      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify', 'warCry', 'foresight', 'overheal', 'rapid']);
-      const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate', 'bash', 'infect', 'curse']);
+      const BUFF_KEYS = new Set(['brave', 'focus', 'bloodlust', 'iaido', 'howl', 'mantra', 'sanctuary', 'windWalk', 'forge', 'fortify', 'warCry', 'foresight', 'overheal', 'rapid', 'vodoo']);
+      const DEBUFF_KEYS = new Set(['impale', 'poison', 'gaze', 'debilitate', 'bash', 'infect']);
       const PERMANENT_DEBUFF_KEYS = new Set(['dominate', 'manaDrain', 'weaken', 'cripple', 'hex', 'blind', 'raid']);
       const SUMMON_KEYS = new Set(['reanimate']);
 
@@ -5978,6 +6071,17 @@ function main() {
                 break;
               }
             }
+            if (skill.target === 'enemy') {
+              let enemyTargets = getEnemyTargets(skill);
+              if (skill.effectKey === 'vodoo' && unit.tempBuff && unit.tempBuff.vodoo) {
+                enemyTargets = enemyTargets.filter((e) => e.id !== unit.tempBuff.vodoo);
+              }
+              if (enemyTargets.length > 0) {
+                chosen = skill;
+                chosenTarget = enemyTargets.sort((a, b) => a.hp - b.hp)[0];
+                break;
+              }
+            }
           }
         }
       }
@@ -6012,7 +6116,9 @@ function main() {
           if (skill.disabled || unit.mp < skill.cost) continue;
           if (PERMANENT_DEBUFF_KEYS.has(skill.effectKey)) {
             const enemyTargets = getEnemyTargets(skill);
-            const toHit = enemyTargets.length > 0 ? enemyTargets.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null) : null;
+            if (enemyTargets.length === 0) continue;
+            const toHit = enemyTargets.reduce((best, e) => (!best || e.hp < best.hp ? e : best), null);
+            if (!toHit) continue;
             chosen = skill;
             chosenTarget = toHit;
             break;
@@ -6183,7 +6289,7 @@ function main() {
           performMove(unit, safe.gx, safe.gy, () => setTimeout(runPlayingAI, 600));
           return;
         }
-        setTimeout(() => endTurn(), 400);
+        endTurn();
         return;
       }
     }
@@ -6289,8 +6395,8 @@ function main() {
     }
 
     if (!aiSkipSkillsForDoubleAttack && attemptMoveWithinAttackRange(effectiveRange)) return;
-
-    setTimeout(() => endTurn(), 400);
+    
+    endTurn();
   }
 
   function clearHighlights() {
@@ -6631,7 +6737,8 @@ function main() {
         isSkillMode = false;
         selectedSkill = null;
         skillTargetTiles = new Set();
-        if (hasMoved && unit.hp > 0) endTurn();
+        if (unit.hp <= 0) updateTurnUI();
+        else if (hasMoved && unit.hp > 0) endTurn();
         else updateTurnUI();
       });
       return;
@@ -6650,7 +6757,7 @@ function main() {
         const angle = dx * dx + dz * dz > 1e-6 ? Math.atan2(dx, dz) : mesh.rotation.y;
         mesh.rotation.y = snapToAllowedFacing(angle);
       }
-      setTimeout(() => endTurn(), 400);
+      endTurn();
       return;
     }
 
@@ -6752,7 +6859,7 @@ function main() {
             localMoveInProgress = false;
             flushOnlineOutboundQueue();
           }
-          if (hasAttacked && u.hp > 0) setTimeout(() => endTurn(), 400);
+          if (hasAttacked && u.hp > 0) endTurn();
           else setTimeout(() => updateTurnUI(), 400);
           return;
         }
@@ -7064,7 +7171,7 @@ function main() {
       });
     }
 
-    const mesh = unitMeshes.get(unit.id);
+      const mesh = unitMeshes.get(unit.id);
     if (!mesh) {
       updateUnitTileBorders();
       checkGameOver();
