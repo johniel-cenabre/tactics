@@ -83,6 +83,8 @@
   <div id="mode-select-overlay">
     <div class="mode-select-inner">
       <h1 class="mode-select-title">TACTICS</h1>
+      <div class="mode-select-main">
+        <div class="mode-select-carousel-col">
       <div class="mode-carousel">
         <div class="mode-carousel-track" id="mode-carousel-track">
           <div class="mode-slide" data-mode="pvp">
@@ -139,67 +141,71 @@
           </div>
         </div>
       </div>
-      <div class="mode-carousel-nav">
-        <button type="button" class="mode-carousel-arrow mode-carousel-prev" id="mode-carousel-prev" aria-label="Previous mode">‹</button>
-        <div class="mode-carousel-dots" id="mode-carousel-dots" role="tablist"></div>
-        <button type="button" class="mode-carousel-arrow mode-carousel-next" id="mode-carousel-next" aria-label="Next mode">›</button>
-      </div>
-      <div class="mode-card mode-settings-card" id="mode-settings-card">
-        <h3 class="mode-settings-title">Settings</h3>
-        <div class="mode-settings-pvp" id="mode-settings-pvp">
-          <div class="mode-select-ai-draft" id="mode-settings-pvp-map">
-            <label for="pvp-map-mode">Mode:</label>
-            <select id="pvp-map-mode" aria-label="PvP map length">
-              <option value="long">Normal</option>
-              <option value="short">Short</option>
-            </select>
-          </div>
-          <div class="mode-select-ai-draft" id="mode-settings-pvp-num-units">
-            <label for="pvp-num-units">No of Units:</label>
-            <input type="number" id="pvp-num-units" min="1" max="20" value="7" aria-label="Number of units per player (PvP)" />
-          </div>
-          <p class="mode-settings-pvp-none" id="mode-settings-pvp-none">No settings for this mode.</p>
-        </div>
-        <div class="mode-settings-options" id="mode-settings-options">
-          <div class="mode-select-ai-draft" id="mode-select-ai-draft">
-            <label for="ai-draft-preference">AI draft:</label>
-            <select id="ai-draft-preference" aria-label="AI draft preference"></select>
-          </div>
-          <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
-            <label for="cvcpu-num-games">No of Games:</label>
-            <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
-          </div>
-          <div class="mode-select-ai-draft">
-            <label for="cvcpu-num-units">No of Units:</label>
-            <input type="number" id="cvcpu-num-units" min="1" max="20" value="7" aria-label="Number of units per player (CPU vs CPU)" />
-          </div>
-          <div class="mode-select-ai-draft" id="mode-select-move-speed">
-            <label for="move-speed">Move speed:</label>
-            <input type="number" id="move-speed" min="0" value="300" aria-label="Move duration (ms)" />
-          </div>
-          <div class="mode-select-ai-draft">
-            <label for="cvcpu-grid-w">Grid W:</label>
-            <input type="number" id="cvcpu-grid-w" min="5" max="50" value="35" aria-label="Grid width (dev)" />
-          </div>
-          <div class="mode-select-ai-draft">
-            <label for="cvcpu-grid-h">Grid H:</label>
-            <input type="number" id="cvcpu-grid-h" min="5" max="50" value="25" aria-label="Grid height (dev)" />
-          </div>
-          <div class="mode-select-ai-draft">
-            <label for="cvcpu-center-plaza">Center plaza radius:</label>
-            <input type="number" id="cvcpu-center-plaza" min="0.1" max="0.9" step="0.01" value="0.29" aria-label="Center plaza radius (dev)" />
-          </div>
-          <div class="mode-select-ai-draft">
-            <label for="cvcpu-max-turns">Max turns:</label>
-            <input type="number" id="cvcpu-max-turns" min="10" max="999" value="200" aria-label="Max turns (CPU vs CPU dev)" />
+          <div class="mode-carousel-nav">
+            <button type="button" class="mode-carousel-arrow mode-carousel-prev" id="mode-carousel-prev" aria-label="Previous mode">‹</button>
+            <div class="mode-carousel-dots" id="mode-carousel-dots" role="tablist"></div>
+            <button type="button" class="mode-carousel-arrow mode-carousel-next" id="mode-carousel-next" aria-label="Next mode">›</button>
           </div>
         </div>
-      </div>
-      <div class="mode-play-wrap">
-        <button type="button" class="mode-play-btn" id="mode-play-btn">
-          <span class="mode-play-text">Play game</span>
-          <span class="mode-play-ripple"></span>
-        </button>
+        <aside class="mode-select-settings-col" aria-label="Game settings">
+          <div class="mode-card mode-settings-card" id="mode-settings-card">
+            <h3 class="mode-settings-title">Settings</h3>
+            <div class="mode-settings-pvp" id="mode-settings-pvp">
+              <div class="mode-select-ai-draft" id="mode-settings-pvp-map">
+                <label for="pvp-map-mode">Mode:</label>
+                <select id="pvp-map-mode" aria-label="PvP map length">
+                  <option value="long">Normal</option>
+                  <option value="short">Short</option>
+                </select>
+              </div>
+              <div class="mode-select-ai-draft" id="mode-settings-pvp-num-units">
+                <label for="pvp-num-units">No of Units:</label>
+                <input type="number" id="pvp-num-units" min="1" max="20" value="7" aria-label="Number of units per player (PvP)" />
+              </div>
+              <p class="mode-settings-pvp-none" id="mode-settings-pvp-none">No settings for this mode.</p>
+            </div>
+            <div class="mode-settings-options" id="mode-settings-options">
+              <div class="mode-select-ai-draft" id="mode-select-ai-draft">
+                <label for="ai-draft-preference">AI draft:</label>
+                <select id="ai-draft-preference" aria-label="AI draft preference"></select>
+              </div>
+              <div class="mode-select-ai-draft" id="mode-select-cvcpu-num-games">
+                <label for="cvcpu-num-games">No of Games:</label>
+                <input type="number" id="cvcpu-num-games" min="1" value="1" aria-label="Number of games (CPU vs CPU)" />
+              </div>
+              <div class="mode-select-ai-draft">
+                <label for="cvcpu-num-units">No of Units:</label>
+                <input type="number" id="cvcpu-num-units" min="1" max="20" value="7" aria-label="Number of units per player (CPU vs CPU)" />
+              </div>
+              <div class="mode-select-ai-draft" id="mode-select-move-speed">
+                <label for="move-speed">Move speed:</label>
+                <input type="number" id="move-speed" min="0" value="300" aria-label="Move duration (ms)" />
+              </div>
+              <div class="mode-select-ai-draft">
+                <label for="cvcpu-grid-w">Grid W:</label>
+                <input type="number" id="cvcpu-grid-w" min="5" max="50" value="35" aria-label="Grid width (dev)" />
+              </div>
+              <div class="mode-select-ai-draft">
+                <label for="cvcpu-grid-h">Grid H:</label>
+                <input type="number" id="cvcpu-grid-h" min="5" max="50" value="25" aria-label="Grid height (dev)" />
+              </div>
+              <div class="mode-select-ai-draft">
+                <label for="cvcpu-center-plaza">Center plaza radius:</label>
+                <input type="number" id="cvcpu-center-plaza" min="0.1" max="0.9" step="0.01" value="0.29" aria-label="Center plaza radius (dev)" />
+              </div>
+              <div class="mode-select-ai-draft">
+                <label for="cvcpu-max-turns">Max turns:</label>
+                <input type="number" id="cvcpu-max-turns" min="10" max="999" value="200" aria-label="Max turns (CPU vs CPU dev)" />
+              </div>
+            </div>
+          </div>
+          <div class="mode-play-wrap">
+            <button type="button" class="mode-play-btn" id="mode-play-btn">
+              <span class="mode-play-text">Play game</span>
+              <span class="mode-play-ripple"></span>
+            </button>
+          </div>
+        </aside>
       </div>
     </div>
   </div>

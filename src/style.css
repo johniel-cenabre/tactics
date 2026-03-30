@@ -755,10 +755,10 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
 }
 #mode-select-overlay .mode-select-inner {
   width: 100%;
-  max-width: 520px;
+  max-width: 960px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 20px;
 }
 #mode-select-overlay .mode-select-title {
@@ -769,6 +769,35 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   letter-spacing: 0.06em;
   margin: 0 0 8px;
   text-align: center;
+  align-self: center;
+}
+
+#mode-select-overlay .mode-select-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  align-items: stretch;
+}
+#mode-select-overlay .mode-select-carousel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+#mode-select-overlay .mode-select-settings-col {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+#mode-select-overlay .mode-select-settings-col .mode-settings-card {
+  flex: 0 0 auto;
+  max-height: min(72vh, 640px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Carousel */
@@ -932,11 +961,15 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   box-sizing: border-box;
 }
 
-/* Play button – gradient + ripple */
-#mode-select-overlay .mode-play-wrap {
+/* Play button – wrapper grows to fill column; button pinned to bottom */
+#mode-select-overlay .mode-select-settings-col .mode-play-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   padding-top: 8px;
 }
 #mode-select-overlay .mode-play-btn {
@@ -998,6 +1031,49 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
   to {
     transform: scale(2.5);
     opacity: 0;
+  }
+}
+
+/* Stack carousel + settings only on narrow portrait; landscape keeps two columns */
+@media (max-width: 720px) and (orientation: portrait) {
+  #mode-select-overlay .mode-select-inner {
+    max-width: 520px;
+  }
+  #mode-select-overlay .mode-select-main {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-settings-card {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow-y: visible;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-play-wrap {
+    flex: none;
+    min-height: 0;
+    justify-content: center;
+    padding-top: 4px;
+  }
+}
+
+@media (max-width: 720px) and (orientation: landscape) {
+  #mode-select-overlay .mode-select-inner {
+    max-width: min(960px, 100%);
+  }
+  #mode-select-overlay .mode-select-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-settings-card {
+    flex: 0 0 auto;
+    max-height: min(calc(100vh - 96px - 64px), calc(70vh - 64px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-play-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: flex-end;
   }
 }
 
@@ -1439,11 +1515,38 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     display: none;
   }
 
-  #mode-select-overlay { padding: 16px; }
-  #mode-select-overlay .mode-select-title { font-size: 1.4rem; }
-  #mode-select-overlay .mode-card { padding: 14px 16px; }
-  #mode-select-overlay .mode-play-btn { padding: 14px 36px; font-size: 1rem; }
+  #mode-select-overlay {
+    padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  #mode-select-overlay .mode-select-inner {
+    max-width: min(960px, 100%);
+    gap: 12px;
+  }
+  #mode-select-overlay .mode-select-title { font-size: 1.2rem; margin-bottom: 2px; }
+  #mode-select-overlay .mode-card { padding: 10px 12px; }
+  #mode-select-overlay .mode-play-btn { padding: 12px 28px; font-size: 0.95rem; }
   #mode-select-overlay .mode-settings-options { grid-template-columns: 1fr; }
+  #mode-select-overlay .mode-select-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+  #mode-select-overlay .mode-select-carousel-col {
+    gap: 10px;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-settings-card {
+    flex: 0 0 auto;
+    max-height: min(calc(100vh - 88px - 60px), calc(58vh - 60px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #mode-select-overlay .mode-select-settings-col .mode-play-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: flex-end;
+  }
 
   #online-connect-overlay { padding: 12px; }
   #online-connect-overlay .online-connect-inner { padding: 16px; }

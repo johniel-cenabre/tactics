@@ -3185,7 +3185,6 @@ function main() {
       }
       document.getElementById('turn-menu').style.display = 'flex';
       updateUnitTileBorders();
-      logNextUnitTurn();
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer(true);
@@ -3629,16 +3628,6 @@ function main() {
     }
   }
 
-  /** Log the unit whose turn is now active (after initiative index / order are final). */
-  function logNextUnitTurn() {
-    if (phase !== 'playing' || initiativeOrder.length === 0) return;
-    const idx = currentTurnIndex;
-    if (idx < 0 || idx >= initiativeOrder.length) return;
-    const u = getUnitById(initiativeOrder[idx]);
-    if (!u || u.hp <= 0) return;
-    console.log('[NEXT TURN]', `${u.name} (P${u.player} ${u.class}) id=${u.id} | order ${idx + 1}/${initiativeOrder.length} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
-  }
-
   function endTurn() {
     if (gameMode === 'online' && currentPlayer === localPlayerNumber && typeof sendOrQueueOnlineMessage === 'function') {
       const uid = initiativeOrder[currentTurnIndex];
@@ -3659,12 +3648,6 @@ function main() {
     if (n === 0) return;
     const currentUid = initiativeOrder[currentTurnIndex];
     const currentUnit = getUnitById(currentUid);
-    if (currentUnit) {
-      const hpBit = currentUnit.hp > 0 ? `HP ${currentUnit.hp}/${currentUnit.maxHp}` : 'dead';
-      console.log('[END TURN]', `${currentUnit.name} (P${currentUnit.player} ${currentUnit.class}) id=${currentUnit.id} | order ${currentTurnIndex + 1}/${n} | ${hpBit} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
-    } else {
-      console.log('[END TURN]', `missing unit id=${currentUid} | order ${currentTurnIndex + 1}/${n} | battle turn ${Math.min(turnCount + 1, maxTurns)}/${maxTurns}`);
-    }
     if (currentUnit && currentUnit.tempDebuff) currentUnit.tempDebuff.duration--;
     if (currentUnit && currentUnit.tempDebuff && currentUnit.tempDebuff.duration <= 0) currentUnit.tempDebuff = undefined;
     if (currentUnit && currentUnit.tempBuff) currentUnit.tempBuff.duration--;
@@ -3757,7 +3740,6 @@ function main() {
       currentTurnIndex = 0;
     }
 
-    logNextUnitTurn();
     updateTurnUI();
     updateActiveUnitPointer();
     centerCameraOnCurrentPlayer();
