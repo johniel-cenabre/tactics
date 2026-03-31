@@ -117,7 +117,7 @@ function shuffleArray(arr) {
 
 const CLASSES = {
   knight:     { name: 'Knight',     gender: 'male',   hp: 27, maxHp: 27, mp: 5,  maxMp: 5,  str: 14, agi: 8,  vit: 14, dex: 10, luk: 4,  int: 7,  range: 1 },
-  mage:       { name: 'Mage',       gender: 'female', hp: 17, maxHp: 17, mp: 22, maxMp: 22, str: 4,  agi: 3,  vit: 5,  dex: 4,  luk: 13, int: 17, range: 1 },
+  mage:       { name: 'Mage',       gender: 'female', hp: 16, maxHp: 16, mp: 22, maxMp: 22, str: 4,  agi: 3,  vit: 5,  dex: 4,  luk: 13, int: 17, range: 1 },
   monk:       { name: 'Monk',       gender: 'male',   hp: 24, maxHp: 24, mp: 13, maxMp: 13, str: 10, agi: 10, vit: 12, dex: 9,  luk: 11, int: 10, range: 1 },
   ghoul:      { name: 'Ghoul',      gender: 'male',   hp: 23, maxHp: 23, mp: 6,  maxMp: 6,  str: 12, agi: 9,  vit: 9,  dex: 11, luk: 9,  int: 5,  range: 1 },
   lancer:     { name: 'Lancer',     gender: 'female', hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 13, agi: 11, vit: 10, dex: 7,  luk: 5,  int: 8,  range: 2 },
@@ -138,7 +138,7 @@ const CLASSES = {
   necromancer:{ name: 'Necromancer',gender: 'male',   hp: 20, maxHp: 20, mp: 20, maxMp: 20, str: 5,  agi: 4,  vit: 7,  dex: 3,  luk: 11, int: 15, range: 1 },
   barbarian:  { name: 'Barbarian',  gender: 'male',   hp: 31, maxHp: 31, mp: 4,  maxMp: 4,  str: 16, agi: 4,  vit: 15, dex: 6,  luk: 3,  int: 2,  range: 1 },
   cannibal:   { name: 'Cannibal',   gender: 'male',   hp: 22, maxHp: 22, mp: 7,  maxMp: 7,  str: 6,  agi: 11, vit: 2,  dex: 13, luk: 9,  int: 7,  range: 4 },
-  shaman:     { name: 'Shaman',     gender: 'female', hp: 16, maxHp: 16, mp: 21, maxMp: 21, str: 4,  agi: 3,  vit: 3,  dex: 3,  luk: 16, int: 16, range: 4 },
+  shaman:     { name: 'Shaman',     gender: 'female', hp: 17, maxHp: 17, mp: 21, maxMp: 21, str: 4,  agi: 3,  vit: 3,  dex: 3,  luk: 16, int: 16, range: 4 },
   oracle:     { name: 'Oracle',     gender: 'female', hp: 19, maxHp: 19, mp: 19, maxMp: 19, str: 6,  agi: 7,  vit: 4,  dex: 10, luk: 14, int: 10, range: 1 },
   amazon:     { name: 'Amazon',     gender: 'female', hp: 23, maxHp: 23, mp: 5,  maxMp: 5,  str: 12, agi: 9,  vit: 11, dex: 7,  luk: 4,  int: 3,  range: 3 },
 };
@@ -265,10 +265,10 @@ function recordGameOver(unitsList, winningPlayer) {
 const CLASS_SKILLS = {
   knight: [
     { name: 'Brave', description: 'Gain +1 STR and +1 VIT for 2 turns.', cost: 3, target: 'self', range: 0, level: 2, effectKey: 'brave' },
-    { name: 'Dominate', description: 'Steal 2 STR and 1 VIT from an enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
+    { name: 'Dominate', description: 'Steal 2 STR and 1 VIT from an enemy.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'dominate' },
   ],
   mage: [
-    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 7, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
+    { name: 'Arcane Bolt', description: 'Deal INT-based damage to one enemy.', cost: 6, target: 'enemy', range: 6, level: 1, effectKey: 'arcaneBolt', type: 'spell' },
     { name: 'Mana Drain', description: 'Drain enemy MP based on INT.', cost: 3, target: 'enemy', range: 6, level: 2, effectKey: 'manaDrain', type: 'spell' },
   ],
   monk: [
@@ -277,7 +277,7 @@ const CLASS_SKILLS = {
   ],
   ghoul: [
     { name: 'Weaken', description: 'Steal 1 VIT from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'weaken' },
-    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
+    { name: 'Feast', description: 'Deal STR-based damage to enemy and heal self.', cost: 4, target: 'enemy', range: 1, level: 3, effectKey: 'feast' },
   ],
   lancer: [
     { name: 'Impale', description: 'Reduce target\'s AGI by 2 for 2 turns.', cost: 4, target: 'enemy', range: 2, level: 2, effectKey: 'impale' },
@@ -344,7 +344,7 @@ const CLASS_SKILLS = {
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
-    { name: 'War Cry', description: 'Gain +3 VIT for -1 HP for 2 turns', cost: 2, hpCost: 1, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
+    { name: 'War Cry', description: 'Gain +3 VIT for 2 turns', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
     { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'bash' },
   ],
   cannibal: [
@@ -352,15 +352,15 @@ const CLASS_SKILLS = {
     { name: 'Infect', description: 'Poison enemy for 3 turns', cost: 4, target: 'enemy', range: 6, level: 3, effectKey: 'infect' },
   ],
   shaman: [
-    { name: 'Vodoo', description: 'Mirror damage for 2 turns', cost: 5, target: 'enemy', range: 6, level: 1, effectKey: 'vodoo', type: 'spell' },
-    { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 8, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
+    { name: 'Vodoo', description: 'Mirror damage for 2 turns', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'vodoo', type: 'spell' },
+    { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 7, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
   ],
   oracle: [
     { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
     { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
-    { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 5, target: 'enemy', range: 3, level: 2, effectKey: 'skewer' },
+    { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 4, target: 'enemy', range: 3, level: 2, effectKey: 'skewer' },
     { name: 'Rapid', description: 'Double attack for 1 turn', cost: 6, target: 'self', range: 0, level: 3, effectKey: 'rapid' },
   ],
 };
@@ -475,7 +475,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'arcaneBolt': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') * 0.7 - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
     } break;
     case 'manaDrain': if (t) {
@@ -504,7 +504,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'feast': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       const isHit = applyDamage(t, d, false);
       if (isHit) {
         applyDamage(u, d, true);
@@ -703,7 +703,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'bloodSuck': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((u.mp * 0.6 + getEffectiveStat(u, 'int') * 0.6) - (t.hp * 0.3 + getEffectiveStat(t, 'luk') * 0.1)));
       const isHit = applyDamage(t, d, false, true);
       if (isHit) applyDamage(u, d, true);
     } break;
@@ -776,7 +776,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'malediction': {
       if (!t) break;
-      const d = Math.max(1, Math.floor(((getEffectiveStat(u, 'int') * 0.4 + getEffectiveStat(u, 'luk') * 0.3)) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil(((getEffectiveStat(u, 'int') * 0.4 + getEffectiveStat(u, 'luk') * 0.3)) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       const dVal = Math.max(1, Math.ceil(d * 0.3));
       t.tempDebuff = { luk: dVal, int: dVal, str: dVal, vit: dVal, agi: dVal, dex: dVal, duration: 3 };
       applyDamage(t, d, false, true);
@@ -799,7 +799,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `Auto heal for 2 turns`, true);
     } break;
     case 'skewer': {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'dex') * 0.8 - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'dex') * 0.8 - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       t.tempDebuff = { agi: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} AGI`, false);
     } break;
