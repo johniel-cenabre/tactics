@@ -1459,7 +1459,6 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     bottom: 0;
     transform: none;
     height: auto;
-    max-height: 38vh;
     width: auto;
     flex-direction: row;
     overflow-x: auto;

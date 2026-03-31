@@ -475,7 +475,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'arcaneBolt': {
       if (!t) break;
-      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') - (getEffectiveStat(t, 'int') * 0.7 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') * 0.7 - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, d, false, true);
     } break;
     case 'manaDrain': if (t) {
@@ -558,8 +558,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const dHp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
-      const dMp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.2) - (getEffectiveStat(t, 'int') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, dHp, false, true);
       applyDamage(u, dHp + dMp, true);
       t.mp = Math.max(1, (t.mp || 0) - dMp);
@@ -617,7 +617,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'exorcise': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((t.maxHp - t.hp) - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((t.maxHp - t.hp) * 1.1 - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
     } break;
     case 'raid': {
@@ -791,7 +791,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `+${bVal} INT, +${bVal} DEX`, true);
     } break;
     case 'overheal': {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3 + getEffectiveStat(u, 'luk') * 0.1));
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3 + getEffectiveStat(u, 'luk') * 0.2));
       u.tempBuff = { heal: d, duration: 3 };
       showStatChange(u.x, u.y, `Auto heal for 2 turns`, true);
       if (!t) break;
@@ -799,7 +799,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `Auto heal for 2 turns`, true);
     } break;
     case 'skewer': {
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'dex') * 0.8 - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       t.tempDebuff = { agi: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} AGI`, false);
     } break;
