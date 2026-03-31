@@ -765,7 +765,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, d, true);
     } break;
     case 'infect': {
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4) - getEffectiveStat(t, 'luk') * 0.2);
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
       t.tempDebuff = { poison: poisonVal, duration: 4 };
       showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
     } break;
