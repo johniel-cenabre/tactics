@@ -316,7 +316,7 @@ const CLASS_SKILLS = {
     { name: 'Judgement', description: 'Deal damage based on remaining HP.', cost: 6, target: 'enemy', range: 1, level: 3, effectKey: 'judgement', type: 'spell' },
   ],
   exorcist: [
-    { name: 'Sanctuary', description: 'Gain +1 ALL stats for both ally and self for 3 turns.', cost: 5, target: 'ally', range: 4, level: 1, effectKey: 'sanctuary' },
+    { name: 'Sanctuary', description: 'Gain +1 ALL stats for both ally and self for 3 turns.', cost: 4, target: 'ally', range: 4, level: 1, effectKey: 'sanctuary' },
     { name: 'Exorcise', description: 'Deal damage based on enemy lost HP.', cost: 6, target: 'enemy', range: 3, level: 2, effectKey: 'exorcise', type: 'spell' },
   ],
   bandit: [
@@ -340,7 +340,7 @@ const CLASS_SKILLS = {
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
-    { name: 'Debilitate', description: 'Steal target\'s 2 HP and 2 VIT for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
+    { name: 'Debilitate', description: 'Steal target\'s 3 HP and 3 VIT for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
@@ -352,8 +352,8 @@ const CLASS_SKILLS = {
     { name: 'Infect', description: 'Poison enemy for 3 turns', cost: 4, target: 'enemy', range: 6, level: 3, effectKey: 'infect' },
   ],
   shaman: [
-    { name: 'Vodoo', description: 'Mirror damage for 2 turns', cost: 4, target: 'enemy', range: 6, level: 1, effectKey: 'vodoo', type: 'spell' },
-    { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 7, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
+    { name: 'Vodoo', description: 'Mirror damage for 2 turns', cost: 4, target: 'enemy', range: 5, level: 1, effectKey: 'vodoo', type: 'spell' },
+    { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 6, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
   ],
   oracle: [
     { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
@@ -558,12 +558,13 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
-      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.3) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, dHp, false, true);
       applyDamage(u, dHp + dMp, true);
       t.mp = Math.max(1, (t.mp || 0) - dMp);
-      showStatChange(t.x, t.y, `-${dMp} MP`, false);
+      showStatChange(u.x, u.y, `+${dHp} HP and +${dMp} MP`, true);
+      showStatChange(t.x, t.y, `-${dHp} HP and -${dMp} MP`, false);
     } break;
     case 'blind': {
       if (!t) break;
@@ -683,9 +684,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'poison': {
       if (!t) break;
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.3 - getEffectiveStat(t, 'luk') * 0.2));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.2));
       t.tempDebuff = { poison: poisonVal, duration: 3 };
-      showStatChange(t.x, t.y, `Poisoned for 2 turns`, false);
+      showStatChange(t.x, t.y, `${poisonVal} poison for 2 turns`, false);
     } break;
     case 'concoct': {
       if (!t) break;
@@ -709,7 +710,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'debilitate': {
       if (!t) break;
-      const d = 2;
+      const d = 3;
       t.tempDebuff = { hp: d, maxHp: d, vit: d, duration: 3 };
       u.tempBuff = { hp: d, maxHp: d, vit: d, duration: 3 };
       showStatChange(t.x, t.y, `-${d} HP, -${d} VIT`, false);
@@ -760,14 +761,14 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'gnaw': {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') - (getEffectiveStat(t, 'vit') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
     } break;
     case 'infect': {
       const poisonVal = Math.max(1, Math.floor(getEffectiveStat(u, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
       t.tempDebuff = { poison: poisonVal, duration: 4 };
-      showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
+      showStatChange(t.x, t.y, `${poisonVal} poison for 3 turns`, false);
     } break;
     case 'vodoo': {
       if (!t) break;
