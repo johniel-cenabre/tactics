@@ -321,7 +321,7 @@ const CLASS_SKILLS = {
   ],
   bandit: [
     { name: 'Raid', description: 'Steal 2 LUK from an enemy.', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'raid' },
-    { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
+    { name: 'Ambush', description: 'Deal LUK-based damage to one enemy.', cost: 4, target: 'enemy', range: 1, level: 3, effectKey: 'ambush' },
   ],
   ranger: [
     { name: 'Wind walk', description: 'Gain +3 AGI for 2 turns.', cost: 5, target: 'self', range: 0, level: 1, effectKey: 'windWalk' },
@@ -765,7 +765,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, d, true);
     } break;
     case 'infect': {
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(t, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
+      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(u, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
       t.tempDebuff = { poison: poisonVal, duration: 4 };
       showStatChange(t.x, t.y, `Poisoned for 3 turns`, false);
     } break;
