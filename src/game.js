@@ -558,8 +558,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.6) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
-      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.4) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, dHp, false, true);
       applyDamage(u, dHp + dMp, true);
       t.mp = Math.max(1, (t.mp || 0) - dMp);
