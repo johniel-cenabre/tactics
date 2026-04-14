@@ -284,7 +284,7 @@ const CLASS_SKILLS = {
     { name: 'Pierce', description: 'Deal STR-based damage through the defense.', cost: 6, target: 'enemy', range: 2, level: 3, effectKey: 'pierce' },
   ],
   hunter: [
-    { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 4, target: 'self', range: 0, level: 1, effectKey: 'focus' },
+    { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 3, target: 'self', range: 0, level: 1, effectKey: 'focus' },
     { name: 'Snipe', description: 'Deal long-ranged, DEX-based damage to one enemy.', cost: 5, target: 'enemy', range: 12, level: 2, effectKey: 'snipe' },
   ],
   assassin: [
@@ -356,8 +356,8 @@ const CLASS_SKILLS = {
     { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 6, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
   ],
   oracle: [
-    { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 5, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
-    { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 8, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
+    { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 4, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
+    { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 7, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
     { name: 'Skewer', description: 'Deal DEX-based damage to AGI for 2 turns ', cost: 4, target: 'enemy', range: 3, level: 2, effectKey: 'skewer' },
@@ -528,7 +528,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'snipe': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'cripple': {
@@ -618,7 +618,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'exorcise': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((t.maxHp - t.hp) * 1.1 - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor((t.maxHp - t.hp) * 1.3 - (getEffectiveStat(t, 'int') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
       applyDamage(t, d, false, true);
     } break;
     case 'raid': {
