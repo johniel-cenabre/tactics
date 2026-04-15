@@ -752,7 +752,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       // }
     } break;
     case 'warCry': {
-      const bVal = Math.max(2, Math.ceil(u.maxHp - u.hp));
+      const bVal = Math.max(2, Math.ceil((u.maxHp - u.hp) * 0.1));
       u.tempBuff = { vit: bVal, luk: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} VIT, +${bVal} LUK`, true);
     } break;
