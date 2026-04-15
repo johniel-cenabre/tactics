@@ -2998,7 +2998,7 @@ function main() {
    * @param {object} summoner - unit performing the summon
    * @param {object} stats - stats for the summoned unit: name, class (for appearance), hp, maxHp, mp, maxMp, str, agi, vit, dex, luk, int, range; optional hairColor
    * @param {Array<object>} [skills] - optional array of skill definitions (same shape as CLASS_SKILLS entries) the summoned unit can use
-   * @param {{ position?: { gx: number, gy: number }, useGrayscaleAppearance?: boolean, ownerPlayer?: number, omitSummonedBy?: boolean }} [opts] - optional; position forces placement at (gx, gy); useGrayscaleAppearance makes mesh dull/grayscale; ownerPlayer sets team (e.g. reanimation keeps dead unit's player); omitSummonedBy skips summon link (reanimation copies are normal roster units)
+   * @param {{ position?: { gx: number, gy: number }, useGrayscaleAppearance?: boolean, ownerPlayer?: number, omitSummonedBy?: boolean }} [opts] - optional; position forces placement at (gx, gy); useGrayscaleAppearance makes mesh dull/grayscale; ownerPlayer overrides team (defaults to summoner); omitSummonedBy skips summon link (reanimation copies are normal roster units)
    * @returns {object | null} the summoned unit, or null if no valid tile
    */
   function summonUnit(summoner, stats, skills, opts) {
@@ -3139,7 +3139,7 @@ function main() {
       isWalkable(world, cx, cy) && !occupied.has(cy * world.w + cx);
     const summonOpts = {
       useGrayscaleAppearance: true,
-      ownerPlayer: deadUnit.player,
+      ownerPlayer: summoner.player,
       omitSummonedBy: true,
     };
     if (corpseTileFree) summonOpts.position = { gx: cx, gy: cy };
