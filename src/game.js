@@ -475,7 +475,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'arcaneBolt': {
       if (!t) break;
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.8 - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') * 0.8 - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, d, false, true);
     } break;
     case 'manaDrain': if (t) {
@@ -504,7 +504,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'feast': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'str') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'str') * 0.8) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       const isHit = applyDamage(t, d, false);
       if (isHit) {
         applyDamage(u, d, true);
