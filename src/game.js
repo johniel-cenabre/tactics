@@ -285,7 +285,7 @@ const CLASS_SKILLS = {
   ],
   hunter: [
     { name: 'Focus', description: 'Gain +3 DEX for 2 turns.', cost: 3, target: 'self', range: 0, level: 1, effectKey: 'focus' },
-    { name: 'Snipe', description: 'Deal long-ranged, DEX-based damage to one enemy.', cost: 5, target: 'enemy', range: 12, level: 2, effectKey: 'snipe' },
+    { name: 'Snipe', description: 'Deal long-ranged, DEX-based damage to one enemy.', cost: 6, target: 'enemy', range: 12, level: 2, effectKey: 'snipe' },
   ],
   assassin: [
     { name: 'Cripple', description: 'Steal 1 AGI from an enemy.', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'cripple' },
