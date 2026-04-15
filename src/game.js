@@ -336,7 +336,7 @@ const CLASS_SKILLS = {
     { name: 'Concoct', description: 'Deal INT-based damage and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
   ],
   vampire: [
-    { name: 'Gaze', description: 'Steal AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze', type: 'spell' },
+    { name: 'Gaze', description: 'Steal AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 1, effectKey: 'gaze', type: 'spell' },
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
@@ -344,7 +344,7 @@ const CLASS_SKILLS = {
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
-    { name: 'War Cry', description: 'Gain +3 VIT and +3 LUK for 2 turns', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
+    { name: 'War Cry', description: 'Gain VIT and LUK based on lost HP', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
     { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'bash' },
   ],
   cannibal: [
@@ -356,7 +356,7 @@ const CLASS_SKILLS = {
     { name: 'Malediction', description: 'Deal INT+LUK-based damage to ALL stats for 2 turns', cost: 6, target: 'enemy', range: 6, level: 2, effectKey: 'malediction', type: 'spell' },
   ],
   oracle: [
-    { name: 'Foresight', description: 'Gain +2 INT and +2 DEX for 2 turns', cost: 4, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
+    { name: 'Foresight', description: 'Gain INT and DEX based on INT for 2 turns', cost: 4, target: 'ally', range: 6, level: 1, effectKey: 'foresight' },
     { name: 'Overheal', description: 'Heal ally for 2 turns', cost: 7, target: 'ally', range: 6, level: 2, effectKey: 'overheal' },
   ],
   amazon: [
@@ -558,8 +558,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'drain': {
       if (!t) break;
-      const dHp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
-      const dMp = Math.max(1, Math.floor((getEffectiveStat(u, 'int') * 0.4) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dHp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.5) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
+      const dMp = Math.max(1, Math.ceil((getEffectiveStat(u, 'int') * 0.4) - (getEffectiveStat(t, 'int') * 0.4 + getEffectiveStat(t, 'luk') * 0.3)));
       applyDamage(t, dHp, false, true);
       applyDamage(u, dHp + dMp, true);
       t.mp = Math.max(1, (t.mp || 0) - dMp);
@@ -752,7 +752,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       // }
     } break;
     case 'warCry': {
-      const bVal = 3;
+      const bVal = Math.max(2, Math.ceil(u.maxHp - u.hp));
       u.tempBuff = { vit: bVal, luk: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} VIT, +${bVal} LUK`, true);
     } break;
@@ -768,7 +768,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, d, true);
     } break;
     case 'infect': {
-      const poisonVal = Math.max(1, Math.floor(getEffectiveStat(u, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
+      const poisonVal = Math.max(1, Math.ceil(getEffectiveStat(u, 'luk') * 0.4 - getEffectiveStat(t, 'luk') * 0.1));
       t.tempDebuff = { poison: poisonVal, duration: 4 };
       showStatChange(t.x, t.y, `${poisonVal} poison for 3 turns`, false);
     } break;
@@ -786,7 +786,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `-${dVal} ALL STATS`, false);
     } break;
     case 'foresight': {
-      const bVal = 2;
+      const bVal = Math.max(2, Math.floor(getEffectiveStat(u, 'int') * 0.3));
       u.tempBuff = { int: bVal, dex: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX`, true);
       if (!t) break;
