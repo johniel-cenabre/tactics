@@ -336,7 +336,7 @@ const CLASS_SKILLS = {
     { name: 'Concoct', description: 'Deal INT-based damage and add to 50% to LUK', cost: 8, target: 'enemy', range: 7, level: 2, effectKey: 'concoct', type: 'spell' },
   ],
   vampire: [
-    { name: 'Gaze', description: 'Reduce target\'s AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze', type: 'spell' },
+    { name: 'Gaze', description: 'Steal AGI and VIT by 1 for 3 turns', cost: 5, target: 'enemy', range: 4, level: 2, effectKey: 'gaze', type: 'spell' },
     { name: 'Blood Suck', description: 'Absorb enemy HP based on your MP', cost: 7, target: 'enemy', range: 1, level: 3, effectKey: 'bloodSuck' },
   ],
   necromancer: [
@@ -344,7 +344,7 @@ const CLASS_SKILLS = {
     { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
-    { name: 'War Cry', description: 'Gain +3 VIT for 2 turns', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
+    { name: 'War Cry', description: 'Gain +3 VIT and +3 LUK for 2 turns', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
     { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'bash' },
   ],
   cannibal: [
@@ -485,7 +485,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(u.x, u.y, `+${dVal} MP`, true);
     } break;
     case 'mantra': if (t) {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3));
+      const d = Math.max(1, Math.ceil(getEffectiveStat(u, 'int') * 0.3));
       u.tempBuff = { int: d, duration: 3 };
       showStatChange(u.x, u.y, `+${d} LUK`, true);
       t.tempBuff = { luk: d, duration: 3 };
@@ -700,7 +700,9 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       if (!t) break;
       const dVal = 1;
       t.tempDebuff = { agi: dVal, vit: dVal, duration: 4 };
+      u.tempBuff = { agi: dVal, vit: dVal, duration: 4 };
       showStatChange(t.x, t.y, `-${dVal} AGI, -${dVal} VIT`, false);
+      showStatChange(u.x, u.y, `+${dVal} AGI, +${dVal} VIT`, true);
     } break;
     case 'bloodSuck': {
       if (!t) break;
@@ -751,8 +753,8 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'warCry': {
       const bVal = 3;
-      u.tempBuff = { vit: bVal, duration: 3 };
-      showStatChange(u.x, u.y, `+${bVal} VIT`, true);
+      u.tempBuff = { vit: bVal, luk: bVal, duration: 3 };
+      showStatChange(u.x, u.y, `+${bVal} VIT, +${bVal} LUK`, true);
     } break;
     case 'bash': {
       if (!t) break;
@@ -761,7 +763,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `-${dVal} AGI`, false);
     } break;
     case 'gnaw': {
-      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') - (getEffectiveStat(t, 'vit') * 0.2 + getEffectiveStat(t, 'luk') * 0.1)));
+      const d = Math.max(1, Math.floor(getEffectiveStat(u, 'str') - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false, true);
       applyDamage(u, d, true);
     } break;
