@@ -546,7 +546,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, 3, false);
     } break;
     case 'bloodlust': {
-      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.2));
+      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.3));
       u.tempBuff = { str: blVal, vit: blVal, duration: 2 };
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true);
     } break;
@@ -574,7 +574,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     } break;
     case 'shuriken': {
       if (!t) break;
-      const d = Math.max(1, Math.floor((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
+      const d = Math.max(1, Math.ceil((getEffectiveStat(u, 'dex') * 0.7) - (getEffectiveStat(t, 'vit') * 0.3 + getEffectiveStat(t, 'luk') * 0.2)));
       applyDamage(t, d, false);
     } break;
     case 'iaido': {
@@ -729,6 +729,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       for (let i = 0; i < list.length; i++) {
         const d = list[i];
         if (d.hp > 0) continue;
+        if (d.isReanimated) continue;
         const oD = d.deathOrder ?? 0;
         if (oD >= oBestAll) {
           oBestAll = oD;
@@ -3141,7 +3142,9 @@ function main() {
       omitSummonedBy: true,
     };
     if (corpseTileFree) summonOpts.position = { gx: cx, gy: cy };
-    return summonUnit(summoner, stats, skills, summonOpts);
+    const raised = summonUnit(summoner, stats, skills, summonOpts);
+    if (raised) raised.isReanimated = true;
+    return raised;
   }
 
   function endDraftPhase() {
@@ -6015,7 +6018,7 @@ function main() {
         }
       }
       if (!chosen && !hasKillPotential) {
-        const deadUnits = units.filter((u) => u.hp <= 0);
+        const deadUnits = units.filter((u) => u.hp <= 0 && !u.isReanimated);
         for (const skill of available) {
           if (skill.disabled || unit.mp < skill.cost) continue;
           if (skill.effectKey === 'reanimate' && !deadUnits.length) continue;
@@ -7125,7 +7128,7 @@ function main() {
 
   function handleUnitDeath(unit, killer, opts) {
     updateUnitTileIndex(unit, unit.x, unit.y);
-    deadCorpseCount++;
+    if (!unit.isReanimated) deadCorpseCount++;
     unit.deathOrder = ++deathOrderSeq;
     if (gameMode === 'online' && typeof sendOnlineMessage === 'function' && !(opts && opts.skipSync)) {
       sendOnlineMessage({ type: 'unitDeath', unitId: unit.id, killerId: killer != null ? killer.id : undefined });
