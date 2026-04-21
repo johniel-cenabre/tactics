@@ -215,14 +215,18 @@ const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
   return acc;
 }, /** @type {Record<string, { battles: number, kills: number, deaths: number, wins: number, losses: number }>} */ ({}));
 
+/** Unit credited for a kill (summoner if killer is a summon, else the killer). */
+function resolveKillCreditingUnit(killerUnit, unitsList) {
+  if (!killerUnit || killerUnit.summonedBy == null || !Array.isArray(unitsList)) return killerUnit;
+  const summoner = unitsList.find((u) => u.id === killerUnit.summonedBy);
+  return summoner != null ? summoner : killerUnit;
+}
+
 function recordClassKill(killerUnit, victimUnit, unitsList) {
   if (!DEV_MODE) return;
 
-  let killerClass = killerUnit?.class;
-  if (killerUnit?.summonedBy != null && Array.isArray(unitsList)) {
-    const summoner = unitsList.find((u) => u.id === killerUnit.summonedBy);
-    if (summoner?.class) killerClass = summoner.class;
-  }
+  const creditUnit = resolveKillCreditingUnit(killerUnit, unitsList);
+  const killerClass = creditUnit?.class;
   if (CLASS_KEYS.includes(killerClass) && CLASS_RECORD[killerClass]) {
     CLASS_RECORD[killerClass].kills++;
   }
