@@ -787,7 +787,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       showStatChange(t.x, t.y, `-${dVal} ALL STATS`, false);
     } break;
     case 'foresight': {
-      const bVal = Math.max(2, Math.floor(getEffectiveStat(u, 'int') * 0.3));
+      const bVal = Math.max(2, Math.floor(getEffectiveStat(u, 'int') * 0.2));
       u.tempBuff = { int: bVal, dex: bVal, mp: bVal, maxMp: bVal, duration: 3 };
       showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX, +${bVal} MP`, true);
       if (!t) break;
