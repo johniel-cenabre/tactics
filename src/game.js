@@ -546,7 +546,7 @@ function applySkillEffect(effectKey, unit, target, ctx) {
       applyDamage(u, 3, false);
     } break;
     case 'bloodlust': {
-      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.3));
+      const blVal = Math.max(1, Math.floor((u.maxHp - u.hp) * 0.2));
       u.tempBuff = { str: blVal, vit: blVal, duration: 2 };
       showStatChange(u.x, u.y, `+${blVal} STR, +${blVal} VIT`, true);
     } break;
