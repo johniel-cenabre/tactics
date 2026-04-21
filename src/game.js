@@ -341,11 +341,11 @@ const CLASS_SKILLS = {
   ],
   necromancer: [
     { name: 'Debilitate', description: 'Steal target\'s 3 HP and 3 VIT for 2 turns', cost: 5, target: 'enemy', range: 5, level: 1, effectKey: 'debilitate', type: 'spell' },
-    { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 10, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
+    { name: 'Reanimate', description: 'Resurrect dead unit to your control', cost: 12, target: 'self', range: 0, level: 2, effectKey: 'reanimate' },
   ],
   barbarian: [
     { name: 'War Cry', description: 'Gain VIT and LUK based on lost HP', cost: 2, target: 'self', range: 0, level: 1, effectKey: 'warCry' },
-    { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 5, target: 'enemy', range: 1, level: 3, effectKey: 'bash' },
+    { name: 'Bash', description: 'Reduce target\'s AGI to 0 for 2 turns', cost: 4, target: 'enemy', range: 1, level: 2, effectKey: 'bash' },
   ],
   cannibal: [
     { name: 'Gnaw', description: 'Deal STR based damage to heal self', cost: 3, target: 'enemy', range: 1, level: 2, effectKey: 'gnaw' },
