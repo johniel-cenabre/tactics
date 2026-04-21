@@ -789,10 +789,10 @@ function applySkillEffect(effectKey, unit, target, ctx) {
     case 'foresight': {
       const bVal = Math.max(2, Math.floor(getEffectiveStat(u, 'int') * 0.3));
       u.tempBuff = { int: bVal, dex: bVal, mp: bVal, maxMp: bVal, duration: 3 };
-      showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX`, true);
+      showStatChange(u.x, u.y, `+${bVal} INT, +${bVal} DEX, +${bVal} MP`, true);
       if (!t) break;
-      t.tempBuff = { int: bVal, dex: bVal, duration: 3 };
-      showStatChange(t.x, t.y, `+${bVal} INT, +${bVal} DEX`, true);
+      t.tempBuff = { int: bVal, dex: bVal, mp: bVal, maxMp: bVal, duration: 3 };
+      showStatChange(t.x, t.y, `+${bVal} INT, +${bVal} DEX, +${bVal} MP`, true);
     } break;
     case 'overheal': {
       const d = Math.max(1, Math.floor(getEffectiveStat(u, 'int') * 0.3 + getEffectiveStat(u, 'luk') * 0.2));
