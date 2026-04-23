@@ -1102,11 +1102,24 @@ function hasLineOfSight(world, ax, ay, bx, by) {
   return true;
 }
 
-/** Minimum tiles a unit can move in one turn (applied in getReachable). */
+/** Minimum tiles a unit can move in one turn (applied in getReachable unless temp AGI debuff is active). */
 const MIN_REACHABLE_MOVES = 4;
 
+/** True when `tempDebuff.agi` is reducing AGI for movement (waives {@link MIN_REACHABLE_MOVES}). */
+function hasActiveTempAgiDebuff(unit) {
+  if (!unit || !unit.tempDebuff) return false;
+  const td = unit.tempDebuff;
+  if (td.agi == null || !(td.agi > 0)) return false;
+  if (td.duration != null && td.duration <= 0) return false;
+  return true;
+}
+
 function getReachable(world, startX, startY, maxMoves, units, movingUnit) {
-  maxMoves = Math.max(MIN_REACHABLE_MOVES, maxMoves);
+  if (movingUnit && hasActiveTempAgiDebuff(movingUnit)) {
+    maxMoves = Math.max(0, maxMoves);
+  } else {
+    maxMoves = Math.max(MIN_REACHABLE_MOVES, maxMoves);
+  }
   const key = (x, y) => y * world.w + x;
   const dist = new Map();
   dist.set(key(startX, startY), 0);
@@ -5496,7 +5509,10 @@ function main() {
       return;
     }
 
-    const unitAgi = Math.max(MIN_REACHABLE_MOVES, getEffectiveStat(unit, 'agi'));
+    const effectiveAgi = getEffectiveStat(unit, 'agi');
+    const unitAgi = hasActiveTempAgiDebuff(unit)
+      ? Math.max(0, effectiveAgi)
+      : Math.max(MIN_REACHABLE_MOVES, effectiveAgi);
     const reachableDist = getReachable(world, unit.x, unit.y, unitAgi, units, unit);
     const otherOccupiedKeys = new Set(
       units.filter((u) => u.hp > 0 && u.id !== unit.id).map((u) => u.y * world.w + u.x)
