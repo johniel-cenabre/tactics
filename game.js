@@ -3750,7 +3750,7 @@ void main() {
               </div>
               ${e?yt`
                 <div class="mode-selected-card">
-                  <span class="mode-selected-icon" aria-hidden="true">${e.icon}</span>
+                  ${this._modeIcon(e.id,"mode-selected-icon")}
                   <div class="mode-selected-copy">
                     <div class="mode-selected-title">${e.title}</div>
                     <p class="mode-selected-desc">${e.desc}</p>

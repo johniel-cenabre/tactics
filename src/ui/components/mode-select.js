@@ -136,7 +136,7 @@ class ModeSelect extends SignalWatcher(LitElement) {
               </div>
               ${selected ? html`
                 <div class="mode-selected-card">
-                  <span class="mode-selected-icon" aria-hidden="true">${selected.icon}</span>
+                  ${this._modeIcon(selected.id, 'mode-selected-icon')}
                   <div class="mode-selected-copy">
                     <div class="mode-selected-title">${selected.title}</div>
                     <p class="mode-selected-desc">${selected.desc}</p>
