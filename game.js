@@ -3739,7 +3739,7 @@ void main() {
                     aria-pressed=${this.mode===n.id}
                     aria-label=${`${n.title}. ${n.desc}`}
                     @click=${()=>this._setMode(n.id)}>
-                    <span class="mode-tile-icon" aria-hidden="true">${n.icon}</span>
+                    ${this._modeIcon(n.id,"mode-tile-icon")}
                     <span class="mode-tile-body">
                       <span class="mode-tile-name mode-tile-name-short">${n.short}</span>
                       <span class="mode-tile-name mode-tile-name-full">${n.title}</span>

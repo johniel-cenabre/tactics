@@ -125,7 +125,7 @@ class ModeSelect extends SignalWatcher(LitElement) {
                     aria-pressed=${this.mode === m.id}
                     aria-label=${`${m.title}. ${m.desc}`}
                     @click=${() => this._setMode(m.id)}>
-                    <span class="mode-tile-icon" aria-hidden="true">${m.icon}</span>
+                    ${this._modeIcon(m.id, 'mode-tile-icon')}
                     <span class="mode-tile-body">
                       <span class="mode-tile-name mode-tile-name-short">${m.short}</span>
                       <span class="mode-tile-name mode-tile-name-full">${m.title}</span>
