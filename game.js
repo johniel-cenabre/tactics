@@ -3704,7 +3704,7 @@ void main() {
       </div>`,n=(s,r,a,o)=>yt`
       <div class="mode-field">
         <label for=${s}>${a}</label>
-        <select id=${s} class="ui-select" @change=${l=>this._upd(r,l.target.value)}>
+        <select id=${s} @change=${l=>this._upd(r,l.target.value)}>
           ${o.map(([l,c])=>yt`<option value=${l} ?selected=${t[r]===l}>${c}</option>`)}
         </select>
       </div>`;return yt`
@@ -3783,9 +3783,9 @@ void main() {
                   <span class="mode-play-text">${this.mode==="online"?"Connect online":"Start game"}</span>
                 </button>
               </div>
-              <details class="mode-settings-details ui-accordion" open>
-                <summary class="mode-settings-summary ui-accordion-summary">Match settings</summary>
-                <div class="mode-card mode-settings-card ui-accordion-body">
+              <details class="mode-settings-details" open>
+                <summary class="mode-settings-summary">Match settings</summary>
+                <div class="mode-card mode-settings-card">
                   <div class="mode-settings-fields">
                     ${this._renderSettings(t)}
                   </div>
@@ -3836,19 +3836,17 @@ void main() {
         <div class="menu-actions">
           <span class="menu-label">${s?"Choose facing":`Player ${t.currentPlayer}`}</span>
           <button type="button" ?disabled=${n||s||t.actionState.hasAttacked} @click=${()=>Jt.attack()}>Attack</button>
-            <div class="skill-wrap">
+          <div class="skill-wrap">
             <button type="button" ?disabled=${n||s||t.actionState.hasAttacked||a} @click=${o=>this._toggleSkills(o)}>Skill</button>
-            <div class="skill-list-overlay ui-dropdown-panel" style="display:${this._skillsOpen?"flex":"none"}">
-              <div class="ui-dropdown-header">Choose skill</div>
-              <div class="ui-dropdown-list">
-                ${r.length===0?yt`<div class="ui-dropdown-empty">No skills available</div>`:""}
-                ${r.map(o=>yt`
-                  <button type="button" class="skill-option ui-dropdown-item" ?disabled=${o.disabled} @click=${()=>this._pickSkill(o.index)}>
-                    <span class="skill-name ui-dropdown-item-title">${o.name}</span>
-                    <span class="skill-meta ui-dropdown-item-meta">${o.cost} MP · Lv.${o.level}${o.description?` \xB7 ${o.description}`:""}</span>
-                  </button>
-                `)}
-              </div>
+            <div class="skill-list-overlay" style="display:${this._skillsOpen?"block":"none"}">
+              ${r.length===0?yt`<div class="skill-option" style="cursor:default;color:#8b949e;">No skills available</div>`:""}
+              ${r.map(o=>yt`
+                <button type="button" class="skill-option" ?disabled=${o.disabled} @click=${()=>this._pickSkill(o.index)}>
+                  <span class="skill-name">${o.name}</span>
+                  <span class="skill-meta">${o.cost} MP · Lv.${o.level}</span>
+                  ${o.description?yt`<br /><span class="skill-meta">${o.description}</span>`:""}
+                </button>
+              `)}
             </div>
           </div>
           <button type="button" class="end" ?disabled=${n||s} @click=${()=>Jt.endTurn()}>End</button>
