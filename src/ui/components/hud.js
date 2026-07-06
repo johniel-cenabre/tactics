@@ -33,8 +33,8 @@ class Hud extends SignalWatcher(LitElement) {
         </div>
         <div class="hud-status">
           <div class="hud-turn-pill turn">
-            <span class="hud-turn-label">${draft ? 'Draft' : 'Turn'}</span>
-            <span id="turn-player">${label}</span>
+            <span class="hud-turn-label">${turnLabel}</span>
+            <span id="turn-player">${turnValue}</span>
           </div>
           <div class="hud-turns-pill turns-left ${lowTurns ? 'turns-left-low' : ''}" id="turns-left" style="display:${showTurnsLeft ? 'flex' : 'none'}">
             <span class="hud-turns-label">Left</span>
