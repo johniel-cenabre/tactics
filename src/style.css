@@ -1842,11 +1842,6 @@ app-root {
     box-shadow: inset 0 0 0 1px rgba(88, 166, 255, 0.35);
   }
 }
-@media (orientation: landscape) and (min-height: 521px) {
-  #mode-select-overlay .mode-card-icon {
-    display: block;
-  }
-}
 @media (orientation: landscape) and (max-height: 380px) {
   #mode-select-overlay .mode-select-tagline {
     display: none;

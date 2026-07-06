@@ -698,13 +698,6 @@
   }
 }
 
-/* Landscape desktop list: show icons beside mode cards */
-@media (orientation: landscape) and (min-height: 521px) {
-  #mode-select-overlay .mode-card-icon {
-    display: block;
-  }
-}
-
 @media (orientation: landscape) and (max-height: 380px) {
   #mode-select-overlay .mode-select-tagline {
     display: none;
