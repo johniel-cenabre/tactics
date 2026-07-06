@@ -398,6 +398,9 @@
   #mode-select-overlay .mode-list-desktop {
     display: flex;
   }
+  #mode-select-overlay .mode-card-icon {
+    display: inline-flex;
+  }
   #mode-select-overlay .mode-settings-summary {
     display: none;
   }
