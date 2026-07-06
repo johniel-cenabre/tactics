@@ -10,8 +10,8 @@ import { getKnockbackResult } from '../world/grid.js';
 // Flanking multipliers: striking a unit from behind hurts most, the sides less,
 // and meeting it head-on the least.
 export const FACING_FRONT_MULT = 0.95;
-export const FACING_SIDE_MULT = 1.15;
-export const FACING_BACK_MULT = 1.25;
+export const FACING_SIDE_MULT = 1.05;
+export const FACING_BACK_MULT = 1.10;
 
 /**
  * Damage multiplier based on where the attacker stands relative to the victim's
