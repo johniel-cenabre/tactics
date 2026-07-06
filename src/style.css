@@ -1133,6 +1133,14 @@ app-root {
     transform: translate(-50%, -180%);
   }
 }
+@media (min-height: 521px) and (min-width: 769px) {
+  .combat-text-float {
+    font-size: 1.25rem;
+  }
+  .combat-text-float.levelup {
+    font-size: 1rem;
+  }
+}
 
 /* src/styles/overlays.css */
 #game-over-overlay {
