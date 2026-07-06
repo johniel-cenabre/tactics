@@ -1,7 +1,6 @@
 /* Style entry point. esbuild bundles these partials (via @import) into style.css.
    Split by UI concern so each Lit component's styling lives in its own file. */
 @import './base.css';
-@import './dropdowns.css';
 @import './turn-menu.css';
 @import './draft.css';
 @import './unit-preview.css';

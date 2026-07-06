@@ -150,13 +150,55 @@
 }
 
 #turn-menu .skill-list-overlay {
+  position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
+  z-index: 10000;
+  pointer-events: auto;
+  min-width: min(72vw, 260px);
+  max-width: min(85vw, 300px);
+  max-height: min(40vh, 280px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(22, 27, 34, 0.96);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+  visibility: visible;
+  -webkit-overflow-scrolling: touch;
 }
 #turn-menu.player-2 .skill-list-overlay {
   left: auto;
   right: 0;
 }
+#turn-menu .skill-list-overlay .skill-option {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: #e6edf3;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+#turn-menu .skill-list-overlay .skill-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#turn-menu .skill-list-overlay .skill-option:hover:not(:disabled),
+#turn-menu .skill-list-overlay .skill-option:active:not(:disabled) {
+  background: rgba(88, 166, 255, 0.12);
+  color: #e6edf3;
+}
+#turn-menu .skill-list-overlay .skill-option .skill-name { font-weight: 600; }
+#turn-menu .skill-list-overlay .skill-option .skill-meta { font-size: 0.72rem; opacity: 0.85; color: #8b949e; }
 
 #turn-menu button {
   font-family: 'Outfit', sans-serif;
