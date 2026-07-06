@@ -2,18 +2,25 @@
   "name": "tactics",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "esbuild src/game.js --bundle --format=esm --minify --outfile=game.js && esbuild src/style.css --minify --outfile=style.css && node -e \"let h=require('fs').readFileSync('src/index.html','utf8'); require('fs').writeFileSync('index.html', h.replace('game.bundle.js','game.js'))\"",
-    "dev": "esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js && concurrently \"esbuild src/game.js --bundle --format=esm --outfile=src/game.bundle.js --watch\" \"npx live-server . --port=3000 --open=/src/index.html\"",
-    "preview": "npm run build && npx serve . -p 3000"
+    "build": "esbuild src/main.js --bundle --format=esm --minify --outfile=game.js && esbuild src/styles/index.css --bundle --minify --outfile=style.css && node scripts/build-html.mjs",
+    "dev": "esbuild src/main.js --bundle --format=esm --outfile=src/game.bundle.js && esbuild src/styles/index.css --bundle --outfile=src/style.css && concurrently \"esbuild src/main.js --bundle --format=esm --outfile=src/game.bundle.js --watch\" \"esbuild src/styles/index.css --bundle --outfile=src/style.css --watch\" \"npx live-server . --port=3000 --open=/src/index.html\"",
+    "preview": "npm run build && npx serve . -p 3000",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@preact/signals-core": "^1.14.3",
+    "lit": "^3.3.3",
     "three": "^0.160.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
     "esbuild": "^0.24.0",
+    "jsdom": "^29.1.1",
     "live-server": "^1.2.2",
-    "serve": "^14.2.4"
+    "serve": "^14.2.4",
+    "vitest": "^4.1.9"
   }
 }
