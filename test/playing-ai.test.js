@@ -3,7 +3,7 @@ import { GameState } from '../src/sim/state.js';
 import { TileType } from '../src/world/tile-types.js';
 import { flatWorld } from './helpers.js';
 import { decidePlayingIntent } from '../src/ai/playing-ai.js';
-import { FACING_FRONT_MULT, FACING_BACK_MULT } from '../src/sim/combat.js';
+import { FACING_FRONT_MULT, FACING_SIDE_MULT, FACING_BACK_MULT } from '../src/sim/combat.js';
 import {
   canKillWithBasicAttack,
   pickSpreadPlacementTile,
@@ -61,10 +61,13 @@ describe('AI helpers', () => {
     const enemy = { x: 5, y: 6, range: 1, agi: 1 }; // directly south of the scored tile
     const facingEnemy = tileThreatScore(world, 5, 5, [enemy], { dx: 0, dy: 1 }); // faces south, toward it
     const backToEnemy = tileThreatScore(world, 5, 5, [enemy], { dx: 0, dy: -1 }); // faces north, back turned
+    const flankToEnemy = tileThreatScore(world, 5, 5, [enemy], { dx: 1, dy: 0 }); // faces east, enemy to the side
     const neutral = tileThreatScore(world, 5, 5, [enemy]);
     expect(backToEnemy).toBe(2 * FACING_BACK_MULT);
     expect(facingEnemy).toBe(2 * FACING_FRONT_MULT);
-    expect(backToEnemy).toBeGreaterThan(facingEnemy);
+    expect(flankToEnemy).toBe(2 * FACING_SIDE_MULT);
+    expect(backToEnemy).toBeGreaterThan(flankToEnemy);
+    expect(flankToEnemy).toBeGreaterThan(facingEnemy);
     expect(neutral).toBe(2);
     expect(facingEnemy).toBeLessThanOrEqual(neutral);
   });
