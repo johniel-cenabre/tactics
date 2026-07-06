@@ -3,7 +3,7 @@ import { GameState } from '../src/sim/state.js';
 import { TileType } from '../src/world/tile-types.js';
 import { flatWorld } from './helpers.js';
 import { decidePlayingIntent } from '../src/ai/playing-ai.js';
-import { FACING_FRONT_MULT } from '../src/sim/combat.js';
+import { FACING_FRONT_MULT, FACING_BACK_MULT } from '../src/sim/combat.js';
 import {
   canKillWithBasicAttack,
   pickSpreadPlacementTile,
@@ -62,10 +62,9 @@ describe('AI helpers', () => {
     const facingEnemy = tileThreatScore(world, 5, 5, [enemy], { dx: 0, dy: 1 }); // faces south, toward it
     const backToEnemy = tileThreatScore(world, 5, 5, [enemy], { dx: 0, dy: -1 }); // faces north, back turned
     const neutral = tileThreatScore(world, 5, 5, [enemy]);
-    expect(backToEnemy).toBeGreaterThan(facingEnemy);
-    // Facing the threat applies the front multiplier; it must not be worse than the
-    // facing-agnostic baseline (front multiplier <= 1).
+    expect(backToEnemy).toBe(2 * FACING_BACK_MULT);
     expect(facingEnemy).toBe(2 * FACING_FRONT_MULT);
+    expect(backToEnemy).toBeGreaterThan(facingEnemy);
     expect(neutral).toBe(2);
     expect(facingEnemy).toBeLessThanOrEqual(neutral);
   });
@@ -263,3 +262,5 @@ describe('decidePlayingIntent', () => {
     expect(intent.toGy).toBeGreaterThan(lv2.y);
   });
 });
+x  
+ 
