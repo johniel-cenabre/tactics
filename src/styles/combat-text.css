@@ -10,11 +10,12 @@
 .combat-text-float {
   position: absolute;
   font-weight: 800;
-  font-size: 1.25rem;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  font-size: 1.1rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.5);
   white-space: nowrap;
   transform: translate(-50%, -100%);
   animation: combat-text-float 1.4s ease-out forwards;
+  -webkit-font-smoothing: antialiased;
 }
 .combat-text-float.miss { color: #ffffff; }
 .combat-text-float.damage { color: #f85149; }
@@ -22,7 +23,7 @@
 .combat-text-float.buff { color: #3fb950; }
 .combat-text-float.debuff { color: #d29922; }
 .combat-text-float.skill-name { color: #ffffff; }
-.combat-text-float.levelup { font-size: 1rem; color: #f0f6fc; }
+.combat-text-float.levelup { font-size: 0.95rem; color: #f0f6fc; }
 .combat-text-float.level2 { color: #e68600; }
 .combat-text-float.level3 { color: #a855f7; }
 @keyframes combat-text-float {

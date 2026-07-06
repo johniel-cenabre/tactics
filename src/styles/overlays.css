@@ -32,14 +32,16 @@
   flex-direction: column;
   align-items: center;
   gap: 28px;
+  padding: 24px;
 }
 #battle-start-overlay .battle-start-message {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(1.8rem, 5vw, 3rem);
-  font-weight: 700;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  font-weight: 800;
   color: #e6edf3;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 24px rgba(88, 166, 255, 0.35), 0 2px 8px rgba(0, 0, 0, 0.5);
   letter-spacing: 0.08em;
+  text-align: center;
 }
 /* Sword-shaped loading bar: grip (left) + blade with pointed tip (right) */
 #battle-start-overlay .battle-start-sword-bar {

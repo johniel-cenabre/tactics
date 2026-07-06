@@ -1,64 +1,39 @@
-/* Mobile landscape: short viewport, maximize game area and compact UI */
+/* Mobile landscape: draft, overlays, and fine-tuning for short viewports */
 @media (orientation: landscape) and (max-height: 520px) {
-  #ui {
-    padding: 6px 12px;
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-    padding-top: max(6px, env(safe-area-inset-top));
+  #ui .hud-brand {
+    display: none;
   }
-  #ui h1 { font-size: 0.85rem; }
-  #ui .turn, #ui .turns-left { font-size: 0.75rem; }
-  #ui .instructions {
-    font-size: 0.65rem;
-    max-width: 180px;
+  #ui .hud-status {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  #ui .turn span,
+  #ui #turn-player {
+    max-width: 42vw;
   }
 
-  #turn-menu {
-    bottom: max(8px, env(safe-area-inset-bottom));
-    left: max(8px, env(safe-area-inset-left));
-    right: auto;
-    gap: 10px;
-    padding: 8px 12px;
-    align-items: center;
-  }
-  #turn-menu.player-2 {
-    left: auto;
-    right: max(8px, env(safe-area-inset-right));
-  }
-  #turn-menu .unit-info {
-    min-width: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    padding-right: 10px;
-    margin-right: 4px;
-    display: flex;
-    width: 100%;
-  }
   #turn-menu .unit-info .unit-class-image {
-    height: 100px;
-    width: auto;
+    width: 44px;
+    height: 44px;
   }
-  #turn-menu .unit-info .unit-name { font-size: 0.78rem; }
-  #turn-menu .unit-info .unit-level-class { font-size: 0.62rem; }
-  #turn-menu .unit-info .unit-stats {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px 12px;
-    font-size: 0.7rem;
+  #turn-menu button {
+    min-width: 58px;
+    padding: 0 10px;
+    font-size: 0.68rem;
   }
-  #turn-menu .menu-actions { flex-wrap: nowrap; }
-  #turn-menu .menu-label { font-size: 0.65rem; padding-right: 6px; margin-right: 2px; }
-  #turn-menu button { font-size: 0.7rem; padding:10px; min-width: 77px; }
 
   #unit-preview-card {
-    top: max(8px, env(safe-area-inset-top));
-    padding: 8px 10px;
-    min-width: 140px;
+    top: max(46px, calc(env(safe-area-inset-top) + 38px));
+    max-width: min(64vw, 240px);
+    padding: 6px 10px;
   }
-  #unit-preview-card.player-1 { left: max(8px, env(safe-area-inset-left)); }
-  #unit-preview-card.player-2 { right: max(8px, env(safe-area-inset-right)); }
-  #unit-preview-card .unit-preview-image { height: 80px; margin-bottom: 4px; }
-  #unit-preview-card .unit-preview-name { font-size: 0.8rem; }
-  #unit-preview-card .unit-preview-meta, #unit-preview-card .unit-preview-stats { font-size: 0.6rem; }
+  #unit-preview-card .unit-preview-image {
+    width: 40px;
+    height: 40px;
+  }
+  #unit-preview-card .unit-preview-stats {
+    display: none;
+  }
 
   #draft-panel {
     top: max(12px, env(safe-area-inset-top));
@@ -69,7 +44,6 @@
     max-height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
     min-height: 0;
   }
-  /* Same layout as desktop: detail left, 5×5 class grid right */
   #draft-panel #draft-body {
     flex-direction: row;
     gap: 12px;
@@ -172,13 +146,35 @@
   #online-connect-overlay .online-connect-inner { padding: 16px; }
   #online-connect-overlay .online-connect-title { font-size: 1.25rem; }
 
-  #game-over-overlay { padding: 12px; }
+  #game-over-overlay {
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
   #game-over-overlay .game-over-title { font-size: 1.25rem; margin-bottom: 12px; }
   #game-over-overlay .game-over-cards { gap: 10px; }
   #game-over-overlay .game-over-card { width: 100px; }
   #game-over-overlay .game-over-card-image { height: 100px; }
   #game-over-overlay .game-over-card-name { font-size: 0.8rem; }
-  #game-over-overlay .game-over-card-meta, #game-over-overlay .game-over-card-stats { font-size: 0.6rem; }
+  #game-over-overlay .game-over-card-meta,
+  #game-over-overlay .game-over-card-stats { font-size: 0.6rem; }
+  #game-over-overlay .mode-play-btn {
+    min-height: 44px;
+    padding: 12px 32px;
+    font-size: 0.95rem;
+  }
 
-  .combat-text-float { font-size: 1rem; }
+  #battle-start-overlay .battle-start-message {
+    font-size: clamp(1.4rem, 6vw, 2rem);
+    letter-spacing: 0.06em;
+  }
+  #battle-start-overlay .battle-start-sword-bar {
+    width: min(160px, 40vw);
+    height: 14px;
+  }
+
+  .combat-text-float {
+    font-size: 1.05rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.6);
+  }
 }
