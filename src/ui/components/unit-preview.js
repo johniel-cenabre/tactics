@@ -12,12 +12,14 @@ class UnitPreview extends SignalWatcher(LitElement) {
     if (!u) return html``;
     const statOrder = ['str', 'agi', 'vit', 'dex', 'luk', 'int'];
     return html`
-      <div id="unit-preview-card" class="player-${u.player}" style="display:block">
+      <div id="unit-preview-card" class="player-${u.player}" style="display:flex">
         <img class="unit-preview-image" src="${CLASS_IMAGES[u.class] || ''}" alt="" referrerpolicy="no-referrer" />
-        <div class="unit-preview-name">${u.name} <small>Lv.${u.level}</small></div>
-        <div class="unit-preview-meta">HP ${u.hp}/${u.maxHp} · MP ${u.mp}/${u.maxMp}</div>
-        <div class="unit-preview-stats">
-          ${statOrder.map((k) => html`<span>${k.toUpperCase()} ${unsafeHTML(u.statsHtml[k])}</span>`)}
+        <div class="unit-preview-body">
+          <div class="unit-preview-name">${u.name} <small>Lv.${u.level}</small></div>
+          <div class="unit-preview-meta">HP ${u.hp}/${u.maxHp} · MP ${u.mp}/${u.maxMp}</div>
+          <div class="unit-preview-stats">
+            ${statOrder.map((k) => html`<span>${k.toUpperCase()} ${unsafeHTML(u.statsHtml[k])}</span>`)}
+          </div>
         </div>
       </div>
     `;

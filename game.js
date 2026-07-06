@@ -3921,12 +3921,14 @@ void main() {
         </div>
       </div>
     `}render(){let t=jt.value;if(t.screen!=="game"||t.phase!=="draft"||!t.draft)return yt``;let e=t.draft;return e.pendingClassKey?this._renderPlacement(e):this._renderPicker(e)}};customElements.define("draft-panel",Mh);var Sh=class extends Me(te){createRenderRoot(){return this}render(){let t=jt.value.previewUnit;if(!t)return yt``;let e=["str","agi","vit","dex","luk","int"];return yt`
-      <div id="unit-preview-card" class="player-${t.player}" style="display:block">
+      <div id="unit-preview-card" class="player-${t.player}" style="display:flex">
         <img class="unit-preview-image" src="${cn[t.class]||""}" alt="" referrerpolicy="no-referrer" />
-        <div class="unit-preview-name">${t.name} <small>Lv.${t.level}</small></div>
-        <div class="unit-preview-meta">HP ${t.hp}/${t.maxHp} · MP ${t.mp}/${t.maxMp}</div>
-        <div class="unit-preview-stats">
-          ${e.map(n=>yt`<span>${n.toUpperCase()} ${Po(t.statsHtml[n])}</span>`)}
+        <div class="unit-preview-body">
+          <div class="unit-preview-name">${t.name} <small>Lv.${t.level}</small></div>
+          <div class="unit-preview-meta">HP ${t.hp}/${t.maxHp} · MP ${t.mp}/${t.maxMp}</div>
+          <div class="unit-preview-stats">
+            ${e.map(n=>yt`<span>${n.toUpperCase()} ${Po(t.statsHtml[n])}</span>`)}
+          </div>
         </div>
       </div>
     `}};customElements.define("unit-preview",Sh);var oS=["str","agi","vit","dex","luk","int"],bh=class extends Me(te){createRenderRoot(){return this}_levelClass(t){return t>=3?"level-3":t>=2?"level-2":""}_renderCard(t){let e=this._levelClass(t.level);return yt`

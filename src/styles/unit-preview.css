@@ -1,9 +1,6 @@
 #unit-preview-card {
   display: none;
   position: fixed;
-  top: max(52px, calc(env(safe-area-inset-top) + 44px));
-  z-index: 15;
-  display: none;
   flex-direction: row;
   align-items: center;
   gap: 10px;
