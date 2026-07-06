@@ -11,10 +11,12 @@ class Hud extends SignalWatcher(LitElement) {
     const s = uiState.value;
     if (s.screen !== 'game') return html``;
     const draft = s.phase === 'draft' ? s.draft : null;
-    const label = draft
+    const player = draft ? draft.player : s.currentPlayer;
+    const turnLabel = draft ? 'Draft' : 'Turn';
+    const turnValue = draft
       ? (draft.pendingClassKey
-        ? `Draft: Player ${draft.player} — place ${CLASSES[draft.pendingClassKey]?.name || 'unit'}`
-        : `Draft: Player ${draft.player} — pick a class`)
+        ? `P${draft.player} · place ${CLASSES[draft.pendingClassKey]?.name || 'unit'}`
+        : `P${draft.player} · pick class`)
       : `Player ${s.currentPlayer}`;
     const showTurnsLeft = s.phase === 'playing' && s.turnsLeft != null;
     const lowTurns = showTurnsLeft && s.turnsLeft <= 10;
@@ -25,7 +27,6 @@ class Hud extends SignalWatcher(LitElement) {
       : (s.actionState?.choosingFacing
         ? 'Click a tile or unit to choose facing direction.'
         : 'Select a unit, then click a highlighted tile to move');
-    const player = draft ? draft.player : s.currentPlayer;
     return html`
       <div id="ui" class="player-${player}">
         <div class="hud-brand">
