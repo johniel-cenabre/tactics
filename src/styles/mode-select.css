@@ -443,7 +443,12 @@
     display: grid;
   }
   #mode-select-overlay .mode-selected-card {
-    display: block;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  #mode-select-overlay .mode-selected-icon {
+    display: inline-flex;
   }
   #mode-select-overlay .mode-list-desktop {
     display: none;
