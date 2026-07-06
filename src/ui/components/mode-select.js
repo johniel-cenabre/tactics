@@ -61,6 +61,10 @@ class ModeSelect extends SignalWatcher(LitElement) {
     else actions.startMatch(cfg);
   }
 
+  _modeIcon(modeId, className) {
+    return html`<span class="${className} mode-icon mode-icon--${modeId}">${MODE_ICONS[modeId]}</span>`;
+  }
+
   _renderSettings(f) {
     const num = (id, key, attrs = {}) => html`
       <div class="mode-field">
