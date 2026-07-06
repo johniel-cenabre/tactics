@@ -3766,7 +3766,7 @@ void main() {
                       aria-pressed=${this.mode===n.id}
                       aria-label=${n.title}
                       @click=${()=>this._setMode(n.id)}>
-                      <span class="mode-card-icon" aria-hidden="true">${n.icon}</span>
+                      ${this._modeIcon(n.id,"mode-card-icon")}
                       <span class="mode-card-copy">
                         <h2 class="mode-card-title">${n.title}</h2>
                         <p class="mode-card-desc-text">${n.desc}</p>
