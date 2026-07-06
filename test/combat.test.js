@@ -72,7 +72,7 @@ describe('combat', () => {
     state.units = [attacker, victim];
     const { ctx } = makeCtx(state);
     applyDamage(ctx, { attacker, victim, amount: 10, preHit: true });
-    expect(victim.hp).toBe(30 - Math.round(10 * FACING_BACK_MULT)); // 30 - 15 = 15
+    expect(victim.hp).toBe(30 - Math.round(10 * FACING_BACK_MULT));
   });
 
   it('heals never exceed maxHp', () => {
