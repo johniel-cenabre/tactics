@@ -1364,10 +1364,6 @@ app-root {
     box-shadow 0.15s,
     transform 0.12s;
 }
-#mode-select-overlay .mode-card-icon {
-  display: none;
-  font-size: 1.35rem;
-}
 #mode-select-overlay .mode-card-copy {
   min-width: 0;
   flex: 1 1 auto;
