@@ -77,7 +77,7 @@ class ModeSelect extends SignalWatcher(LitElement) {
     const select = (id, key, label, options) => html`
       <div class="mode-field">
         <label for=${id}>${label}</label>
-        <select id=${id} @change=${(e) => this._upd(key, e.target.value)}>
+        <select id=${id} class="ui-select" @change=${(e) => this._upd(key, e.target.value)}>
           ${options.map(([val, text]) => html`<option value=${val} ?selected=${f[key] === val}>${text}</option>`)}
         </select>
       </div>`;
@@ -169,9 +169,9 @@ class ModeSelect extends SignalWatcher(LitElement) {
                   <span class="mode-play-text">${this.mode === 'online' ? 'Connect online' : 'Start game'}</span>
                 </button>
               </div>
-              <details class="mode-settings-details" open>
-                <summary class="mode-settings-summary">Match settings</summary>
-                <div class="mode-card mode-settings-card">
+              <details class="mode-settings-details ui-accordion" open>
+                <summary class="mode-settings-summary ui-accordion-summary">Match settings</summary>
+                <div class="mode-card mode-settings-card ui-accordion-body">
                   <div class="mode-settings-fields">
                     ${this._renderSettings(f)}
                   </div>
