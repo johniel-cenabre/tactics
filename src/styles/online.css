@@ -1,0 +1,135 @@
+/* Online connect overlay */
+#online-connect-overlay.online-connect-overlay,
+#online-connect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  background: rgba(0, 0, 0, 0.77);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+#online-connect-overlay .online-connect-inner {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(145deg, rgba(22, 27, 34, 0.98) 0%, rgba(13, 17, 23, 0.98) 100%);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+#online-connect-overlay .online-connect-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e6edf3;
+  margin: 0 0 4px;
+}
+#online-connect-overlay label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #c9d1d9;
+  display: block;
+  margin-bottom: 4px;
+}
+#online-connect-overlay #online-player-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1px solid rgba(48, 54, 61, 0.8);
+  border-radius: 8px;
+  background: #21262d;
+  color: #e6edf3;
+  width: 100%;
+  box-sizing: border-box;
+}
+#online-connect-overlay #online-player-name::placeholder {
+  color: #6e7681;
+}
+#online-connect-overlay .online-connect-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#online-connect-overlay .online-connect-actions button,
+#online-connect-overlay .online-section button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #238636;
+  color: #fff;
+  transition: background 0.15s, transform 0.15s;
+}
+#online-connect-overlay .online-connect-actions button:hover,
+#online-connect-overlay .online-section button:hover {
+  background: #2ea043;
+}
+#online-connect-overlay .online-connect-actions button:last-of-type {
+  background: #21262d;
+  border: 1px solid rgba(88, 166, 255, 0.4);
+  color: #58a6ff;
+}
+#online-connect-overlay .online-connect-actions button:last-of-type:hover {
+  background: #30363d;
+  color: #e6edf3;
+}
+#online-connect-overlay .online-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(48, 54, 61, 0.6);
+}
+#online-connect-overlay .online-instruction {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #8b949e;
+  margin: 0 0 4px;
+}
+#online-connect-overlay textarea {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  padding: 10px 12px;
+  border: 1px solid rgba(48, 54, 61, 0.8);
+  border-radius: 8px;
+  background: #161b22;
+  color: #e6edf3;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 80px;
+}
+#online-connect-overlay textarea::placeholder {
+  color: #6e7681;
+}
+#online-connect-overlay textarea[readonly] {
+  color: #8b949e;
+}
+#online-connect-overlay #online-join-answer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#online-connect-overlay .online-waiting {
+  font-size: 0.9rem;
+  color: #8b949e;
+  margin: 0;
+  font-style: italic;
+}
+#online-connect-overlay .online-error {
+  font-size: 0.9rem;
+  color: #f85149;
+  margin: 0;
+  padding: 8px 0;
+}

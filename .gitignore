@@ -1,2 +1,4 @@
 /node_modules
 /src/game.bundle.js
+/src/style.css
+.cursor
