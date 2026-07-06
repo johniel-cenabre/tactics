@@ -5,11 +5,32 @@ import { AI_DRAFT_PREFERENCE_OPTIONS } from '../../data/draft-config.js';
 import { DEFAULT_SETTINGS, DEV_MODE } from '../../config.js';
 
 const MODES = [
-  { id: 'pvp', title: 'Player vs Player', short: 'PvP', icon: '⚔', desc: 'Two players on the same device.' },
-  { id: 'pvcpu', title: 'Player vs CPU', short: 'PvCPU', icon: '🛡', desc: 'You control your army; the CPU responds.' },
-  { id: 'cvcpu', title: 'CPU vs CPU', short: 'Watch', icon: '👁', desc: 'Watch two AI armies fight.' },
-  { id: 'online', title: 'Online Match', short: 'Online', icon: '🌐', desc: 'Play a friend over the internet.' },
+  { id: 'pvp', title: 'Player vs Player', short: 'PvP', desc: 'Two players on the same device.' },
+  { id: 'pvcpu', title: 'Player vs CPU', short: 'PvCPU', desc: 'You control your army; the CPU responds.' },
+  { id: 'cvcpu', title: 'CPU vs CPU', short: 'Watch', desc: 'Watch two AI armies fight.' },
+  { id: 'online', title: 'Online Match', short: 'Online', desc: 'Play a friend over the internet.' },
 ];
+
+const MODE_ICONS = {
+  pvp: html`
+    <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M6.5 2.8 9.7 6l-1.4 1.4-2.4-2.4-1.4 1.4 2.4 2.4L5.5 10 2.3 6.8 3.7 5.4 6.1 7.8 7.5 6.4 4.3 3.2 5.7 1.8 6.5 2.8Zm11 0 1.4-1.4 3.2 3.2-1.4 1.4-2.4-2.4-1.4 1.4 2.4 2.4-1.4 1.4-3.2-3.2 1.4-1.4 2.4 2.4 1.4-1.4-2.4-2.4 1.4-1.4Z"/>
+      <path fill="currentColor" d="M8.8 13.2 13.2 8.8l6 6-1.4 1.4-4.6-4.6-4.6 4.6-1.4-1.4 6-6Z"/>
+    </svg>`,
+  pvcpu: html`
+    <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M12 2 20 5v6.2c0 4.8-3.4 8.8-8 10.8-4.6-2-8-6-8-10.8V5l8-3Zm0 2.2L6 6.4V11c0 3.7 2.6 7 6 8.8 3.4-1.8 6-5.1 6-8.8V6.4l-6-2.2Z"/>
+    </svg>`,
+  cvcpu: html`
+    <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M12 5c-3.9 0-7 2.7-7 6.2 0 2.2 1.2 4.1 3 5.3-.3.9-.8 1.7-1.5 2.5 2-.5 3.6-1.5 4.8-2.8 1.5.4 3.1.4 4.7 0 1.2 1.3 2.8 2.3 4.8 2.8-.7-.8-1.2-1.6-1.5-2.5 1.8-1.2 3-3.1 3-5.3C19 7.7 15.9 5 12 5Zm0 2.2c2.6 0 4.6 1.7 4.6 4 0 2.3-2 4-4.6 4s-4.6-1.7-4.6-4c0-2.3 2-4 4.6-4Z"/>
+    </svg>`,
+  online: html`
+    <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.8" d="M3 12h18M12 3c2.4 2.8 2.4 14.2 0 18M12 3c-2.4 2.8-2.4 14.2 0 18"/>
+    </svg>`,
+};
 
 // Mode-select screen. Light DOM — styles live in styles/mode-select.css.
 class ModeSelect extends SignalWatcher(LitElement) {
