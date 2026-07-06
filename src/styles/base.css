@@ -26,7 +26,7 @@ html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: '
     background: #161b22;
   }
 }
-/* Let clicks/wheels pass through to the canvas except on panels that set pointer-events: auto. */
+
 app-root {
   pointer-events: none;
 }
@@ -41,18 +41,156 @@ app-root {
   touch-action: none;
 }
 #canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+
+/* ── Battle HUD (mobile-first) ── */
 #ui {
-  position: fixed; top: 0; left: 0; right: 0;
-  padding: 12px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(13, 17, 23, 0.88) 0%, rgba(13, 17, 23, 0.55) 70%, transparent 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(48, 54, 61, 0.35);
 }
-#ui h1 { font-size: 1rem; font-weight: 700; color: #e6edf3; letter-spacing: 0.02em; }
-#ui .turn { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #8b949e; }
-#ui .turn span { color: #58a6ff; }
-#ui .turns-left { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #8b949e; }
-#ui .turns-left span { color: #58a6ff; }
-#ui .turns-left.turns-left-low { color: #f85149; }
-#ui .turns-left.turns-left-low span { color: #f85149; font-weight: 600; }
-#ui .instructions { font-size: 0.75rem; color: #6e7681; max-width: 320px; }
+
+#ui .hud-brand {
+  grid-column: 1;
+  grid-row: 1;
+}
+#ui .hud-brand h1 {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #8b949e;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+#ui .hud-status {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+#ui .hud-instructions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #6e7681;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ui .hud-turn-pill,
+#ui .hud-turns-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1;
+  border: 1px solid rgba(48, 54, 61, 0.85);
+  background: rgba(22, 27, 34, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+#ui .hud-turn-label,
+#ui .hud-turns-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6e7681;
+}
+#ui .turn span,
+#ui #turn-player {
+  color: #58a6ff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28vw;
+}
+#ui .turns-left span,
+#ui #turns-left-value {
+  color: #58a6ff;
+  font-weight: 700;
+}
+#ui .turns-left.turns-left-low {
+  border-color: rgba(248, 81, 73, 0.45);
+  background: rgba(40, 18, 18, 0.75);
+}
+#ui .turns-left.turns-left-low .hud-turns-label { color: #f85149; }
+#ui .turns-left.turns-left-low span,
+#ui .turns-left.turns-left-low #turns-left-value {
+  color: #f85149;
+}
+
+#ui.player-1 .hud-turn-pill { border-color: rgba(88, 166, 255, 0.35); }
+#ui.player-2 .hud-turn-pill { border-color: rgba(248, 81, 73, 0.35); }
+#ui.player-2 .turn span,
+#ui.player-2 #turn-player { color: #ff7b72; }
+
+/* Desktop HUD: single row, show brand prominently */
+@media (min-height: 521px) and (min-width: 769px) {
+  #ui {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 20px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+    backdrop-filter: none;
+    border-bottom: none;
+  }
+  #ui .hud-brand h1 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e6edf3;
+    letter-spacing: 0.02em;
+  }
+  #ui .hud-status {
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+  #ui .hud-turn-pill,
+  #ui .hud-turns-pill {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+  #ui .hud-turn-label,
+  #ui .hud-turns-label {
+    font-size: 0.65rem;
+  }
+  #ui .turn span,
+  #ui #turn-player {
+    max-width: none;
+  }
+  #ui .hud-instructions {
+    flex: 1 1 auto;
+    text-align: right;
+    font-size: 0.75rem;
+    max-width: 320px;
+    white-space: normal;
+  }
+}

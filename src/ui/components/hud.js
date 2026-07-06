@@ -25,14 +25,23 @@ class Hud extends SignalWatcher(LitElement) {
       : (s.actionState?.choosingFacing
         ? 'Click a tile or unit to choose facing direction.'
         : 'Select a unit, then click a highlighted tile to move');
+    const player = draft ? draft.player : s.currentPlayer;
     return html`
-      <div id="ui">
-        <h1>TACTICS</h1>
-        <div class="turn">${draft ? '' : 'Turn: '}<span id="turn-player">${label}</span></div>
-        <div class="turns-left ${lowTurns ? 'turns-left-low' : ''}" id="turns-left" style="display:${showTurnsLeft ? 'block' : 'none'}">
-          Turns left: <span id="turns-left-value">${s.turnsLeft}</span>
+      <div id="ui" class="player-${player}">
+        <div class="hud-brand">
+          <h1>TACTICS</h1>
         </div>
-        <div class="instructions">${instructions}</div>
+        <div class="hud-status">
+          <div class="hud-turn-pill turn">
+            <span class="hud-turn-label">${draft ? 'Draft' : 'Turn'}</span>
+            <span id="turn-player">${label}</span>
+          </div>
+          <div class="hud-turns-pill turns-left ${lowTurns ? 'turns-left-low' : ''}" id="turns-left" style="display:${showTurnsLeft ? 'flex' : 'none'}">
+            <span class="hud-turns-label">Left</span>
+            <span id="turns-left-value">${s.turnsLeft}</span>
+          </div>
+        </div>
+        <p class="hud-instructions instructions">${instructions}</p>
       </div>
     `;
   }

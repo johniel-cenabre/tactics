@@ -3795,14 +3795,22 @@ void main() {
           </div>
         </div>
       </div>
-    `}};customElements.define("mode-select-screen",xh);var yh=class extends Me(te){createRenderRoot(){return this}render(){let t=jt.value;if(t.screen!=="game")return yt``;let e=t.phase==="draft"?t.draft:null,n=e?e.pendingClassKey?`Draft: Player ${e.player} \u2014 place ${Ue[e.pendingClassKey]?.name||"unit"}`:`Draft: Player ${e.player} \u2014 pick a class`:`Player ${t.currentPlayer}`,s=t.phase==="playing"&&t.turnsLeft!=null,r=s&&t.turnsLeft<=10,a=e?e.pendingClassKey?"Click a highlighted base tile to place your unit.":e.isHumanTurn?"Choose a class to draft.":"Waiting for opponent\u2026":t.actionState?.choosingFacing?"Click a tile or unit to choose facing direction.":"Select a unit, then click a highlighted tile to move";return yt`
-      <div id="ui">
-        <h1>TACTICS</h1>
-        <div class="turn">${e?"":"Turn: "}<span id="turn-player">${n}</span></div>
-        <div class="turns-left ${r?"turns-left-low":""}" id="turns-left" style="display:${s?"block":"none"}">
-          Turns left: <span id="turns-left-value">${t.turnsLeft}</span>
+    `}};customElements.define("mode-select-screen",xh);var yh=class extends Me(te){createRenderRoot(){return this}render(){let t=jt.value;if(t.screen!=="game")return yt``;let e=t.phase==="draft"?t.draft:null,n=e?e.pendingClassKey?`Draft: Player ${e.player} \u2014 place ${Ue[e.pendingClassKey]?.name||"unit"}`:`Draft: Player ${e.player} \u2014 pick a class`:`Player ${t.currentPlayer}`,s=t.phase==="playing"&&t.turnsLeft!=null,r=s&&t.turnsLeft<=10,a=e?e.pendingClassKey?"Click a highlighted base tile to place your unit.":e.isHumanTurn?"Choose a class to draft.":"Waiting for opponent\u2026":t.actionState?.choosingFacing?"Click a tile or unit to choose facing direction.":"Select a unit, then click a highlighted tile to move",o=e?e.player:t.currentPlayer;return yt`
+      <div id="ui" class="player-${o}">
+        <div class="hud-brand">
+          <h1>TACTICS</h1>
         </div>
-        <div class="instructions">${a}</div>
+        <div class="hud-status">
+          <div class="hud-turn-pill turn">
+            <span class="hud-turn-label">${e?"Draft":"Turn"}</span>
+            <span id="turn-player">${n}</span>
+          </div>
+          <div class="hud-turns-pill turns-left ${r?"turns-left-low":""}" id="turns-left" style="display:${s?"flex":"none"}">
+            <span class="hud-turns-label">Left</span>
+            <span id="turns-left-value">${t.turnsLeft}</span>
+          </div>
+        </div>
+        <p class="hud-instructions instructions">${a}</p>
       </div>
     `}};customElements.define("hud-bar",yh);var Ro={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},Co=i=>(...t)=>({_$litDirective$:i,values:t}),Is=class{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,n){this._$Ct=t,this._$AM=e,this._$Ci=n}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}};var Yp=Co(class extends Is{constructor(i){if(super(i),i.type!==Ro.ATTRIBUTE||i.name!=="class"||i.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(i){return" "+Object.keys(i).filter(t=>i[t]).join(" ")+" "}update(i,[t]){if(this.st===void 0){this.st=new Set,i.strings!==void 0&&(this.nt=new Set(i.strings.join(" ").split(/\s/).filter(n=>n!=="")));for(let n in t)t[n]&&!this.nt?.has(n)&&this.st.add(n);return this.render(t)}let e=i.element.classList;for(let n of this.st)n in t||(e.remove(n),this.st.delete(n));for(let n in t){let s=!!t[n];s===this.st.has(n)||this.nt?.has(n)||(s?(e.add(n),this.st.add(n)):(e.remove(n),this.st.delete(n)))}return Cn}});var Ir=class extends Is{constructor(t){if(super(t),this.it=xe,t.type!==Ro.CHILD)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(t){if(t===xe||t==null)return this._t=void 0,this.it=t;if(t===Cn)return t;if(typeof t!="string")throw Error(this.constructor.directiveName+"() called with a non-string value");if(t===this.it)return this._t;this.it=t;let e=[t];return e.raw=e,this._t={_$litType$:this.constructor.resultType,strings:e,values:[]}}};Ir.directiveName="unsafeHTML",Ir.resultType=1;var Po=Co(Ir);var aS=["str","agi","vit","dex","luk","int"],vh=class extends Me(te){createRenderRoot(){return this}constructor(){super(),this._skillsOpen=!1,this._onDocClick=null}connectedCallback(){super.connectedCallback(),this._onDocClick=t=>{if(!this._skillsOpen)return;let e=this.querySelector(".skill-wrap");e&&!e.contains(t.target)&&(this._skillsOpen=!1,this.requestUpdate())},document.addEventListener("click",this._onDocClick)}disconnectedCallback(){this._onDocClick&&document.removeEventListener("click",this._onDocClick),super.disconnectedCallback()}_toggleSkills(t){t?.stopPropagation(),this._skillsOpen=!this._skillsOpen,this.requestUpdate()}_pickSkill(t){this._skillsOpen=!1,Jt.skill(t),this.requestUpdate()}_statRows(t){return yt`
       <span>HP</span><span class="stat-val stat-val-hp">${t.hp}/${t.maxHp}</span>
