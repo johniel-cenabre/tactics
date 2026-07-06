@@ -1,0 +1,209 @@
+#turn-menu {
+  position: fixed;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(22, 27, 34, 0.60);
+  border: 1px solid rgba(48, 54, 61, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  overflow: visible;
+  z-index: 50;
+}
+#turn-menu.player-1 {
+  left: 24px;
+}
+#turn-menu.player-2 {
+  right: 24px;
+  left: auto;
+}
+#turn-menu.level-2 {
+  background: linear-gradient(135deg, rgba(40, 28, 18, 0.77) 0%, rgba(60, 38, 20, 0.70) 50%, rgba(35, 22, 12, 0.77) 100%);
+  border-color: rgba(194, 120, 54, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(230, 150, 70, 0.2);
+}
+#turn-menu.level-3 {
+  background: linear-gradient(135deg, rgba(35, 22, 45, 0.77) 0%, rgba(55, 35, 70, 0.70) 50%, rgba(28, 18, 40, 0.77) 100%);
+  border-color: rgba(140, 90, 180, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(160, 110, 200, 0.25);
+}
+#turn-menu .unit-info {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 200px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+}
+#turn-menu .unit-info .unit-class-image {
+  width: auto;
+  height: 140px;
+  max-height: 28vh;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #21262d;
+  flex-shrink: 0;
+}
+#turn-menu .unit-info .unit-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+#turn-menu .unit-info .unit-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#turn-menu .unit-info .unit-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #e6edf3;
+}
+#turn-menu .unit-info .unit-level-class {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #8b949e;
+}
+#turn-menu .unit-info .unit-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: #8b949e;
+}
+#turn-menu .unit-info .unit-stats span {
+  color: #6e7681;
+}
+#turn-menu .unit-info .unit-stats .stat-val {
+  color: #e6edf3;
+  text-align: right;
+}
+#turn-menu .unit-info.no-unit .unit-name,
+#turn-menu .unit-info.no-unit .unit-stats {
+  color: #6e7681;
+}
+#turn-menu .unit-info.no-unit .unit-class-image {
+  visibility: hidden;
+}
+@keyframes low-hp-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); border-color: rgba(248, 81, 73, 0.5); }
+  50% { box-shadow: 0 0 12px 4px rgba(248, 81, 73, 0.4); border-color: rgba(248, 81, 73, 0.9); }
+}
+#turn-menu.low-hp {
+  animation: low-hp-pulse 1.2s ease-in-out infinite;
+  border: 1px solid rgba(248, 81, 73, 0.6);
+  border-radius: 8px;
+}
+#turn-menu.low-hp .unit-info .unit-stats .stat-val-hp { color: #f85149; }
+#turn-menu .unit-info .unit-stats .stat-val-poison,
+#turn-menu .unit-info .unit-stats .stat-val-debuff { color: #f85149; }
+#turn-menu .unit-info .unit-stats .stat-val-buff { color: #3fb950; }
+#turn-menu .menu-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#turn-menu .skill-wrap {
+  position: relative;
+  overflow: visible;
+}
+
+#turn-menu .skill-list-overlay {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 10000;
+  pointer-events: auto;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  padding: 4px 0;
+  visibility: visible;
+}
+#turn-menu.player-2 .skill-list-overlay {
+  left: auto;
+  right: 0;
+}
+#turn-menu .skill-list-overlay .skill-option {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #e6edf3;
+  font-family: inherit;
+}
+#turn-menu .skill-list-overlay .skill-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#turn-menu .skill-list-overlay .skill-option:hover:not(:disabled) {
+  background: #30363d;
+  color: #e6edf3;
+}
+#turn-menu .skill-list-overlay .skill-option .skill-name { font-weight: 600; }
+#turn-menu .skill-list-overlay .skill-option .skill-meta { font-size: 0.75rem; opacity: 0.85; }
+
+#turn-menu .menu-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-right: 4px;
+  padding-right: 10px;
+  border-right: 1px solid rgba(48, 54, 61, 0.8);
+}
+#turn-menu button {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #21262d;
+  color: #e6edf3;
+  transition: background 0.15s, color 0.15s;
+  min-width: 100px;
+}
+#turn-menu button:hover {
+  background: #30363d;
+  color: #fff;
+}
+#turn-menu button:active {
+  background: #161b22;
+}
+#turn-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#turn-menu button:disabled:hover {
+  background: #21262d;
+  color: #e6edf3;
+}
+#turn-menu button.end {
+  background: #da3633;
+  color: #fff;
+}
+#turn-menu button.end:hover {
+  background: #f85149;
+}

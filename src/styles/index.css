@@ -1,0 +1,11 @@
+/* Style entry point. esbuild bundles these partials (via @import) into style.css.
+   Split by UI concern so each Lit component's styling lives in its own file. */
+@import './base.css';
+@import './turn-menu.css';
+@import './draft.css';
+@import './unit-preview.css';
+@import './combat-text.css';
+@import './overlays.css';
+@import './mode-select.css';
+@import './online.css';
+@import './responsive.css';

@@ -1,0 +1,58 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0d1117; font-family: 'Outfit', sans-serif; }
+
+/* Desktop: thinner, dark scrollbars (matches panel chrome) */
+@media (min-width: 769px) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3d444d #161b22;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #161b22;
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #3d444d;
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+  }
+  *::-webkit-scrollbar-corner {
+    background: #161b22;
+  }
+}
+/* Let clicks/wheels pass through to the canvas except on panels that set pointer-events: auto. */
+app-root {
+  pointer-events: none;
+}
+
+#canvas-wrap {
+  position: fixed;
+  inset: 0;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-top: env(safe-area-inset-top, 0);
+  touch-action: none;
+}
+#canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+#ui {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+}
+#ui h1 { font-size: 1rem; font-weight: 700; color: #e6edf3; letter-spacing: 0.02em; }
+#ui .turn { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #8b949e; }
+#ui .turn span { color: #58a6ff; }
+#ui .turns-left { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #8b949e; }
+#ui .turns-left span { color: #58a6ff; }
+#ui .turns-left.turns-left-low { color: #f85149; }
+#ui .turns-left.turns-left-low span { color: #f85149; font-weight: 600; }
+#ui .instructions { font-size: 0.75rem; color: #6e7681; max-width: 320px; }

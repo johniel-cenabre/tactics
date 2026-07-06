@@ -1,0 +1,31 @@
+#combat-text-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+.combat-text-float {
+  position: absolute;
+  font-weight: 800;
+  font-size: 1.25rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  animation: combat-text-float 1.4s ease-out forwards;
+}
+.combat-text-float.miss { color: #ffffff; }
+.combat-text-float.damage { color: #f85149; }
+.combat-text-float.heal { color: #3fb950; }
+.combat-text-float.buff { color: #3fb950; }
+.combat-text-float.debuff { color: #d29922; }
+.combat-text-float.skill-name { color: #ffffff; }
+.combat-text-float.levelup { font-size: 1rem; color: #f0f6fc; }
+.combat-text-float.level2 { color: #e68600; }
+.combat-text-float.level3 { color: #a855f7; }
+@keyframes combat-text-float {
+  0% { opacity: 1; transform: translate(-50%, -100%); }
+  100% { opacity: 0; transform: translate(-50%, -180%); }
+}

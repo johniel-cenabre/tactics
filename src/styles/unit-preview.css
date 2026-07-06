@@ -1,0 +1,69 @@
+#unit-preview-card {
+  display: none;
+  position: fixed;
+  top: 24px;
+  z-index: 15;
+  padding: 12px 14px;
+  background: rgba(22, 27, 34, 0.95);
+  border: 1px solid rgba(48, 54, 61, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  min-width: 180px;
+  pointer-events: none;
+}
+#unit-preview-card.player-1 {
+  left: 24px;
+}
+#unit-preview-card.player-2 {
+  right: 24px;
+}
+#unit-preview-card.level-2 {
+  background: linear-gradient(135deg, rgba(40, 28, 18, 0.97) 0%, rgba(60, 38, 20, 0.95) 50%, rgba(35, 22, 12, 0.97) 100%);
+  border-color: rgba(194, 120, 54, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(230, 150, 70, 0.25);
+}
+#unit-preview-card.level-3 {
+  background: linear-gradient(135deg, rgba(35, 22, 45, 0.97) 0%, rgba(55, 35, 70, 0.95) 50%, rgba(28, 18, 40, 0.97) 100%);
+  border-color: rgba(140, 90, 180, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(160, 110, 200, 0.25);
+}
+#unit-preview-card .unit-preview-image {
+  width: auto;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #21262d;
+  display: block;
+  margin: 0 auto;
+  margin-bottom: 8px;
+}
+#unit-preview-card .unit-preview-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #e6edf3;
+  margin-bottom: 2px;
+}
+#unit-preview-card .unit-preview-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #8b949e;
+  margin-bottom: 8px;
+}
+#unit-preview-card .unit-preview-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+}
+#unit-preview-card .unit-preview-stats .stat-label { color: #8b949e; }
+#unit-preview-card .unit-preview-stats .stat-val { color: #e6edf3; text-align: right; font-weight: 600; }
+#unit-preview-card.low-hp {
+  animation: low-hp-pulse 1.2s ease-in-out infinite;
+  border-color: rgba(248, 81, 73, 0.6);
+}
+#unit-preview-card.low-hp .unit-preview-stats .stat-val-hp { color: #f85149; }
+#unit-preview-card .unit-preview-stats .stat-val-poison,
+#unit-preview-card .unit-preview-stats .stat-val-debuff { color: #f85149; }
+#unit-preview-card .unit-preview-stats .stat-val-buff { color: #3fb950; }
