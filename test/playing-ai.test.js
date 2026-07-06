@@ -262,5 +262,4 @@ describe('decidePlayingIntent', () => {
     expect(intent.toGy).toBeGreaterThan(lv2.y);
   });
 });
-x  
- 
+
