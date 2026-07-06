@@ -7,7 +7,6 @@ import { CLASS_IMAGES } from '../../data/class-look.js';
 import { CLASSES } from '../../data/classes.js';
 
 const STAT_ORDER = ['str', 'agi', 'vit', 'dex', 'luk', 'int'];
-const DETAILS_STORAGE_KEY = 'tactics-turn-details';
 
 // Bottom action bar: active unit info + Attack / Skill / End. Skills open an
 // inline list. Light DOM to reuse #turn-menu styles.
@@ -17,7 +16,6 @@ class TurnMenu extends SignalWatcher(LitElement) {
   constructor() {
     super();
     this._skillsOpen = false;
-    this._showDetails = sessionStorage.getItem(DETAILS_STORAGE_KEY) !== '0';
     this._onDocClick = null;
   }
 
@@ -45,13 +43,6 @@ class TurnMenu extends SignalWatcher(LitElement) {
     this.requestUpdate();
   }
 
-  _toggleDetails(e) {
-    e?.stopPropagation();
-    this._showDetails = !this._showDetails;
-    sessionStorage.setItem(DETAILS_STORAGE_KEY, this._showDetails ? '1' : '0');
-    this.requestUpdate();
-  }
-
   _pickSkill(index) {
     this._skillsOpen = false;
     actions.skill(index);
@@ -69,18 +60,6 @@ class TurnMenu extends SignalWatcher(LitElement) {
       ${u.poison ? html`<span>Poison</span><span class="stat-val stat-val-poison">${u.poison} dmg/turn</span>` : ''}
       ${u.autoHeal ? html`<span>Regen</span><span class="stat-val stat-val-buff">${u.autoHeal} HP/turn</span>` : ''}
     `;
-  }
-
-  _skillRows(skills) {
-    if (skills.length === 0) {
-      return html`<li class="unit-skill-item unit-skill-empty">No skills</li>`;
-    }
-    return skills.map((sk) => html`
-      <li class="unit-skill-item ${sk.disabled ? 'disabled' : ''}">
-        <span class="unit-skill-name">${sk.name}</span>
-        <span class="unit-skill-meta">${sk.cost} MP · Lv.${sk.level}</span>
-      </li>
-    `);
   }
 
   render() {
