@@ -106,7 +106,20 @@ export function applySkillEffect(ctx, unit, target, skill, summonApi = {}) {
 
   if (handler) handler(effectCtx);
 
+  stampTempEffectKey(unit.tempBuff, effectKey);
+  stampTempEffectKey(unit.tempDebuff, effectKey);
+  if (target) {
+    stampTempEffectKey(target.tempBuff, effectKey);
+    stampTempEffectKey(target.tempDebuff, effectKey);
+  }
+
   ctx.emit('unitStatsChanged', { unit });
   if (target) ctx.emit('unitStatsChanged', { unit: target });
   ctx.emit('skillResolved', { unit, target, skill });
+}
+
+function stampTempEffectKey(temp, effectKey) {
+  if (temp && typeof temp === 'object' && temp.duration != null && temp.effectKey == null) {
+    temp.effectKey = effectKey;
+  }
 }

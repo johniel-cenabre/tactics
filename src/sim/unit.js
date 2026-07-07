@@ -4,6 +4,7 @@
 
 import { CLASSES } from '../data/classes.js';
 import { CLASS_LOOK } from '../data/class-look.js';
+import { getSkillEffectDisplayTitle } from '../data/skills.js';
 
 /** Team-default facing as a grid vector: P1 (bottom) looks up, P2 (top) looks down. */
 export function defaultFacing(player) {
@@ -72,11 +73,61 @@ export function isLowHp(unit) {
 
 const STAT_KEYS = ['str', 'agi', 'vit', 'dex', 'luk', 'int'];
 
+/** UI-facing buff/debuff entries derived from tempBuff / tempDebuff. */
+export function unitStatusEffects(unit) {
+  if (!unit) return { buffs: [], debuffs: [] };
+  return {
+    buffs: parseStatusEntries(unit.tempBuff, 'buff'),
+    debuffs: parseStatusEntries(unit.tempDebuff, 'debuff'),
+  };
+}
+
+function parseStatusEntries(source, kind) {
+  if (!source || typeof source !== 'object') return [];
+  const entries = [];
+
+  if (source.effectKey) {
+    const name = getSkillEffectDisplayTitle(source.effectKey);
+    const detail = statusEffectDetail(source, kind);
+    entries.push({ name, detail });
+    return entries;
+  }
+
+  if (kind === 'debuff' && typeof source.poison === 'number' && source.poison > 0) {
+    entries.push({ name: 'Poison', detail: `${source.poison} dmg/turn` });
+  }
+  if (typeof source.heal === 'number' && source.heal > 0) {
+    entries.push({
+      name: kind === 'buff' ? 'Regen' : 'Regen',
+      detail: `${source.heal} HP/turn`,
+    });
+  }
+  if (kind === 'buff' && source.doubleAttack === true) {
+    entries.push({ name: 'Double Attack', detail: '' });
+  }
+  if (kind === 'buff' && source.vodoo != null) {
+    entries.push({ name: 'Vodoo', detail: '' });
+  }
+
+  return entries;
+}
+
+function statusEffectDetail(source, kind) {
+  if (kind === 'debuff' && typeof source.poison === 'number' && source.poison > 0) {
+    return `${source.poison} dmg/turn`;
+  }
+  if (typeof source.heal === 'number' && source.heal > 0) {
+    return `${source.heal} HP/turn`;
+  }
+  return '';
+}
+
 /** Plain serializable snapshot for the UI store (no functions/meshes). */
 export function unitSummary(unit) {
   if (!unit) return null;
   const stats = {};
   for (const k of STAT_KEYS) stats[k] = formatStatWithBuffs(unit, k);
+  const { buffs, debuffs } = unitStatusEffects(unit);
   return {
     id: unit.id,
     player: unit.player,
@@ -91,6 +142,8 @@ export function unitSummary(unit) {
     lowHp: isLowHp(unit),
     poison: unit.tempDebuff && unit.tempDebuff.poison ? unit.tempDebuff.poison : 0,
     autoHeal: unit.tempBuff && unit.tempBuff.heal ? unit.tempBuff.heal : 0,
+    buffs,
+    debuffs,
     statsHtml: stats,
   };
 }
