@@ -122,6 +122,14 @@ const skillEffectTitleCache = new Map();
 export function getSkillEffectDisplayTitle(effectKey) {
   let t = skillEffectTitleCache.get(effectKey);
   if (t !== undefined) return t;
+  for (const list of Object.values(CLASS_SKILLS)) {
+    const skill = list.find((s) => s.effectKey === effectKey);
+    if (skill) {
+      t = skill.name;
+      skillEffectTitleCache.set(effectKey, t);
+      return t;
+    }
+  }
   t =
     SKILL_EFFECT_DISPLAY_NAMES[effectKey] ??
     effectKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();

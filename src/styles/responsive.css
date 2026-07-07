@@ -12,6 +12,7 @@
     max-width: 42vw;
   }
 
+  #turn-menu-stack .unit-info .unit-class-image,
   #turn-menu .unit-info .unit-class-image {
     width: 44px;
     height: 44px;
