@@ -1991,11 +1991,13 @@ app-root {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 #mode-select-overlay .mode-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 #mode-select-overlay .mode-field label {
   font-size: 0.82rem;
@@ -2013,6 +2015,8 @@ app-root {
   background: #161b22;
   color: #e6edf3;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   -webkit-text-fill-color: #e6edf3;
   caret-color: #e6edf3;
@@ -2121,6 +2125,19 @@ app-root {
     display: none;
   }
 }
+@media (max-width: 720px) {
+  #mode-select-overlay .mode-select-main > * {
+    min-width: 0;
+  }
+  #mode-select-overlay .mode-settings-details,
+  #mode-select-overlay .mode-settings-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+  #mode-select-overlay {
+    overflow-x: hidden;
+  }
+}
 @media (max-width: 720px) and (orientation: portrait) {
   #mode-select-overlay {
     padding-top: max(16px, env(safe-area-inset-top));
@@ -2160,6 +2177,10 @@ app-root {
   #mode-select-overlay .mode-settings-card {
     max-height: none;
     overflow: visible;
+    padding: 12px 14px;
+  }
+  #mode-select-overlay .mode-settings-fields {
+    min-width: 0;
   }
   #mode-select-overlay .mode-play-wrap {
     padding-bottom: 8px;
@@ -2319,7 +2340,10 @@ app-root {
   #mode-select-overlay .mode-select-settings-col {
     gap: 10px;
     min-height: 0;
-    overflow: visible;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid rgba(88, 166, 255, 0.14);
@@ -2353,15 +2377,20 @@ app-root {
   #mode-select-overlay .mode-settings-details {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   #mode-select-overlay .mode-settings-card {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
+    min-width: 0;
     max-height: none;
     overflow: visible;
+    display: block;
     padding: 0;
     border-radius: 0;
     box-shadow: none;
@@ -2372,15 +2401,15 @@ app-root {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px 10px;
-    max-height: calc(100dvh - 136px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    min-width: 0;
+    overflow: visible;
     padding: 2px;
     align-content: start;
   }
   #mode-select-overlay .mode-field {
     gap: 3px;
+    min-width: 0;
   }
   #mode-select-overlay .mode-field label {
     font-size: 0.65rem;
@@ -2418,8 +2447,14 @@ app-root {
     font-size: 0.62rem;
   }
   #mode-select-overlay .mode-settings-fields {
-    grid-template-columns: 1fr;
-    gap: 5px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 8px;
+  }
+  #mode-select-overlay .mode-field select,
+  #mode-select-overlay .mode-field input[type=number] {
+    min-height: 28px;
+    padding: 3px 6px;
+    font-size: 16px;
   }
 }
 
