@@ -106,78 +106,80 @@ class ModeSelect extends SignalWatcher(LitElement) {
     const selected = MODES.find((m) => m.id === this.mode);
 
     return html`
-      <div id="mode-select-overlay" style="display:flex">
-        <div class="mode-select-inner">
-          <header class="mode-select-header">
-            <div class="mode-select-brand">
-              <h1 class="mode-select-title">TACTICS</h1>
-              <p class="mode-select-tagline">Turn-based tactics on a living tile map</p>
-            </div>
-          </header>
-
-          <div class="mode-select-main">
-            <section class="mode-select-modes">
-              <p class="mode-section-label">Choose a mode</p>
-              <div class="mode-picker-grid" role="group" aria-label="Game mode">
-                ${MODES.map((m) => html`
-                  <button type="button"
-                    class="mode-tile ${this.mode === m.id ? 'selected' : ''}"
-                    aria-pressed=${this.mode === m.id}
-                    aria-label=${`${m.title}. ${m.desc}`}
-                    @click=${() => this._setMode(m.id)}>
-                    ${this._modeIcon(m.id, 'mode-tile-icon')}
-                    <span class="mode-tile-body">
-                      <span class="mode-tile-name mode-tile-name-short">${m.short}</span>
-                      <span class="mode-tile-name mode-tile-name-full">${m.title}</span>
-                      <span class="mode-tile-desc">${m.desc}</span>
-                    </span>
-                  </button>
-                `)}
+      <div id="mode-select-overlay">
+        <div class="mode-select-scroll">
+          <div class="mode-select-inner">
+            <header class="mode-select-header">
+              <div class="mode-select-brand">
+                <h1 class="mode-select-title">TACTICS</h1>
+                <p class="mode-select-tagline">Turn-based tactics on a living tile map</p>
               </div>
-              ${selected ? html`
-                <div class="mode-selected-card">
-                  ${this._modeIcon(selected.id, 'mode-selected-icon')}
-                  <div class="mode-selected-copy">
-                    <div class="mode-selected-title">${selected.title}</div>
-                    <p class="mode-selected-desc">${selected.desc}</p>
-                  </div>
-                </div>
-              ` : ''}
+            </header>
 
-              <ul class="mode-list-desktop" aria-label="Game mode">
-                ${MODES.map((m) => html`
-                  <li>
+            <div class="mode-select-main">
+              <section class="mode-select-modes">
+                <p class="mode-section-label">Choose a mode</p>
+                <div class="mode-picker-grid" role="group" aria-label="Game mode">
+                  ${MODES.map((m) => html`
                     <button type="button"
-                      class="mode-card mode-card-desc ${this.mode === m.id ? 'selected' : ''}"
+                      class="mode-tile ${this.mode === m.id ? 'selected' : ''}"
                       aria-pressed=${this.mode === m.id}
-                      aria-label=${m.title}
+                      aria-label=${`${m.title}. ${m.desc}`}
                       @click=${() => this._setMode(m.id)}>
-                      ${this._modeIcon(m.id, 'mode-card-icon')}
-                      <span class="mode-card-copy">
-                        <h2 class="mode-card-title">${m.title}</h2>
-                        <p class="mode-card-desc-text">${m.desc}</p>
+                      ${this._modeIcon(m.id, 'mode-tile-icon')}
+                      <span class="mode-tile-body">
+                        <span class="mode-tile-name mode-tile-name-short">${m.short}</span>
+                        <span class="mode-tile-name mode-tile-name-full">${m.title}</span>
+                        <span class="mode-tile-desc">${m.desc}</span>
                       </span>
                     </button>
-                  </li>
-                `)}
-              </ul>
-            </section>
-
-            <aside class="mode-select-settings-col">
-              <div class="mode-play-wrap">
-                <button type="button" class="mode-play-btn" @click=${() => this._play()}>
-                  <span class="mode-play-text">${this.mode === 'online' ? 'Connect online' : 'Start game'}</span>
-                </button>
-              </div>
-              <details class="mode-settings-details" open>
-                <summary class="mode-settings-summary">Match settings</summary>
-                <div class="mode-card mode-settings-card">
-                  <div class="mode-settings-fields">
-                    ${this._renderSettings(f)}
-                  </div>
+                  `)}
                 </div>
-              </details>
-            </aside>
+                ${selected ? html`
+                  <div class="mode-selected-card">
+                    ${this._modeIcon(selected.id, 'mode-selected-icon')}
+                    <div class="mode-selected-copy">
+                      <div class="mode-selected-title">${selected.title}</div>
+                      <p class="mode-selected-desc">${selected.desc}</p>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <ul class="mode-list-desktop" aria-label="Game mode">
+                  ${MODES.map((m) => html`
+                    <li>
+                      <button type="button"
+                        class="mode-card mode-card-desc ${this.mode === m.id ? 'selected' : ''}"
+                        aria-pressed=${this.mode === m.id}
+                        aria-label=${m.title}
+                        @click=${() => this._setMode(m.id)}>
+                        ${this._modeIcon(m.id, 'mode-card-icon')}
+                        <span class="mode-card-copy">
+                          <h2 class="mode-card-title">${m.title}</h2>
+                          <p class="mode-card-desc-text">${m.desc}</p>
+                        </span>
+                      </button>
+                    </li>
+                  `)}
+                </ul>
+              </section>
+
+              <aside class="mode-select-settings-col">
+                <div class="mode-play-wrap">
+                  <button type="button" class="mode-play-btn" @click=${() => this._play()}>
+                    <span class="mode-play-text">${this.mode === 'online' ? 'Connect online' : 'Start game'}</span>
+                  </button>
+                </div>
+                <details class="mode-settings-details" open>
+                  <summary class="mode-settings-summary">Match settings</summary>
+                  <div class="mode-card mode-settings-card">
+                    <div class="mode-settings-fields">
+                      ${this._renderSettings(f)}
+                    </div>
+                  </div>
+                </details>
+              </aside>
+            </div>
           </div>
         </div>
       </div>

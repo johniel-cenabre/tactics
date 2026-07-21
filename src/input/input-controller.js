@@ -344,16 +344,21 @@ export class InputController {
     window.addEventListener('pointermove', this._onPointerMove);
     window.addEventListener('pointerup', this._onPointerUp);
     window.addEventListener('wheel', this._onWheel, { passive: false });
-    window.addEventListener('touchstart', this._onTouchStart, { passive: false });
-    window.addEventListener('touchmove', this._onTouchMove, { passive: false });
-    window.addEventListener('touchend', this._onTouchEnd, { passive: false });
-    window.addEventListener('touchcancel', this._onTouchEnd, { passive: false });
+    // Touch stays on the canvas only. Window-level non-passive touchmove
+    // blocks native scroll on Android Chrome even when preventDefault is skipped.
+    c.addEventListener('touchstart', this._onTouchStart, { passive: false });
+    c.addEventListener('touchmove', this._onTouchMove, { passive: false });
+    c.addEventListener('touchend', this._onTouchEnd, { passive: false });
+    c.addEventListener('touchcancel', this._onTouchEnd, { passive: false });
   }
 
   _isUiTarget(target) {
-    return target && target.closest(
-      '#turn-menu, #draft-panel, #draft-placement-card, #mode-select-overlay:not(.hidden), #game-over-overlay.visible, #online-connect-overlay, #rotate-overlay, button, input, select, textarea, a',
-    );
+    const el = target && (target.nodeType === 1 ? target : target.parentElement);
+    // app-root hosts every overlay; include it so scrollable panels
+    // (mode-select, turn-menu skill list, unit-details, etc.) keep native touch scroll.
+    return !!(el && el.closest(
+      'app-root, #turn-menu, #turn-menu-stack, #unit-details-card, #draft-panel, #draft-placement-card, #mode-select-overlay:not(.hidden), #game-over-overlay.visible, #online-connect-overlay, #rotate-overlay, button, input, select, textarea, a',
+    ));
   }
 
   _onPointerDown(e) {
@@ -468,6 +473,7 @@ export class InputController {
   }
 
   _onTouchMove(e) {
+    if (this._isUiTarget(e.target)) return;
     if (e.touches.length === 2) {
       e.preventDefault();
       if (this._pinchDist == null) {

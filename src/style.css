@@ -36,11 +36,25 @@ body {
   }
 }
 app-root {
+  position: relative;
+  z-index: 1;
   pointer-events: none;
+}
+mode-select-screen,
+hud-bar,
+draft-panel,
+turn-menu,
+unit-preview,
+battle-start,
+game-over-screen,
+rotate-overlay,
+online-connect {
+  display: block;
 }
 #canvas-wrap {
   position: fixed;
   inset: 0;
+  z-index: 0;
   padding-left: env(safe-area-inset-left, 0);
   padding-right: env(safe-area-inset-right, 0);
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -51,6 +65,13 @@ app-root {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
+}
+body:has(#mode-select-overlay) #canvas-wrap,
+body:has(#game-over-overlay.visible) #canvas-wrap,
+body:has(#online-connect-overlay) #canvas-wrap,
+body:has(#draft-panel) #canvas-wrap {
+  pointer-events: none;
 }
 #ui {
   position: fixed;
@@ -309,6 +330,8 @@ app-root {
 #turn-menu-stack .unit-details-col-effects {
   gap: 8px;
   overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 #turn-menu-stack .unit-details-row-label {
@@ -590,6 +613,8 @@ app-root {
   max-height: min(40vh, 280px);
   overflow-y: auto;
   overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   background: rgba(22, 27, 34, 0.96);
   border: 1px solid rgba(88, 166, 255, 0.25);
   border-radius: 12px;
@@ -795,6 +820,8 @@ app-root {
   #turn-menu .unit-info-effects .unit-effects-list {
     max-height: min(18vh, 100px);
     overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
   #turn-menu .unit-info-effects .unit-effect-item {
@@ -859,11 +886,11 @@ app-root {
   border: 1px solid rgba(48, 54, 61, 0.9);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
+  pointer-events: auto;
   backdrop-filter: blur(8px);
   max-width: 95vw;
-  max-height: 95vh;
-  height: min(720px, 92vh);
+  max-height: min(720px, calc(100dvh - 48px), calc(100vh - 48px));
+  height: min(680px, calc(100dvh - 56px), calc(100vh - 56px));
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -872,12 +899,6 @@ app-root {
 #draft-panel #draft-header {
   flex-shrink: 0;
   padding: 0 20px;
-}
-#draft-panel #draft-header,
-#draft-panel #draft-body,
-#draft-panel #draft-detail,
-#draft-panel #draft-classes {
-  pointer-events: auto;
 }
 #draft-panel #draft-title {
   font-weight: 700;
@@ -892,17 +913,18 @@ app-root {
   display: flex;
   flex-direction: row;
   gap: 20px;
-  align-items: flex-start;
+  align-items: stretch;
   flex: 1 1 0;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding: 0 20px;
 }
 #draft-panel #draft-detail {
   flex: 0 0 auto;
   width: 240px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 #draft-panel .draft-detail-card {
   display: flex;
@@ -917,7 +939,9 @@ app-root {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  min-height: 280px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
 }
 #draft-panel .draft-detail-placeholder {
   flex: 1;
@@ -946,6 +970,8 @@ app-root {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 #draft-panel .draft-detail-name {
@@ -1025,20 +1051,28 @@ app-root {
 #draft-panel #draft-classes {
   display: grid;
   grid-template-columns: repeat(5, 100px);
-  grid-auto-rows: auto;
+  grid-auto-rows: min-content;
   grid-auto-flow: row;
   justify-content: start;
   align-content: start;
+  align-items: start;
   gap: 10px;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
+  overflow-x: auto;
   overflow-y: auto;
-  padding-bottom: 8px;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  padding-bottom: 12px;
 }
 #draft-panel .draft-class-card {
   flex: 0 0 auto;
   width: 100px;
+  height: fit-content;
+  min-height: min-content;
   background:
     linear-gradient(
       180deg,
@@ -1056,6 +1090,7 @@ app-root {
   text-align: left;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  touch-action: pan-x pan-y;
 }
 #draft-panel .draft-class-card:hover:not(.draft-class-card-unavailable) {
   transform: translateY(-2px);
@@ -1101,18 +1136,20 @@ app-root {
 #draft-placement-card {
   position: fixed;
   top: 50%;
-  transform: translateY(-50%);
   width: 140px;
   height: 90vh;
   max-height: 90vh;
   display: none;
   flex-direction: column;
   gap: 10px;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 60;
   overflow-y: auto;
   overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  transform: translateY(-50%) translateZ(0);
 }
 #draft-placement-card.player-1 {
   left: 24px;
@@ -1422,6 +1459,9 @@ app-root {
   flex-direction: column;
   padding: 24px;
   overflow: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 #game-over-overlay.visible {
   display: flex;
@@ -1684,27 +1724,43 @@ app-root {
       transparent 55%),
     rgba(0, 0, 0, 0.82);
   pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: block;
+  overflow: hidden;
+}
+#mode-select-overlay.hidden {
+  display: none;
+}
+#mode-select-overlay .mode-select-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 20px;
   padding-top: max(24px, env(safe-area-inset-top));
   padding-bottom: max(20px, env(safe-area-inset-bottom));
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-#mode-select-overlay.hidden {
-  display: none;
+  transform: translateZ(0);
 }
 #mode-select-overlay .mode-select-inner {
   width: 100%;
   max-width: 920px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 20px;
+  min-height: min-content;
+}
+#mode-select-overlay button,
+#mode-select-overlay input,
+#mode-select-overlay select,
+#mode-select-overlay summary,
+#mode-select-overlay details {
+  touch-action: pan-y;
 }
 #mode-select-overlay .mode-select-header {
   text-align: center;
@@ -1737,8 +1793,8 @@ app-root {
   gap: 20px;
   width: 100%;
   align-items: start;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: min-content;
 }
 #mode-select-overlay .mode-section-label {
   font-size: 0.72rem;
@@ -2134,15 +2190,14 @@ app-root {
     min-width: 0;
     max-width: 100%;
   }
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
     overflow-x: hidden;
   }
 }
 @media (max-width: 720px) and (orientation: portrait) {
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
     padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
-    align-items: stretch;
   }
   #mode-select-overlay .mode-select-inner {
     gap: 16px;
@@ -2187,15 +2242,17 @@ app-root {
   }
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
     padding: 8px 12px;
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
-    align-items: stretch;
-    justify-content: flex-start;
-    overflow: hidden;
   }
   #mode-select-overlay .mode-select-inner {
     gap: 10px;
@@ -2382,6 +2439,8 @@ app-root {
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
   #mode-select-overlay .mode-settings-card {
@@ -2471,6 +2530,9 @@ app-root {
   justify-content: center;
   padding: 20px;
   overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   pointer-events: auto;
 }
 #online-connect-overlay .online-connect-inner {
@@ -2634,28 +2696,33 @@ app-root {
     display: none;
   }
   #draft-panel {
-    top: max(12px, env(safe-area-inset-top));
+    top: max(10px, env(safe-area-inset-top));
+    bottom: max(10px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px 16px;
-    height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
-    max-height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
+    padding: 10px 14px;
+    height: auto;
+    max-height: none;
     min-height: 0;
   }
   #draft-panel #draft-body {
     flex-direction: row;
     gap: 12px;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
   }
   #draft-panel #draft-detail {
-    width: 200px;
+    width: 168px;
     flex: 0 0 auto;
+    min-height: 0;
   }
   #draft-panel .draft-detail-card {
-    min-height: 200px;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
   }
   #draft-panel .draft-detail-image {
-    height: 252px;
+    height: 96px;
     flex-shrink: 0;
     object-position: top;
   }
@@ -2664,12 +2731,22 @@ app-root {
   }
   #draft-panel #draft-classes {
     grid-template-columns: repeat(5, 72px);
-    grid-auto-rows: auto;
+    grid-auto-rows: min-content;
     grid-auto-flow: row;
+    align-content: start;
+    align-items: start;
     gap: 6px;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
   }
   #draft-panel .draft-class-card {
     width: 72px;
+    height: fit-content;
+    min-height: min-content;
   }
   #draft-panel .draft-class-card-image {
     height: 72px;
@@ -2693,12 +2770,14 @@ app-root {
   #draft-placement-card {
     top: auto;
     bottom: 0;
-    transform: none;
+    transform: translateZ(0);
     height: auto;
     width: auto;
+    max-width: calc(100vw - 16px);
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
+    touch-action: pan-x;
     gap: 10px;
     padding: 10px 12px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -2733,6 +2812,7 @@ app-root {
     flex-shrink: 0;
     width: 92px;
     min-width: 92px;
+    touch-action: pan-x;
   }
   #draft-placement-card .draft-class-card-image {
     min-height: 120px;

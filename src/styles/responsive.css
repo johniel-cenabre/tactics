@@ -37,39 +37,56 @@
   }
 
   #draft-panel {
-    top: max(12px, env(safe-area-inset-top));
+    top: max(10px, env(safe-area-inset-top));
+    bottom: max(10px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px 16px;
-    height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
-    max-height: calc(100vh - 2 * max(12px, env(safe-area-inset-top)));
+    padding: 10px 14px;
+    height: auto;
+    max-height: none;
     min-height: 0;
   }
   #draft-panel #draft-body {
     flex-direction: row;
     gap: 12px;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
   }
   #draft-panel #draft-detail {
-    width: 200px;
+    width: 168px;
     flex: 0 0 auto;
+    min-height: 0;
   }
   #draft-panel .draft-detail-card {
-    min-height: 200px;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
   }
   #draft-panel .draft-detail-image {
-    height: 252px;
+    height: 96px;
     flex-shrink: 0;
     object-position: top;
   }
   #draft-panel #draft-title { font-size: 0.9rem; }
   #draft-panel #draft-classes {
     grid-template-columns: repeat(5, 72px);
-    grid-auto-rows: auto;
+    grid-auto-rows: min-content;
     grid-auto-flow: row;
+    align-content: start;
+    align-items: start;
     gap: 6px;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
   }
-  #draft-panel .draft-class-card { width: 72px; }
+  #draft-panel .draft-class-card {
+    width: 72px;
+    height: fit-content;
+    min-height: min-content;
+  }
   #draft-panel .draft-class-card-image { height: 72px; object-position: top; }
   #draft-panel .draft-class-card-name { font-size: 0.55rem; }
   #draft-panel .draft-detail-stats { font-size: 0.6rem; }
@@ -80,12 +97,14 @@
   #draft-placement-card {
     top: auto;
     bottom: 0;
-    transform: none;
+    transform: translateZ(0);
     height: auto;
     width: auto;
+    max-width: calc(100vw - 16px);
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
+    touch-action: pan-x;
     gap: 10px;
     padding: 10px 12px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -120,6 +139,7 @@
     flex-shrink: 0;
     width: 92px;
     min-width: 92px;
+    touch-action: pan-x;
   }
   #draft-placement-card .draft-class-card-image {
     min-height: 120px;

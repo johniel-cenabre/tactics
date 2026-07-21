@@ -11,11 +11,13 @@
   border: 1px solid rgba(48, 54, 61, 0.9);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
+  /* Must receive touches — pointer-events:none lets pans fall through to the WebGL canvas. */
+  pointer-events: auto;
   backdrop-filter: blur(8px);
   max-width: 95vw;
-  max-height: 95vh;
-  height: min(720px, 92vh);
+  /* Leave margin so Select + last unit row aren't clipped by browser chrome / notches. */
+  max-height: min(720px, calc(100dvh - 48px), calc(100vh - 48px));
+  height: min(680px, calc(100dvh - 56px), calc(100vh - 56px));
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -24,12 +26,6 @@
 #draft-panel #draft-header {
   flex-shrink: 0;
   padding: 0 20px;
-}
-#draft-panel #draft-header,
-#draft-panel #draft-body,
-#draft-panel #draft-detail,
-#draft-panel #draft-classes {
-  pointer-events: auto;
 }
 #draft-panel #draft-title {
   font-weight: 700;
@@ -44,17 +40,19 @@
   display: flex;
   flex-direction: row;
   gap: 20px;
-  align-items: flex-start;
+  align-items: stretch;
   flex: 1 1 0;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Single scrollport for the class grid (avoid nested overflow fighting on Android). */
+  overflow: hidden;
   padding: 0 20px;
 }
 #draft-panel #draft-detail {
   flex: 0 0 auto;
   width: 240px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 #draft-panel .draft-detail-card {
   display: flex;
@@ -65,7 +63,9 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  min-height: 280px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
 }
 #draft-panel .draft-detail-placeholder {
   flex: 1;
@@ -94,6 +94,8 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 #draft-panel .draft-detail-name {
@@ -173,20 +175,30 @@
 #draft-panel #draft-classes {
   display: grid;
   grid-template-columns: repeat(5, 100px);
-  grid-auto-rows: auto;
+  /* min-content: cards use overflow:hidden, which makes auto rows collapse to the
+     panel height instead of growing — so the grid never becomes scrollable. */
+  grid-auto-rows: min-content;
   grid-auto-flow: row;
   justify-content: start;
   align-content: start;
+  align-items: start;
   gap: 10px;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
+  overflow-x: auto;
   overflow-y: auto;
-  padding-bottom: 8px;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  padding-bottom: 12px;
 }
 #draft-panel .draft-class-card {
   flex: 0 0 auto;
   width: 100px;
+  height: fit-content;
+  min-height: min-content;
   background: linear-gradient(180deg, #1c2128 0%, #161b22 100%);
   border: 1px solid #373e47;
   border-radius: 10px;
@@ -197,6 +209,8 @@
   text-align: left;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  /* Allow vertical/horizontal pans to scroll the grid instead of capturing the gesture. */
+  touch-action: pan-x pan-y;
 }
 #draft-panel .draft-class-card:hover:not(.draft-class-card-unavailable) {
   transform: translateY(-2px);
@@ -242,18 +256,20 @@
 #draft-placement-card {
   position: fixed;
   top: 50%;
-  transform: translateY(-50%);
   width: 140px;
   height: 90vh;
   max-height: 90vh;
   display: none;
   flex-direction: column;
   gap: 10px;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 60;
   overflow-y: auto;
   overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  transform: translateY(-50%) translateZ(0);
 }
 #draft-placement-card.player-1 {
   left: 24px;

@@ -102,6 +102,8 @@
 #turn-menu-stack .unit-details-col-effects {
   gap: 8px;
   overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 #turn-menu-stack .unit-details-row-label {
@@ -359,6 +361,8 @@
   max-height: min(40vh, 280px);
   overflow-y: auto;
   overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   background: rgba(22, 27, 34, 0.96);
   border: 1px solid rgba(88, 166, 255, 0.25);
   border-radius: 12px;
@@ -550,6 +554,8 @@
   #turn-menu .unit-info-effects .unit-effects-list {
     max-height: min(18vh, 100px);
     overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
   #turn-menu .unit-info-effects .unit-effect-item {

@@ -6,26 +6,48 @@
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(88, 166, 255, 0.12) 0%, transparent 55%),
     rgba(0, 0, 0, 0.82);
   pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  /* Keep overlay itself non-scrolling; Android Chrome is unreliable when the
+     flex/backdrop layer is also the scrollport above a WebGL canvas. */
+  display: block;
+  overflow: hidden;
+}
+#mode-select-overlay.hidden { display: none; }
+
+#mode-select-overlay .mode-select-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 20px;
   padding-top: max(24px, env(safe-area-inset-top));
   padding-bottom: max(20px, env(safe-area-inset-bottom));
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Own compositor layer so the WebGL canvas underneath cannot steal pans. */
+  transform: translateZ(0);
 }
-#mode-select-overlay.hidden { display: none; }
 
 #mode-select-overlay .mode-select-inner {
   width: 100%;
   max-width: 920px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 20px;
+  min-height: min-content;
+}
+
+/* Let vertical pans scroll the panel even when the gesture starts on controls. */
+#mode-select-overlay button,
+#mode-select-overlay input,
+#mode-select-overlay select,
+#mode-select-overlay summary,
+#mode-select-overlay details {
+  touch-action: pan-y;
 }
 
 /* Header */
@@ -62,8 +84,8 @@
   gap: 20px;
   width: 100%;
   align-items: start;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: min-content;
 }
 #mode-select-overlay .mode-section-label {
   font-size: 0.72rem;
@@ -434,16 +456,15 @@
     min-width: 0;
     max-width: 100%;
   }
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
     overflow-x: hidden;
   }
 }
 
 @media (max-width: 720px) and (orientation: portrait) {
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
     padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
-    align-items: stretch;
   }
   #mode-select-overlay .mode-select-inner {
     gap: 16px;
@@ -490,15 +511,17 @@
 
 /* Mobile landscape — compact two-panel layout (short viewports, any width) */
 @media (orientation: landscape) and (max-height: 520px) {
-  #mode-select-overlay {
+  #mode-select-overlay .mode-select-scroll {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
     padding: 8px 12px;
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
-    align-items: stretch;
-    justify-content: flex-start;
-    overflow: hidden;
   }
   #mode-select-overlay .mode-select-inner {
     gap: 10px;
@@ -677,6 +700,8 @@
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
   #mode-select-overlay .mode-settings-card {
