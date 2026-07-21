@@ -63,9 +63,11 @@
     max-height: 100%;
   }
   #draft-panel .draft-detail-image {
-    height: 96px;
-    flex-shrink: 0;
-    object-position: top;
+    height: auto;
+    max-height: min(96px, calc(100% - 120px));
+    flex: 0 0 auto;
+    object-fit: contain;
+    object-position: top center;
   }
   #draft-panel #draft-title { font-size: 0.9rem; }
   #draft-panel #draft-classes {

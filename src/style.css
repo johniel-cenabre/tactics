@@ -955,10 +955,11 @@ body:has(#draft-panel) #canvas-wrap {
 }
 #draft-panel .draft-detail-image {
   width: 100%;
-  height: 330px;
-  flex-shrink: 0;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
+  max-height: min(330px, calc(100% - 160px));
+  flex: 0 0 auto;
+  object-fit: contain;
+  object-position: top center;
   background: #21262d;
   display: block;
 }
@@ -967,8 +968,9 @@ body:has(#draft-panel) #canvas-wrap {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   touch-action: pan-y;
   overscroll-behavior: contain;
@@ -2722,9 +2724,11 @@ body:has(#draft-panel) #canvas-wrap {
     max-height: 100%;
   }
   #draft-panel .draft-detail-image {
-    height: 96px;
-    flex-shrink: 0;
-    object-position: top;
+    height: auto;
+    max-height: min(96px, calc(100% - 120px));
+    flex: 0 0 auto;
+    object-fit: contain;
+    object-position: top center;
   }
   #draft-panel #draft-title {
     font-size: 0.9rem;
