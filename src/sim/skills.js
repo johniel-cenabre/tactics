@@ -97,6 +97,7 @@ export function applySkillEffect(ctx, unit, target, skill, summonApi = {}) {
         isHeal: opts.heal,
         isSpell: opts.spell,
         preHit: opts.preHit,
+        selfCost: opts.selfCost,
       }),
     statText: (gx, gy, text, isBuff) =>
       ctx.emit('floatingText', { gx, gy, text, kind: isBuff ? 'buff' : 'debuff' }),

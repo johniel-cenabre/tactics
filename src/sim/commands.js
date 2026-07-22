@@ -160,11 +160,18 @@ export class GameController {
     unit.mp = Math.max(0, unit.mp - (skill.cost || 0));
     state.hasAttacked = true;
     this.events.emit('unitSkill', { unit, target, skill });
-    await this._anim('animateSkill', unit, target, skill);
-
-    applySkillEffect(this.ctx, unit, target, skill, {
-      reanimate: (summoner, corpse) => reanimateDeadUnit(this.ctx, summoner, corpse),
-    });
+    // Apply the effect at the animation's impact moment (like basic-attack onStrike)
+    // so damage numbers + victim flinch land with the hit, not after the wind-down.
+    let applied = false;
+    const apply = () => {
+      if (applied) return;
+      applied = true;
+      applySkillEffect(this.ctx, unit, target, skill, {
+        reanimate: (summoner, corpse) => reanimateDeadUnit(this.ctx, summoner, corpse),
+      });
+    };
+    await this._anim('animateSkill', unit, target, skill, apply);
+    apply();
     await this._resolveDeathsAndCheckGameOver();
     await this._finishAction(unit);
   }

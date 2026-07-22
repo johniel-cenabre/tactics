@@ -6,9 +6,9 @@
 import * as THREE from 'three';
 import { TILE_SIZE } from '../config.js';
 import { createTilingNoiseTexture } from './tiles.js';
-import { createHumanFigure, setWalkPose, resetWalkPose, setMeleeAttackPose, meleeLungeFactor, resetAttackPose, clearWoundedPose, refreshDamagedPose, setDamageFlinchPose, setDeathPose, applyDeathTint, applyWoundedTint, syncWoundedBaseY, woundedSinkOffset } from './figure.js';
+import { createHumanFigure, setWalkPose, resetWalkPose, setMeleeAttackPose, meleeLungeFactor, resetAttackPose, clearWoundedPose, refreshDamagedPose, setDamageFlinchPose, setDeathPose, applyDeathTint, applyWoundedTint, syncWoundedBaseY, woundedSinkOffset, setMeshFacing } from './figure.js';
 import { isPooledGeometry, isPooledMaterial } from './figure-assets.js';
-import { easeInOutQuad } from '../core/tween.js';
+import { easeInOutQuad, linear } from '../core/tween.js';
 
 const MELEE_ATTACK_MS = 400;
 const RANGED_ATTACK_MS = 280;
@@ -39,8 +39,6 @@ function facingAngle(unit) {
   if (f && (f.dx !== 0 || f.dy !== 0)) return Math.atan2(f.dx, f.dy);
   return defaultFacingForPlayer(unit.player);
 }
-
-const smoothstep = (x) => x * x * (3 - 2 * x);
 
 export class UnitRenderer {
   constructor(sceneView, state, bus, tween) {
@@ -80,7 +78,9 @@ export class UnitRenderer {
       if (unit.summonedBy != null) {
         const summonerMesh = this.meshes.get(unit.summonedBy);
         const mesh = this.meshes.get(unit.id);
-        if (summonerMesh && mesh) mesh.rotation.y = summonerMesh.rotation.y;
+        if (summonerMesh && mesh) {
+          setMeshFacing(mesh, summonerMesh.userData.facingYaw ?? summonerMesh.rotation.y);
+        }
       }
       this.updateBorders();
       this.updatePointer();
@@ -116,7 +116,7 @@ export class UnitRenderer {
     const body = createHumanFigure(unit.player, unit.class, unit.hairColor, this.bumpMap);
     body.position.copy(this.view.worldPos(unit.x, unit.y));
     body.userData.baseY = body.position.y;
-    body.rotation.y = facingAngle(unit);
+    setMeshFacing(body, facingAngle(unit));
     body.castShadow = true;
     body.userData.unitId = unit.id;
     body.userData.poseMode = 'idle';
@@ -250,7 +250,7 @@ export class UnitRenderer {
 
   syncFacing(unit) {
     const mesh = this.meshes.get(unit.id);
-    if (mesh) mesh.rotation.y = facingAngle(unit);
+    if (mesh) setMeshFacing(mesh, facingAngle(unit));
     this.view.requestRender();
   }
 
@@ -268,7 +268,7 @@ export class UnitRenderer {
   setFacingPreview(unitId, facing) {
     const mesh = this.meshes.get(unitId);
     if (!mesh || !facing) return;
-    mesh.rotation.y = Math.atan2(facing.dx, facing.dy);
+    setMeshFacing(mesh, Math.atan2(facing.dx, facing.dy));
     this.view.requestRender();
   }
 
@@ -362,26 +362,48 @@ export class UnitRenderer {
 
   async animateMove(unit, path) {
     const mesh = this.meshes.get(unit.id);
-    if (!mesh) return;
+    if (!mesh || path.length < 2) return;
     mesh.userData.poseMode = 'walk';
     this.updateBorders(unit.id);
-    const dur = this.state.settings.moveDurationMs || 300;
-    for (let i = 1; i < path.length; i++) {
-      const from = this.view.worldPos(path[i - 1].x, path[i - 1].y).clone();
-      const to = this.view.worldPos(path[i].x, path[i].y).clone();
-      const dx = to.x - from.x, dz = to.z - from.z;
-      if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
-      await this._run(dur, (e) => {
-        const eased = smoothstep(e);
-        mesh.position.lerpVectors(from, to, eased);
-        const bob = setWalkPose(mesh, eased);
-        mesh.position.y += bob;
-        // Shadow map is manual-update (autoUpdate off); refresh it each frame so
-        // the cast shadow tracks the unit instead of freezing at the start tile.
-        this.view.invalidateShadows();
-        if (this.cameraFollow) this.cameraFollow(mesh.position);
-      }, (t) => t);
+
+    // One continuous traverse — per-tile ease-in/out made each step hitch like a limp.
+    const points = path.map((p) => this.view.worldPos(p.x, p.y).clone());
+    const segs = [];
+    let totalLen = 0;
+    for (let i = 1; i < points.length; i++) {
+      const len = points[i].distanceTo(points[i - 1]);
+      segs.push({ from: points[i - 1], to: points[i], len, start: totalLen });
+      totalLen += len;
     }
+    const stepMs = this.state.settings.moveDurationMs || 300;
+    const dur = stepMs * (path.length - 1);
+
+    await this._run(dur, (t) => {
+      const dist = t * totalLen;
+      let seg = segs[segs.length - 1];
+      for (let i = 0; i < segs.length; i++) {
+        if (dist <= segs[i].start + segs[i].len) {
+          seg = segs[i];
+          break;
+        }
+      }
+      const local = seg.len > 1e-8 ? Math.min(1, (dist - seg.start) / seg.len) : 1;
+      mesh.position.lerpVectors(seg.from, seg.to, local);
+
+      const dx = seg.to.x - seg.from.x;
+      const dz = seg.to.z - seg.from.z;
+      if (dx * dx + dz * dz > 1e-6) setMeshFacing(mesh, Math.atan2(dx, dz));
+
+      // Gait follows distance traveled so stride rate stays even across the path.
+      const bob = setWalkPose(mesh, dist / TILE_SIZE);
+      mesh.position.y += bob;
+      // Shadow map is manual-update (autoUpdate off); refresh it each frame so
+      // the cast shadow tracks the unit instead of freezing at the start tile.
+      this.view.invalidateShadows();
+      if (this.cameraFollow) this.cameraFollow(mesh.position);
+    }, linear);
+
+    mesh.position.copy(points[points.length - 1]);
     resetWalkPose(mesh);
     syncWoundedBaseY(mesh);
     mesh.userData.poseMode = 'idle';
@@ -395,7 +417,7 @@ export class UnitRenderer {
     const start = this.view.worldPos(unit.x, unit.y).clone();
     const end = this.view.worldPos(target.x, target.y).clone();
     const dx = end.x - start.x, dz = end.z - start.z;
-    if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
+    if (dx * dx + dz * dz > 1e-6) setMeshFacing(mesh, Math.atan2(dx, dz));
     const range = unit.range != null ? unit.range : 1;
     const count = Math.max(1, (strikes && strikes.length) || 1);
     const meleeStyle = range <= 1 ? 'slash' : 'thrust';
@@ -436,25 +458,43 @@ export class UnitRenderer {
     mesh.userData.poseMode = 'idle';
   }
 
-  async animateSkill(unit, target, skill) {
+  async animateSkill(unit, target, skill, onHit) {
+    // Lance skills — reuse the melee attack lunge (not a projectile).
+    if ((skill?.effectKey === 'pierce' || skill?.effectKey === 'impale') && target) {
+      await this.animateAttack(unit, target, [{}], onHit ? () => onHit() : undefined);
+      this.updateLowHp(unit);
+      return;
+    }
     const mesh = this.meshes.get(unit.id);
-    if (!mesh) return;
+    if (!mesh) {
+      if (onHit) onHit();
+      return;
+    }
     mesh.userData.poseMode = 'attack';
     if (target && (target.x !== unit.x || target.y !== unit.y)) {
       const start = this.view.worldPos(unit.x, unit.y).clone();
       const end = this.view.worldPos(target.x, target.y).clone();
       const dx = end.x - start.x, dz = end.z - start.z;
-      if (dx * dx + dz * dz > 1e-6) mesh.rotation.y = Math.atan2(dx, dz);
+      if (dx * dx + dz * dz > 1e-6) setMeshFacing(mesh, Math.atan2(dx, dz));
       const range = (skill && skill.range) || 1;
       if (range > 1) {
         await this._fireProjectile(start, end, 0x66ccff);
+        if (onHit) onHit();
         mesh.userData.poseMode = 'idle';
         return;
       }
     }
-    // Self / adjacent skill: a quick upward flash.
+    // Self / adjacent skill: a quick upward flash; resolve at the peak.
     const baseY = mesh.position.y;
-    await this._run(220, (e) => { mesh.position.y = baseY + Math.sin(e * Math.PI) * 0.18; });
+    let struck = false;
+    await this._run(220, (e) => {
+      mesh.position.y = baseY + Math.sin(e * Math.PI) * 0.18;
+      if (!struck && e >= 0.45 && onHit) {
+        struck = true;
+        onHit();
+      }
+    });
+    if (!struck && onHit) onHit();
     mesh.position.y = baseY;
     mesh.userData.poseMode = 'idle';
     this.updateLowHp(unit);
@@ -516,13 +556,13 @@ export class UnitRenderer {
     mesh.userData.poseMode = 'attack';
     // Spin a full turn for flair, then restore the original facing so the unit
     // doesn't end up pointing a new direction after leveling up.
-    const baseRot = mesh.rotation.y;
+    const baseRot = mesh.userData.facingYaw ?? mesh.rotation.y;
     this._run(LEVEL_UP_ANIMATION_MS, (e) => {
       const s = 1 + Math.sin(e * Math.PI) * 0.25;
       mesh.scale.setScalar(s);
       mesh.rotation.y = baseRot + e * Math.PI * 2;
     }).then(() => {
-      mesh.rotation.y = baseRot;
+      setMeshFacing(mesh, baseRot);
       mesh.userData.poseMode = 'idle';
       this.updateLowHp(unit);
     });

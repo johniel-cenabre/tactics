@@ -364,8 +364,25 @@ export function createHumanFigure(player, classKey, hairColor, bumpMap) {
   group.userData.head = head;
   group.userData.woundedSeverity = 0;
   group.userData.damageRatio = 0;
+  group.userData.facingYaw = 0;
   group.userData.poseMode = 'idle';
+  group.rotation.order = 'YXZ';
   return group;
+}
+
+/** Yaw the figure while keeping pitch/roll in facing-local space (YXZ). */
+export function setMeshFacing(mesh, yaw) {
+  mesh.userData.facingYaw = yaw;
+  mesh.rotation.order = 'YXZ';
+  mesh.rotation.y = yaw;
+}
+
+/** Body pitch/roll relative to facing. Preserves userData.facingYaw. */
+function setBodyTilt(mesh, pitch, roll = 0) {
+  const yaw = mesh.userData.facingYaw ?? mesh.rotation.y;
+  mesh.userData.facingYaw = yaw;
+  mesh.rotation.order = 'YXZ';
+  mesh.rotation.set(pitch, yaw, roll);
 }
 
 /** Severity 0..1: slumped, guarded posture for wounded / exhausted units. */
@@ -402,8 +419,7 @@ function applyWoundedPose(mesh, idlePhase = 0) {
   const d = u.damageRatio || 0;
 
   if (s <= 0 && d <= 0) {
-    mesh.rotation.x = 0;
-    mesh.rotation.z = 0;
+    setBodyTilt(mesh, 0, 0);
     mesh.scale.setScalar(1);
     mesh.position.y = baseY;
     if (u.head) u.head.rotation.set(0, 0, 0);
@@ -414,9 +430,9 @@ function applyWoundedPose(mesh, idlePhase = 0) {
     return;
   }
 
-  // Hunched forward, weight sinking, slight favor to one side.
-  mesh.rotation.x = s * 0.24;
-  mesh.rotation.z = s * 0.05;
+  // Hunched forward into facing, weight sinking, slight favor to one side.
+  let pitch = s * 0.24;
+  let roll = s * 0.05;
   mesh.scale.setScalar(1 - s * 0.045);
   mesh.position.y = baseY - s * 0.07;
 
@@ -449,15 +465,15 @@ function applyWoundedPose(mesh, idlePhase = 0) {
 
   // Labored breathing and weight shifts on any injured unit.
   if (idlePhase && d > 0) {
-    const breathe = Math.sin(idlePhase) * 0.024 * d;
-    const sway = Math.sin(idlePhase * 0.71 + 1.2) * 0.016 * d;
-    mesh.rotation.x += breathe;
-    mesh.rotation.z += sway;
+    pitch += Math.sin(idlePhase) * 0.024 * d;
+    roll += Math.sin(idlePhase * 0.71 + 1.2) * 0.016 * d;
     mesh.position.y -= Math.max(0, Math.sin(idlePhase * 0.88)) * 0.014 * Math.max(s, d * 0.5);
     if (u.head) u.head.rotation.x += Math.sin(idlePhase * 1.12) * 0.038 * d;
     if (u.rightArm && s > 0.15) u.rightArm.rotation.y += Math.sin(idlePhase * 1.35) * 0.045 * s;
     if (u.leftLeg && s > 0.25) u.leftLeg.rotation.x += Math.sin(idlePhase * 0.85) * 0.028 * s;
   }
+
+  setBodyTilt(mesh, pitch, roll);
 }
 
 /** Hit reaction layered on the current damaged pose. t: 0..1, intensity scales with hit size. */
@@ -467,8 +483,8 @@ export function setDamageFlinchPose(mesh, t, intensity = 0.5) {
   const a = intensity * peak;
   const side = mesh.userData.flinchSide || 1;
   const u = mesh.userData;
-  mesh.rotation.x -= a * 0.42;
-  mesh.rotation.z += side * a * 0.2;
+  // Recoil opposite facing (pitch back) with a facing-local side sway.
+  setBodyTilt(mesh, mesh.rotation.x - a * 0.42, mesh.rotation.z + side * a * 0.2);
   mesh.position.y -= a * 0.065;
   if (u.head) {
     u.head.rotation.x += a * 0.58;
@@ -515,6 +531,7 @@ export function syncWoundedBaseY(mesh) {
   if (slump > 0) applyWoundedPose(mesh);
 }
 
+/** Walk cycle. `t` is tiles traveled (may exceed 1 along a multi-tile path). */
 export function setWalkPose(mesh, t) {
   const u = mesh.userData;
   if (!u.leftLeg) return 0;
@@ -526,46 +543,50 @@ export function setWalkPose(mesh, t) {
   // Two stride cycles per tile — a short tactical jog rather than a stroll.
   const phase = t * Math.PI * 4;
   const stride = Math.sin(phase);
+  // Smooth half-wave lifts (C1) — hard max(0, ±stride) kinks looked like a limp.
+  const liftL = Math.max(0, -stride);
+  const liftR = Math.max(0, stride);
+  const kneeL = liftL * liftL;
+  const kneeR = liftR * liftR;
 
   const leftBase = slump ? -slump * 0.16 : 0;
   const rightBase = slump ? -slump * 0.11 : 0;
-  const legSwing = stride * 0.64 * amp;
-  // Extra knee lift on the leading leg each step.
-  u.leftLeg.rotation.x = leftBase + legSwing - Math.max(0, -stride) * 0.26 * amp;
-  u.rightLeg.rotation.x = rightBase - legSwing - Math.max(0, stride) * 0.26 * amp;
+  const legSwing = stride * 0.52 * amp;
+  u.leftLeg.rotation.x = leftBase + legSwing - kneeL * 0.22 * amp;
+  u.rightLeg.rotation.x = rightBase - legSwing - kneeR * 0.22 * amp;
   if (slump > 0) {
     u.leftLeg.rotation.z = slump * 0.05;
     u.rightLeg.rotation.z = -slump * 0.04;
   } else {
-    u.leftLeg.rotation.z = stride * 0.04 * amp;
-    u.rightLeg.rotation.z = -stride * 0.04 * amp;
+    u.leftLeg.rotation.z = stride * 0.025 * amp;
+    u.rightLeg.rotation.z = -stride * 0.025 * amp;
   }
 
-  const armPump = Math.sin(phase + Math.PI) * 0.62 * amp;
-  const rightPump = Math.sin(phase) * 0.62 * amp;
+  const armPump = Math.sin(phase + Math.PI) * 0.5 * amp;
+  const rightPump = Math.sin(phase) * 0.5 * amp;
   if (u.leftArm) {
     u.leftArm.rotation.x = slump * 0.48 + armPump;
-    u.leftArm.rotation.y = slump * 0.1 - armPump * 0.08;
-    u.leftArm.rotation.z = slump * 0.14 + armPump * 0.06;
+    u.leftArm.rotation.y = slump * 0.1 - armPump * 0.06;
+    u.leftArm.rotation.z = slump * 0.14 + armPump * 0.04;
   }
   if (u.rightArm) {
     u.rightArm.rotation.x = slump * 0.62 + rightPump;
-    u.rightArm.rotation.y = -slump * 0.38 + rightPump * 0.08;
-    u.rightArm.rotation.z = -slump * 0.08 - rightPump * 0.06;
+    u.rightArm.rotation.y = -slump * 0.38 + rightPump * 0.06;
+    u.rightArm.rotation.z = -slump * 0.08 - rightPump * 0.04;
   }
 
-  // Lean into the run with a subtle side-to-side balance shift.
-  const jogLean = 0.15 * amp;
-  mesh.rotation.x = slump * 0.24 + jogLean;
-  mesh.rotation.z = slump * 0.05 + Math.sin(phase) * 0.028 * amp;
+  // Dash lean into facing.
+  const jogLean = 0.28 * amp;
+  setBodyTilt(mesh, slump * 0.24 + jogLean, slump * 0.05 + Math.sin(phase) * 0.016 * amp);
 
   if (u.head) {
-    u.head.rotation.x = slump * 0.28 + jogLean * 0.4;
+    // Keep the head a bit more upright than the torso so the lean reads as a dash.
+    u.head.rotation.x = slump * 0.28 - jogLean * 0.35;
     u.head.rotation.z = slump * -0.06;
   }
 
-  // Vertical bob — peaks twice per tile as each foot lands.
-  return Math.abs(Math.sin(phase)) * 0.045 * amp;
+  // sin² bob — continuous velocity (unlike abs(sin), which cusps at each step).
+  return stride * stride * 0.032 * amp;
 }
 
 export function resetWalkPose(mesh) {
@@ -579,8 +600,7 @@ export function resetWalkPose(mesh) {
   u.rightLeg.rotation.set(0, 0, 0);
   u.leftArm.rotation.set(0, 0, 0);
   u.rightArm.rotation.set(0, 0, 0);
-  mesh.rotation.x = 0;
-  mesh.rotation.z = 0;
+  setBodyTilt(mesh, 0, 0);
   if (u.head) u.head.rotation.set(0, 0, 0);
 }
 
@@ -637,8 +657,7 @@ export function setMeleeAttackPose(mesh, t, { style = 'slash' } = {}) {
       u.leftArm.rotation.x = wLeftArm + armX * 0.82;
       u.leftArm.rotation.y = (s > 0 ? s * 0.1 : 0) + wind * 0.08 * amp;
     }
-    mesh.rotation.x = wTorsoX + (strike * 0.18 - wind * 0.06) * amp;
-    mesh.rotation.z = wTorsoZ;
+    setBodyTilt(mesh, wTorsoX + (strike * 0.18 - wind * 0.06) * amp, wTorsoZ);
     if (u.leftLeg) u.leftLeg.rotation.x = wLeftLeg - strike * 0.22 * amp;
     if (u.rightLeg) u.rightLeg.rotation.x = wRightLeg + strike * 0.28 * amp;
     if (u.head) u.head.rotation.x = wHead - strike * 0.1 * amp;
@@ -658,8 +677,11 @@ export function setMeleeAttackPose(mesh, t, { style = 'slash' } = {}) {
     u.leftArm.rotation.y = (s > 0 ? s * 0.1 : 0) + wind * 0.22 * amp;
     u.leftArm.rotation.z = (s > 0 ? s * 0.14 : 0) + wind * 0.06 * amp;
   }
-  mesh.rotation.x = wTorsoX + (-wind * 0.1 + strike * 0.16) * amp;
-  mesh.rotation.z = wTorsoZ + (wind * 0.08 - strike * 0.05) * amp;
+  setBodyTilt(
+    mesh,
+    wTorsoX + (-wind * 0.1 + strike * 0.16) * amp,
+    wTorsoZ + (wind * 0.08 - strike * 0.05) * amp,
+  );
   if (u.leftLeg) u.leftLeg.rotation.x = wLeftLeg + wind * 0.14 * amp - strike * 0.2 * amp;
   if (u.rightLeg) u.rightLeg.rotation.x = wRightLeg - wind * 0.1 * amp + strike * 0.24 * amp;
   if (u.head) u.head.rotation.x = wHead + wind * 0.1 * amp - strike * 0.06 * amp;
@@ -677,13 +699,12 @@ export function resetAttackPose(mesh) {
   u.leftLeg.rotation.set(0, 0, 0);
   u.rightLeg.rotation.set(0, 0, 0);
   if (u.head) u.head.rotation.set(0, 0, 0);
-  mesh.rotation.x = 0;
-  mesh.rotation.z = 0;
+  setBodyTilt(mesh, 0, 0);
 }
 
 const deathSmooth = (x) => x * x * (3 - 2 * x);
 
-/** Fatal collapse: stagger → buckle → fall to the ground. */
+/** Fatal collapse: stagger → buckle → fall to the ground (relative to facing). */
 export function setDeathPose(mesh, t) {
   const u = mesh.userData;
   if (!u.leftLeg) return;
@@ -695,15 +716,16 @@ export function setDeathPose(mesh, t) {
   const fallT = deathSmooth(Math.min(1, Math.max(0, (t - 0.45) / 0.55)));
   const staggerFade = 1 - Math.min(1, collapseT * 1.5);
 
-  mesh.rotation.x =
+  const pitch =
     staggerT * staggerFade * -0.3 +
     collapseT * 0.65 +
     fallT * 0.1;
-  mesh.rotation.z = side * (
+  const roll = side * (
     staggerT * staggerFade * 0.26 +
     collapseT * 0.14 +
     fallT * Math.PI * 0.47
   );
+  setBodyTilt(mesh, pitch, roll);
 
   const sink = collapseT * 0.2 + fallT * 0.34;
   mesh.position.y = baseY - sink;
