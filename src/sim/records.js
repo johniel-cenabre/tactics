@@ -9,6 +9,19 @@ export const CLASS_RECORD = CLASS_KEYS.reduce((acc, k) => {
   return acc;
 }, {});
 
+/** Zero all class stats (start of a watch-mode series). */
+export function resetClassRecord() {
+  for (const k of CLASS_KEYS) {
+    const r = CLASS_RECORD[k];
+    if (!r) continue;
+    r.battles = 0;
+    r.kills = 0;
+    r.deaths = 0;
+    r.wins = 0;
+    r.losses = 0;
+  }
+}
+
 function resolveKillCreditingUnit(killerUnit, unitsList) {
   if (!killerUnit || killerUnit.summonedBy == null || !Array.isArray(unitsList)) return killerUnit;
   const summoner = unitsList.find((u) => u.id === killerUnit.summonedBy);

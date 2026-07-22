@@ -24,6 +24,7 @@ import { NetPlay } from './net/netplay.js';
 
 import { DraftAI } from './ai/draft-ai.js';
 import { PlayingAI } from './ai/playing-ai.js';
+import { resetClassRecord } from './sim/records.js';
 
 function main() {
   const container = document.getElementById('canvas-wrap');
@@ -85,10 +86,38 @@ function main() {
     }, 2500);
   });
 
-  function startMatch(cfg) {
+  // Watch mode (cvcpu) can run a series of games for balance stats.
+  let seriesCfg = null;
+  let seriesTotal = 1;
+  let seriesPlayed = 0;
+  let seriesTimer = null;
+
+  function clearSeriesTimer() {
+    if (seriesTimer != null) {
+      clearTimeout(seriesTimer);
+      seriesTimer = null;
+    }
+  }
+
+  function startMatch(cfg, { continueSeries = false } = {}) {
+    clearSeriesTimer();
     state.gameMode = cfg.mode;
     state.aiDraftPreference = cfg.aiDraftPreference || 'balanced';
     const seed = cfg.seed != null ? cfg.seed : (Date.now() >>> 0);
+
+    if (cfg.mode === 'cvcpu') {
+      if (!continueSeries) {
+        seriesCfg = { ...cfg };
+        delete seriesCfg.seed;
+        seriesTotal = Math.max(1, Number(cfg.numGames) || 1);
+        seriesPlayed = 0;
+        resetClassRecord();
+      }
+    } else {
+      seriesCfg = null;
+      seriesTotal = 1;
+      seriesPlayed = 0;
+    }
 
     const isShort = (cfg.mode === 'pvp' || cfg.mode === 'online') && cfg.mapMode === 'short';
     state.settings = createSettings({
@@ -110,12 +139,33 @@ function main() {
     });
     renderer.view.setWorld(state.world);
     bus.emit('worldRebuilt', {});
+    input.clearSelection();
 
-    patchUi({ screen: 'game', phase: 'draft', gameMode: cfg.mode, gameOver: null, previewUnit: null });
+    patchUi({ screen: 'game', phase: 'draft', gameMode: cfg.mode, gameOver: null, battleStart: false, previewUnit: null });
     startDraft(controller.ctx);
   }
 
+  // After a watch-mode game ends, brief pause then start the next (if any).
+  bus.on('gameOver', () => {
+    if (state.gameMode !== 'cvcpu' || !seriesCfg) return;
+    seriesPlayed++;
+    const more = seriesPlayed < seriesTotal;
+    if (more) {
+      const go = uiState.value.gameOver;
+      if (go) patchUi({ gameOver: { ...go, classRecord: null } });
+      clearSeriesTimer();
+      seriesTimer = setTimeout(() => {
+        seriesTimer = null;
+        startMatch({ ...seriesCfg }, { continueSeries: true });
+      }, 2000);
+    }
+  });
+
   function toModeSelect() {
+    clearSeriesTimer();
+    seriesCfg = null;
+    seriesTotal = 1;
+    seriesPlayed = 0;
     state.phase = 'draft';
     input.clearSelection();
     patchUi({ screen: 'mode-select', gameOver: null, battleStart: false, draft: null, previewUnit: null, selectedUnit: null });
