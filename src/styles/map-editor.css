@@ -1,0 +1,217 @@
+/* Map maker side panel. */
+
+#map-editor-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 120;
+  width: min(300px, 92vw);
+  background: rgba(13, 17, 23, 0.94);
+  border-right: 1px solid rgba(48, 54, 61, 0.9);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  color: #e6edf3;
+  padding: 14px 14px max(14px, env(safe-area-inset-bottom));
+  padding-top: max(14px, env(safe-area-inset-top));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+#map-editor-panel .me-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#map-editor-panel .me-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+#map-editor-panel .me-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+#map-editor-panel .me-section-title {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b949e;
+}
+
+#map-editor-panel .me-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#map-editor-panel .me-row {
+  display: flex;
+  gap: 8px;
+}
+
+#map-editor-panel .me-field-half {
+  flex: 1;
+}
+
+#map-editor-panel label {
+  color: #8b949e;
+  font-size: 0.72rem;
+}
+
+#map-editor-panel input[type="text"],
+#map-editor-panel input[type="number"],
+#map-editor-panel select {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #e6edf3;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+#map-editor-panel .me-btn {
+  appearance: none;
+  border: 1px solid #30363d;
+  background: #21262d;
+  color: #e6edf3;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+#map-editor-panel .me-btn:hover {
+  border-color: #58a6ff;
+}
+
+#map-editor-panel .me-btn.selected {
+  border-color: #58a6ff;
+  background: rgba(88, 166, 255, 0.18);
+  color: #fff;
+}
+
+#map-editor-panel .me-btn-ghost {
+  background: transparent;
+}
+
+#map-editor-panel .me-btn-primary {
+  background: #238636;
+  border-color: #2ea043;
+}
+
+#map-editor-panel .me-btn-primary:hover {
+  background: #2ea043;
+}
+
+#map-editor-panel .me-btn-block {
+  width: 100%;
+  text-align: center;
+}
+
+#map-editor-panel .me-swatches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+#map-editor-panel .me-swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #e6edf3;
+  border-radius: 6px;
+  padding: 5px 6px;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+#map-editor-panel .me-swatch.selected {
+  border-color: #58a6ff;
+  background: rgba(88, 166, 255, 0.15);
+}
+
+#map-editor-panel .me-swatch-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--swatch);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+#map-editor-panel .me-swatch-label {
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+#map-editor-panel .me-height-row,
+#map-editor-panel .me-team-row {
+  display: flex;
+  gap: 6px;
+}
+
+#map-editor-panel .me-height-btn,
+#map-editor-panel .me-team-btn {
+  flex: 1;
+}
+
+#map-editor-panel .me-facing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+#map-editor-panel .me-facing-btn {
+  padding: 5px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+#map-editor-panel .me-team-btn.p2.selected {
+  border-color: #f85149;
+  background: rgba(248, 81, 73, 0.18);
+}
+
+#map-editor-panel .me-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#map-editor-panel .me-file-btn {
+  display: block;
+  box-sizing: border-box;
+}
+
+#map-editor-panel .me-hint {
+  margin: 0;
+  color: #8b949e;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+#map-editor-panel .me-error {
+  margin: 0;
+  color: #f85149;
+  font-size: 0.78rem;
+}

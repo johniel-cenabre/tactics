@@ -27,7 +27,7 @@ export class GameState {
 
     // Match / turn
     this.phase = 'draft'; // 'draft' | 'playing' | 'gameover'
-    this.gameMode = 'pvp'; // 'pvp' | 'pvcpu' | 'cvcpu' | 'online'
+    this.gameMode = 'pvp'; // 'pvp' | 'pvcpu' | 'cvcpu' | 'online' | 'story'
     this.turnCount = 0;
     this.currentPlayer = 1;
     /** @type {number[]} unit ids in initiative order */
@@ -47,6 +47,10 @@ export class GameState {
 
     // Draft sub-state
     this.draft = createDraftState();
+
+    // Story-mode runtime (null outside story)
+    /** @type {{ stageId: string, objectives: object, stageIndex: number }|null} */
+    this.story = null;
 
     // Online sub-state
     this.localPlayerNumber = 1;
@@ -146,19 +150,22 @@ export class GameState {
   /** Whether the local human controls the current turn (mode-aware). */
   isHumanTurn() {
     if (this.gameMode === 'cvcpu') return false;
-    if (this.gameMode === 'pvcpu' && this.currentPlayer !== 1) return false;
+    if ((this.gameMode === 'pvcpu' || this.gameMode === 'story') && this.currentPlayer !== 1) return false;
     if (this.gameMode === 'online' && this.currentPlayer !== this.localPlayerNumber) return false;
     return true;
   }
 
   isCPUPlayer(player) {
-    return (this.gameMode === 'pvcpu' && player === 2) || this.gameMode === 'cvcpu';
+    return (this.gameMode === 'pvcpu' && player === 2)
+      || (this.gameMode === 'story' && player === 2)
+      || this.gameMode === 'cvcpu';
   }
 }
 
 export function createDraftState() {
   return {
     order: [], // snake pick order (player numbers)
+    totalPicks: 0, // order.length; used for completion (supports solo draft)
     pickIndex: 0,
     pickCountByPlayer: { 1: 0, 2: 0 },
     availableClasses: new Set(),

@@ -7,6 +7,14 @@ export const actions = {
   startMatch: (_cfg) => {},
   /** Return to the mode-select screen. */
   toModeSelect: () => {},
+  /** Open the story level-select screen. */
+  openStorySelect: () => {},
+  /** Start a story stage by id. */
+  startStage: (_stageId) => {},
+  /** Retry the current story stage. */
+  retryStage: () => {},
+  /** Advance to the next unlocked story stage. */
+  nextStage: () => {},
   /** Draft: choose a class. */
   draftPick: (_classKey) => {},
   /** Turn menu: enter attack targeting. */
@@ -29,4 +37,21 @@ export const actions = {
   onlineJoin: (_offerCode, _name) => {},
   /** Close the connect overlay and tear down any pending connection. */
   onlineCancel: () => {},
+
+  // --- Map editor ---
+  openEditor: () => {},
+  closeEditor: () => {},
+  editorSetTool: (_tool) => {},
+  editorSetTileType: (_t) => {},
+  editorSetHeight: (_h) => {},
+  editorSetUnitPlayer: (_p) => {},
+  editorSetUnitClass: (_classKey) => {},
+  editorSetUnitLevel: (_level) => {},
+  editorSetUnitFacing: (_facing) => {},
+  editorSetName: (_name) => {},
+  editorResize: (_w, _h) => {},
+  editorNew: () => {},
+  editorSave: () => {},
+  editorLoad: (_map) => {},
+  editorError: (_msg) => {},
 };

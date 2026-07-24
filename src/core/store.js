@@ -15,9 +15,10 @@ export const uiState = signal(createInitialUiState());
 export function createInitialUiState() {
   return {
     // High-level flow
-    screen: 'mode-select', // 'mode-select' | 'game'
+    screen: 'mode-select', // 'mode-select' | 'story-select' | 'game' | 'editor'
     phase: 'draft', // 'draft' | 'playing' | 'gameover'
     gameMode: 'pvp',
+    unlockedStageIndex: 0,
     // Turn HUD
     currentPlayer: 1,
     turnCount: 0,
@@ -36,6 +37,10 @@ export function createInitialUiState() {
     gameOver: null, // { winner, title, cards, classRecord }
     online: null, // online connect UI state
     rotate: false,
+    // Map editor (null when not editing)
+    editor: null,
+    // Story mode HUD (null outside story)
+    story: null,
     // Mode-select settings (mirrors the controls)
     settings: null,
   };

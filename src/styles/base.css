@@ -128,6 +128,30 @@ body:has(#draft-panel) #canvas-wrap {
   text-overflow: unset;
 }
 
+#ui .hud-objectives {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  list-style: none;
+  margin: 0;
+  padding: 6px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  background: rgba(22, 27, 34, 0.78);
+  border: 1px solid rgba(48, 54, 61, 0.85);
+  border-radius: 10px;
+  width: fit-content;
+  max-width: min(92vw, 520px);
+}
+#ui .hud-objectives li {
+  font-size: 0.72rem;
+  color: #c9d1d9;
+  font-weight: 600;
+}
+#ui .hud-objectives li.done { color: #3fb950; }
+#ui .hud-objectives li.danger { color: #f85149; }
+#ui:has(.hud-objectives) .hud-instructions { grid-row: 4; }
+
 #ui .hud-turn-pill,
 #ui .hud-turns-pill {
   display: inline-flex;

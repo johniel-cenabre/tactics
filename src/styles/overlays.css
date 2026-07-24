@@ -226,3 +226,26 @@
 #game-over-overlay .mode-play-btn:active {
   transform: translateY(0);
 }
+
+#game-over-overlay .game-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+#game-over-overlay .game-over-actions .mode-play-btn {
+  margin-top: 0;
+  padding: 12px 22px;
+  font-size: 0.95rem;
+}
+#game-over-overlay .mode-play-btn-secondary {
+  background: linear-gradient(135deg, #21262d 0%, #30363d 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(48, 54, 61, 0.95);
+}
+#game-over-overlay .mode-play-btn-secondary:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+#game-over-overlay.story-lose .game-over-title { color: #ff7b72; }
+#game-over-overlay.story-win .game-over-title { color: #3fb950; }

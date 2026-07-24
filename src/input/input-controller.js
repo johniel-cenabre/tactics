@@ -76,6 +76,8 @@ export class InputController {
     this.rangeKeys = new Set(); // valid target/move tile keys
     this._allowedFacings = [];
     this.busy = false;
+    /** When false, pointer/touch/wheel are ignored (e.g. map editor is active). */
+    this.enabled = true;
 
     this._isPanning = false;
     this._isRotating = false;
@@ -357,11 +359,12 @@ export class InputController {
     // app-root hosts every overlay; include it so scrollable panels
     // (mode-select, turn-menu skill list, unit-details, etc.) keep native touch scroll.
     return !!(el && el.closest(
-      'app-root, #turn-menu, #turn-menu-stack, #unit-details-card, #draft-panel, #draft-placement-card, #mode-select-overlay:not(.hidden), #game-over-overlay.visible, #online-connect-overlay, #rotate-overlay, button, input, select, textarea, a',
+      'app-root, #turn-menu, #turn-menu-stack, #unit-details-card, #draft-panel, #draft-placement-card, #mode-select-overlay:not(.hidden), #map-editor-panel, #game-over-overlay.visible, #online-connect-overlay, #rotate-overlay, button, input, select, textarea, a',
     ));
   }
 
   _onPointerDown(e) {
+    if (!this.enabled) return;
     if (e.pointerType === 'touch') return; // handled by touch events
     if (this._isUiTarget(e.target)) return;
     this._downPixel = { x: e.clientX, y: e.clientY };
@@ -372,6 +375,7 @@ export class InputController {
   }
 
   _onPointerMove(e) {
+    if (!this.enabled) return;
     if (e.pointerType === 'touch') return;
     if (this.mode === 'facing' && !this._isPanning && !this._isRotating) {
       this._updateFacingFromPointer(e.clientX, e.clientY);
@@ -400,6 +404,7 @@ export class InputController {
   }
 
   _onPointerUp(e) {
+    if (!this.enabled) return;
     if (e.pointerType === 'touch') return;
     this._endDrag(e.clientX, e.clientY);
   }
@@ -418,6 +423,7 @@ export class InputController {
   }
 
   _onWheel(e) {
+    if (!this.enabled) return;
     if (this._isUiTarget(e.target)) return;
     e.preventDefault();
     this.camera.disableFollow();
@@ -457,6 +463,7 @@ export class InputController {
   }
 
   _onTouchStart(e) {
+    if (!this.enabled) return;
     if (this._isUiTarget(e.target)) return;
     if (e.touches.length === 2) {
       this._beginTwoFingerTouch(e.touches);
@@ -473,6 +480,7 @@ export class InputController {
   }
 
   _onTouchMove(e) {
+    if (!this.enabled) return;
     if (this._isUiTarget(e.target)) return;
     if (e.touches.length === 2) {
       e.preventDefault();
@@ -508,6 +516,7 @@ export class InputController {
   }
 
   _onTouchEnd(e) {
+    if (!this.enabled) return;
     if (e.touches.length === 1) {
       this._pinchDist = null;
       this._pinchAngle = null;

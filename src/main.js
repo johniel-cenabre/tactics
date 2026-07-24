@@ -8,6 +8,9 @@ import { createSettings, DEFAULT_SETTINGS } from './config.js';
 import { GameState } from './sim/state.js';
 import { GameController } from './sim/commands.js';
 import { createWorld } from './world/worldgen.js';
+import { worldFromMap, unitsFromMap } from './world/map-format.js';
+import { TileType } from './world/tile-types.js';
+import { createUnit } from './sim/unit.js';
 import { startDraft } from './sim/draft.js';
 
 import { createRenderer } from './render/index.js';
@@ -25,6 +28,11 @@ import { NetPlay } from './net/netplay.js';
 import { DraftAI } from './ai/draft-ai.js';
 import { PlayingAI } from './ai/playing-ai.js';
 import { resetClassRecord } from './sim/records.js';
+import { EditorController } from './editor/editor-controller.js';
+import { STAGES, getStageById, getStageIndex, resolveClassPool } from './data/stages.js';
+import { getUnlockedStageIndex } from './data/story-progress.js';
+
+const BLOCKED_TILES = new Set([TileType.TREE, TileType.WATER, TileType.ROCK]);
 
 function main() {
   const container = document.getElementById('canvas-wrap');
@@ -53,6 +61,14 @@ function main() {
   const send = (intent) => outboundDispatch(intent);
 
   const input = new InputController({ view: renderer.view, state, controller, camera, highlights: renderer.highlights, bus, dispatch: send, units: renderer.units });
+
+  const editor = new EditorController({
+    view: renderer.view,
+    state,
+    camera,
+    units: renderer.units,
+    bus,
+  });
 
   bindStore(state, bus);
 
@@ -101,7 +117,10 @@ function main() {
 
   function startMatch(cfg, { continueSeries = false } = {}) {
     clearSeriesTimer();
+    editor.setEnabled(false);
+    input.enabled = true;
     state.gameMode = cfg.mode;
+    state.story = null;
     state.aiDraftPreference = cfg.aiDraftPreference || 'balanced';
     const seed = cfg.seed != null ? cfg.seed : (Date.now() >>> 0);
 
@@ -141,8 +160,90 @@ function main() {
     bus.emit('worldRebuilt', {});
     input.clearSelection();
 
-    patchUi({ screen: 'game', phase: 'draft', gameMode: cfg.mode, gameOver: null, battleStart: false, previewUnit: null });
+    patchUi({ screen: 'game', phase: 'draft', gameMode: cfg.mode, gameOver: null, battleStart: false, previewUnit: null, story: null });
     startDraft(controller.ctx);
+  }
+
+  function placeMapUnits(map) {
+    const world = state.world;
+    const placements = unitsFromMap(map);
+    for (const p of placements) {
+      if (BLOCKED_TILES.has(world.type[p.y][p.x])) continue;
+      if (state.getUnitAtTile(p.x, p.y)) continue;
+      const unit = createUnit({
+        id: state.ids.next(),
+        player: p.player,
+        classKey: p.class,
+        x: p.x,
+        y: p.y,
+        level: p.level,
+        tag: p.tag || null,
+      });
+      if (p.facing) unit.facing = { dx: p.facing.dx, dy: p.facing.dy };
+      state.addUnit(unit);
+      renderer.units.addUnit(unit);
+    }
+    renderer.units.updateBorders();
+  }
+
+  function startStage(stageId) {
+    const stage = getStageById(stageId);
+    if (!stage) return;
+    clearSeriesTimer();
+    seriesCfg = null;
+    editor.setEnabled(false);
+    input.enabled = true;
+    teardownNet();
+
+    const stageIndex = getStageIndex(stage.id);
+    const seed = Date.now() >>> 0;
+    state.gameMode = 'story';
+    state.story = {
+      stageId: stage.id,
+      stageIndex,
+      objectives: stage.objectives || { win: [{ type: 'eliminate' }], lose: [] },
+    };
+    state.aiDraftPreference = 'balanced';
+    state.playerNames = { 1: 'You', 2: 'Enemy' };
+    state.localPlayerNumber = 1;
+
+    state.settings = createSettings({
+      gridW: stage.map.w,
+      gridH: stage.map.h,
+      maxTurns: stage.maxTurns || DEFAULT_SETTINGS.maxTurns,
+      draftPicksPerPlayer: stage.maxPlayerUnits || DEFAULT_SETTINGS.draftPicksPerPlayer,
+      moveDurationMs: DEFAULT_SETTINGS.moveDurationMs,
+    });
+
+    state.rng.reseed(seed);
+    state.clearUnits();
+    renderer.units.clear();
+    state.world = worldFromMap(stage.map);
+    renderer.view.setWorld(state.world);
+    bus.emit('worldRebuilt', {});
+    placeMapUnits(stage.map);
+    input.clearSelection();
+
+    const classPool = resolveClassPool(stage.classPool);
+    patchUi({
+      screen: 'game',
+      phase: 'draft',
+      gameMode: 'story',
+      gameOver: null,
+      battleStart: false,
+      previewUnit: null,
+      story: {
+        stageId: stage.id,
+        stageIndex,
+        objectives: [],
+      },
+    });
+    startDraft(controller.ctx, {
+      players: [1],
+      picksPerPlayer: stage.maxPlayerUnits,
+      classPool,
+    });
+    camera.centerOn(Math.floor(state.world.w / 2), Math.floor(state.world.h / 2));
   }
 
   // After a watch-mode game ends, brief pause then start the next (if any).
@@ -167,8 +268,24 @@ function main() {
     seriesTotal = 1;
     seriesPlayed = 0;
     state.phase = 'draft';
+    state.story = null;
+    editor.setEnabled(false);
+    input.enabled = true;
     input.clearSelection();
-    patchUi({ screen: 'mode-select', gameOver: null, battleStart: false, draft: null, previewUnit: null, selectedUnit: null });
+    renderer.units.clear();
+    state.clearUnits();
+    patchUi({ screen: 'mode-select', gameOver: null, battleStart: false, draft: null, previewUnit: null, selectedUnit: null, editor: null, story: null });
+  }
+
+  function downloadMapJson(map) {
+    const blob = new Blob([JSON.stringify(map, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safe = String(map.name || 'map').replace(/[^\w\-]+/g, '_').slice(0, 40);
+    a.href = url;
+    a.download = `${safe || 'map'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // --- Online (WebRTC copy/paste signaling) ---
@@ -270,6 +387,42 @@ function main() {
   // Wire the UI action hub.
   actions.startMatch = (cfg) => startMatch(cfg);
   actions.toModeSelect = () => { teardownNet(); toModeSelect(); };
+  actions.openStorySelect = () => {
+    teardownNet();
+    clearSeriesTimer();
+    seriesCfg = null;
+    editor.setEnabled(false);
+    input.enabled = true;
+    input.clearSelection();
+    renderer.units.clear();
+    state.clearUnits();
+    state.story = null;
+    patchUi({
+      screen: 'story-select',
+      gameOver: null,
+      battleStart: false,
+      draft: null,
+      previewUnit: null,
+      selectedUnit: null,
+      editor: null,
+      story: null,
+      unlockedStageIndex: getUnlockedStageIndex(),
+    });
+  };
+  actions.startStage = (stageId) => startStage(stageId);
+  actions.retryStage = () => {
+    const id = state.story?.stageId || uiState.value.gameOver?.stageId;
+    if (id) startStage(id);
+  };
+  actions.nextStage = () => {
+    const go = uiState.value.gameOver;
+    const idx = go?.nextStageIndex != null
+      ? go.nextStageIndex
+      : (state.story ? state.story.stageIndex + 1 : -1);
+    const next = STAGES[idx];
+    if (next) startStage(next.id);
+    else actions.openStorySelect();
+  };
   actions.draftPick = (classKey) => {
     if (state.gameMode === 'online' && controller.currentDraftPlayer !== state.localPlayerNumber) return;
     send({ type: 'draftPick', classKey });
@@ -282,6 +435,54 @@ function main() {
     input.enterFacingMode();
   };
   actions.cancel = () => input.clearSelection();
+
+  actions.openEditor = () => {
+    teardownNet();
+    clearSeriesTimer();
+    seriesCfg = null;
+    state.story = null;
+    input.clearSelection();
+    input.enabled = false;
+    renderer.units.clear();
+    state.clearUnits();
+    patchUi({
+      screen: 'editor',
+      gameOver: null,
+      battleStart: false,
+      draft: null,
+      previewUnit: null,
+      selectedUnit: null,
+      editor: {},
+      story: null,
+    });
+    editor.open(DEFAULT_SETTINGS.gridW, DEFAULT_SETTINGS.gridH);
+    camera.centerOn(Math.floor(state.world.w / 2), Math.floor(state.world.h / 2));
+  };
+  actions.closeEditor = () => {
+    editor.setEnabled(false);
+    toModeSelect();
+  };
+  actions.editorSetTool = (tool) => editor.setTool(tool);
+  actions.editorSetTileType = (t) => editor.setTileType(t);
+  actions.editorSetHeight = (h) => editor.setHeight(h);
+  actions.editorSetUnitPlayer = (p) => editor.setUnitPlayer(p);
+  actions.editorSetUnitClass = (classKey) => editor.setUnitClass(classKey);
+  actions.editorSetUnitLevel = (level) => editor.setUnitLevel(level);
+  actions.editorSetUnitFacing = (facing) => editor.setUnitFacing(facing);
+  actions.editorSetName = (name) => editor.setMapName(name);
+  actions.editorResize = (w, h) => editor.resize(w, h);
+  actions.editorNew = () => editor.newBlank();
+  actions.editorSave = () => downloadMapJson(editor.serialize());
+  actions.editorLoad = (map) => {
+    try {
+      editor.load(map);
+    } catch (err) {
+      patchUi({ editor: { ...(uiState.value.editor || {}), error: err.message || 'Invalid map.' } });
+    }
+  };
+  actions.editorError = (msg) => {
+    patchUi({ editor: { ...(uiState.value.editor || {}), error: msg || 'Error.' } });
+  };
 
   patchUi({ screen: 'mode-select' });
 }

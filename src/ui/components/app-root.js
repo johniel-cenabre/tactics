@@ -9,6 +9,8 @@ import './game-over.js';
 import './battle-start.js';
 import './rotate-overlay.js';
 import './online-connect.js';
+import './map-editor.js';
+import './story-select.js';
 
 // Root overlay. Sits above #canvas-wrap and hosts every screen/overlay. Each child
 // decides its own visibility from the store, so app-root just mounts them all.
@@ -18,6 +20,7 @@ class AppRoot extends SignalWatcher(LitElement) {
   render() {
     return html`
       <mode-select-screen></mode-select-screen>
+      <story-select-screen></story-select-screen>
       <hud-bar></hud-bar>
       <draft-panel></draft-panel>
       <turn-menu></turn-menu>
@@ -26,6 +29,7 @@ class AppRoot extends SignalWatcher(LitElement) {
       <game-over-screen></game-over-screen>
       <rotate-overlay></rotate-overlay>
       <online-connect></online-connect>
+      <map-editor></map-editor>
     `;
   }
 }

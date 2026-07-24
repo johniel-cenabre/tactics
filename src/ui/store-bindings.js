@@ -6,7 +6,10 @@ import { patchUi, uiState } from '../core/store.js';
 import { unitSummary, getEffectiveStat } from '../sim/unit.js';
 import { getAvailableSkills } from '../sim/skills.js';
 import { getCurrentDraftPlayer, getCurrentPlayerPickCount } from '../sim/draft.js';
+import { storyObjectiveProgress } from '../sim/story.js';
 import { CLASS_IMAGES } from '../data/class-look.js';
+import { getStageIndex } from '../data/stages.js';
+import { unlockNextAfter } from '../data/story-progress.js';
 
 export function bindStore(state, bus) {
   const activeUnit = () => (state.phase === 'playing' ? state.getActiveUnit() : null);
@@ -27,6 +30,13 @@ export function bindStore(state, bus) {
 
   const syncHud = () => {
     const unit = activeUnit();
+    const storyHud = state.story
+      ? {
+          stageId: state.story.stageId,
+          stageIndex: state.story.stageIndex,
+          objectives: storyObjectiveProgress(state),
+        }
+      : null;
     patchUi({
       phase: state.phase,
       gameMode: state.gameMode,
@@ -37,6 +47,7 @@ export function bindStore(state, bus) {
       isHumanTurn: state.phase === 'playing' ? state.isHumanTurn() : false,
       selectedUnit: unitSummary(unit),
       availableSkills: skillsFor(unit),
+      story: storyHud,
       actionState: {
         attackMode: false,
         skillMode: false,
@@ -49,7 +60,7 @@ export function bindStore(state, bus) {
 
   const isHumanDraftTurn = (player) => {
     if (state.gameMode === 'cvcpu') return false;
-    if (state.gameMode === 'pvcpu' && player !== 1) return false;
+    if ((state.gameMode === 'pvcpu' || state.gameMode === 'story') && player !== 1) return false;
     if (state.gameMode === 'online' && player !== state.localPlayerNumber) return false;
     return true;
   };
@@ -108,7 +119,7 @@ export function bindStore(state, bus) {
   bus.on('draftComplete', () => patchUi({ draft: null }));
 
   // --- Game over ---
-  bus.on('gameOver', ({ winner, title, classRecord }) => {
+  bus.on('gameOver', ({ winner, title, classRecord, outcome, stageId }) => {
     const winnerPlayer = winner != null ? winner : 1;
     const cards = state.units
       .filter((u) => u.player === winnerPlayer && !u.summonedBy)
@@ -131,6 +142,15 @@ export function bindStore(state, bus) {
           int: getEffectiveStat(u, 'int'),
         },
       }));
+    let nextStageId = null;
+    if (outcome === 'win' && stageId) {
+      const idx = getStageIndex(stageId);
+      if (idx >= 0) {
+        unlockNextAfter(idx);
+        // nextStageId resolved by UI via STAGES; store index for buttons
+        nextStageId = idx + 1;
+      }
+    }
     patchUi({
       phase: 'gameover',
       gameOver: {
@@ -138,8 +158,19 @@ export function bindStore(state, bus) {
         title: title || (winner ? `Player ${winner} wins!` : 'Draw'),
         cards,
         classRecord: classRecord || null,
+        outcome: outcome || null,
+        stageId: stageId || null,
+        nextStageIndex: nextStageId,
       },
     });
+  });
+
+  // Story objectives also update after moves/deaths
+  bus.on('unitMoved', () => {
+    if (state.story) syncHud();
+  });
+  bus.on('unitDied', () => {
+    if (state.story) syncHud();
   });
 
   return { syncHud, syncDraft, imageFor: (cls) => CLASS_IMAGES[cls] };

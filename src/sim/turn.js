@@ -7,6 +7,7 @@ import { TileType } from '../world/tile-types.js';
 import { getCenterTiles } from '../world/worldgen.js';
 import { buildInitiativeOrder, handleUnitDeath } from './summon.js';
 import { recordGameOver } from './records.js';
+import { evaluateStory } from './story.js';
 
 const TEMP_DEBUFF_DAMAGERS = ['poison'];
 
@@ -140,6 +141,12 @@ export function endTurn(ctx) {
 export function checkGameOver(ctx) {
   const { state } = ctx;
   if (state.phase !== 'playing') return;
+  if (state.story) {
+    const result = evaluateStory(state);
+    if (result.outcome === 'win') declareWinner(ctx, 1, result.title, 'win');
+    else if (result.outcome === 'lose') declareWinner(ctx, 2, result.title, 'lose');
+    return;
+  }
   const p1Alive = state.units.some((u) => u.player === 1 && u.hp > 0 && !u.summonedBy);
   const p2Alive = state.units.some((u) => u.player === 2 && u.hp > 0 && !u.summonedBy);
   if (!p1Alive) declareWinner(ctx, 2);
@@ -148,6 +155,15 @@ export function checkGameOver(ctx) {
 
 export function endGameByTurnLimit(ctx) {
   const { state } = ctx;
+  if (state.story) {
+    const result = evaluateStory(state);
+    if (result.outcome === 'win') {
+      declareWinner(ctx, 1, result.title || 'Victory — you held out!', 'win');
+    } else {
+      declareWinner(ctx, 2, 'Defeat — time ran out.', 'lose');
+    }
+    return;
+  }
   const world = state.world;
   const centerTiles = getCenterTiles(world);
   const centerKeys = new Set(centerTiles.map((c) => c.gy * world.w + c.gx));
@@ -185,15 +201,21 @@ function playerLabel(state, player) {
   return state.playerNames[player] || `Player ${player}`;
 }
 
-function declareWinner(ctx, winningPlayer, titleOverride) {
+function declareWinner(ctx, winningPlayer, titleOverride, outcomeOverride) {
   const { state } = ctx;
   if (state.phase === 'gameover') return;
   state.phase = 'gameover';
   const table = recordGameOver(state.units, winningPlayer);
+  let outcome = outcomeOverride || null;
+  if (outcome == null && state.story) {
+    outcome = winningPlayer === 1 ? 'win' : 'lose';
+  }
   ctx.emit('gameOver', {
     winner: winningPlayer,
     title: titleOverride != null ? titleOverride : `${playerLabel(state, winningPlayer)} wins!`,
     classRecord: table,
+    outcome,
+    stageId: state.story?.stageId || null,
   });
 }
 

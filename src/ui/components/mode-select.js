@@ -5,6 +5,7 @@ import { AI_DRAFT_PREFERENCE_OPTIONS } from '../../data/draft-config.js';
 import { DEFAULT_SETTINGS, DEV_MODE } from '../../config.js';
 
 const MODES = [
+  { id: 'story', title: 'Story', short: 'Story', desc: 'Campaign stages with fixed maps and objectives.' },
   { id: 'pvp', title: 'Player vs Player', short: 'PvP', desc: 'Two players on the same device.' },
   { id: 'pvcpu', title: 'Player vs CPU', short: 'PvCPU', desc: 'You control your army; the CPU responds.' },
   { id: 'cvcpu', title: 'CPU vs CPU', short: 'Watch', desc: 'Watch two AI armies fight.' },
@@ -12,6 +13,11 @@ const MODES = [
 ];
 
 const MODE_ICONS = {
+  story: html`
+    <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M6 3.5h9.2c1.1 0 2 .9 2 2v14.2l-3.1-1.6-3.1 1.6-3.1-1.6-3.1 1.6V5.5c0-1.1.9-2 2-2Zm0 1.8v11.3l1.3-.7 3.1 1.6 3.1-1.6 1.3.7V5.3H6Z"/>
+      <path fill="currentColor" d="M8.2 8.2h7.2v1.4H8.2zm0 3h5.4v1.4H8.2z"/>
+    </svg>`,
   pvp: html`
     <svg class="mode-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d="M6.5 2.8 9.7 6l-1.4 1.4-2.4-2.4-1.4 1.4 2.4 2.4L5.5 10 2.3 6.8 3.7 5.4 6.1 7.8 7.5 6.4 4.3 3.2 5.7 1.8 6.5 2.8Zm11 0 1.4-1.4 3.2 3.2-1.4 1.4-2.4-2.4-1.4 1.4 2.4 2.4-1.4 1.4-3.2-3.2 1.4-1.4 2.4 2.4 1.4-1.4-2.4-2.4 1.4-1.4Z"/>
@@ -38,7 +44,7 @@ class ModeSelect extends SignalWatcher(LitElement) {
 
   constructor() {
     super();
-    this.mode = 'pvp';
+    this.mode = 'story';
     this.form = {
       mapMode: 'long',
       numUnits: DEFAULT_SETTINGS.draftPicksPerPlayer,
@@ -56,6 +62,10 @@ class ModeSelect extends SignalWatcher(LitElement) {
   _upd(key, value) { this.form = { ...this.form, [key]: value }; this.requestUpdate(); }
 
   _play() {
+    if (this.mode === 'story') {
+      actions.openStorySelect();
+      return;
+    }
     const cfg = { mode: this.mode, ...this.form };
     if (this.mode === 'online') actions.onlineStart(cfg);
     else actions.startMatch(cfg);
@@ -66,6 +76,9 @@ class ModeSelect extends SignalWatcher(LitElement) {
   }
 
   _renderSettings(f) {
+    if (this.mode === 'story') {
+      return html`<p class="mode-story-hint">Choose a stage, draft your squad, and complete the objectives.</p>`;
+    }
     const num = (id, key, attrs = {}) => html`
       <div class="mode-field">
         <label for=${id}>${attrs.label}</label>
@@ -167,7 +180,14 @@ class ModeSelect extends SignalWatcher(LitElement) {
               <aside class="mode-select-settings-col">
                 <div class="mode-play-wrap">
                   <button type="button" class="mode-play-btn" @click=${() => this._play()}>
-                    <span class="mode-play-text">${this.mode === 'online' ? 'Connect online' : 'Start game'}</span>
+                    <span class="mode-play-text">${
+                      this.mode === 'online' ? 'Connect online'
+                        : this.mode === 'story' ? 'Choose stage'
+                          : 'Start game'
+                    }</span>
+                  </button>
+                  <button type="button" class="mode-editor-btn" @click=${() => actions.openEditor()}>
+                    Map Maker
                   </button>
                 </div>
                 <details class="mode-settings-details" open>

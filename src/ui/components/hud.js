@@ -7,6 +7,18 @@ import { CLASSES } from '../../data/classes.js';
 class Hud extends SignalWatcher(LitElement) {
   createRenderRoot() { return this; }
 
+  _objectives(s) {
+    const objs = s.story?.objectives;
+    if (!objs?.length || s.phase === 'draft') return null;
+    return html`
+      <ul class="hud-objectives" aria-label="Objectives">
+        ${objs.map((o) => html`
+          <li class="${o.done ? 'done' : ''} ${o.danger ? 'danger' : ''}">${o.text}</li>
+        `)}
+      </ul>
+    `;
+  }
+
   render() {
     const s = uiState.value;
     if (s.screen !== 'game') return html``;
@@ -42,6 +54,7 @@ class Hud extends SignalWatcher(LitElement) {
             <span id="turns-left-value">${s.turnsLeft}</span>
           </div>
         </div>
+        ${this._objectives(s)}
         <p class="hud-instructions instructions">${instructions}</p>
       </div>
     `;

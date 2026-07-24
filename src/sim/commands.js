@@ -117,6 +117,8 @@ export class GameController {
     state.hasMoved = true;
     tryCollectPowerup(this.ctx, unit);
     this.events.emit('unitMoved', { unit, from: { gx: fromGx, gy: fromGy }, to: { gx: unit.x, gy: unit.y }, path });
+    if (state.story) await this._resolveDeathsAndCheckGameOver();
+    if (state.phase !== 'playing') return;
     this._finishAction(unit);
   }
 

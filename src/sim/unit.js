@@ -20,7 +20,7 @@ export function facingToward(fromX, fromY, toX, toY) {
 }
 
 /** Create a live unit object from a class template. */
-export function createUnit({ id, player, classKey, x, y, level = 1 }) {
+export function createUnit({ id, player, classKey, x, y, level = 1, tag = null }) {
   const template = CLASSES[classKey];
   const look = CLASS_LOOK[classKey] || CLASS_LOOK.knight;
   return {
@@ -29,6 +29,7 @@ export function createUnit({ id, player, classKey, x, y, level = 1 }) {
     x,
     y,
     level,
+    tag: tag || null,
     facing: defaultFacing(player),
     name: template.name,
     class: classKey,

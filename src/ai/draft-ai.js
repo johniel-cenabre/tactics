@@ -35,7 +35,9 @@ export class DraftAI {
 
   /** Once every pick is placed there is no valid current player; stop drafting. */
   _draftComplete() {
-    return this.state.draft.pickIndex >= 2 * this.state.settings.draftPicksPerPlayer;
+    const d = this.state.draft;
+    const total = d.totalPicks != null ? d.totalPicks : 2 * this.state.settings.draftPicksPerPlayer;
+    return d.pickIndex >= total;
   }
 
   async _act(player) {
