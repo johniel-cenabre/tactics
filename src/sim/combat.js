@@ -36,7 +36,7 @@ export function directionalMultiplier(attacker, victim) {
 export function computeStrikeOutcome(attacker, target, rng) {
   const evasionMax = getEffectiveStat(target, 'agi') * 0.7 + getEffectiveStat(target, 'luk') * 0.3;
   const evasionRoll = rng.next() * Math.max(0.001, evasionMax);
-  const isHit = evasionRoll <= getEffectiveStat(attacker, 'dex');
+  const isHit = evasionRoll <= getEffectiveStat(attacker, 'dex') * directionalMultiplier(attacker, target);
   let damage = 0;
   if (isHit) {
     const raw =
@@ -111,7 +111,7 @@ export function applyDamage(ctx, opts) {
   } else if (!isSelfDamage && !opts.isSpell) {
     const evasionMax = getEffectiveStat(victim, 'agi') * 0.7 + getEffectiveStat(victim, 'luk') * 0.3;
     const evasionRoll = ctx.rng.next() * Math.max(0.001, evasionMax);
-    isHit = evasionRoll <= getEffectiveStat(attacker, 'dex');
+    isHit = evasionRoll <= getEffectiveStat(attacker, 'dex') * directionalMultiplier(attacker, victim);
   }
 
   if (isHit) {

@@ -164,7 +164,7 @@ export const buffEffects = {
 
   warCry(ctx) {
     const { u } = ctx;
-    const bVal = Math.max(2, Math.ceil((u.maxHp - u.hp) * 0.1));
+    const bVal = Math.max(2, Math.ceil((u.maxHp - u.hp) * 0.3));
     u.tempBuff = { vit: bVal, luk: bVal, duration: 3 };
     ctx.statText(u.x, u.y, `+${bVal} VIT, +${bVal} LUK`, true);
   },
