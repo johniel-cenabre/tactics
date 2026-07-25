@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { CLASS_LOOK } from '../data/class-look.js';
 import { CLASSES } from '../data/classes.js';
 import {
-  sharedGeo, bodyMat, sharedMat,
+  sharedGeo, bodyMat, sharedMat, ensureOwnedMaterial,
   EYE_WHITE, PUPIL, SHINE, LINER, LIP, CHEEK, MOUTH,
   CAP_SEG, RAD_SEG, HEAD_SEG, HEAD_RINGS, LATHE_SEG, CYL_SEG,
 } from './figure-assets.js';
@@ -506,10 +506,13 @@ export function applyWoundedTint(mesh, severity) {
   const s = Math.max(0, Math.min(1, severity));
   const dim = 1 - s * 0.2;
   mesh.traverse((child) => {
-    if (!child.isMesh || !child.material?.color) return;
-    if (!child.userData.originalColor) child.userData.originalColor = child.material.color.clone();
+    const mat = ensureOwnedMaterial(child);
+    if (!mat?.color) return;
+    if (!child.userData.originalColor) {
+      child.userData.originalColor = (mat.userData.baseColor || mat.color).clone();
+    }
     const o = child.userData.originalColor;
-    child.material.color.setRGB(
+    mat.color.setRGB(
       Math.min(1, o.r * dim + s * 0.05),
       o.g * dim * (1 - s * 0.1),
       o.b * dim * (1 - s * 0.12),
@@ -519,9 +522,9 @@ export function applyWoundedTint(mesh, severity) {
 
 export function clearWoundedTint(mesh) {
   mesh.traverse((child) => {
-    if (child.isMesh && child.material?.color && child.userData.originalColor) {
-      child.material.color.copy(child.userData.originalColor);
-    }
+    if (!child.isMesh || !child.userData.originalColor) return;
+    const mat = ensureOwnedMaterial(child);
+    if (mat?.color) mat.color.copy(child.userData.originalColor);
   });
 }
 
@@ -755,10 +758,13 @@ export function applyDeathTint(mesh, t) {
   const fade = Math.max(0, Math.min(1, t));
   const dim = 1 - fade * 0.38;
   mesh.traverse((child) => {
-    if (!child.isMesh || !child.material?.color) return;
-    if (!child.userData.originalColor) child.userData.originalColor = child.material.color.clone();
+    const mat = ensureOwnedMaterial(child);
+    if (!mat?.color) return;
+    if (!child.userData.originalColor) {
+      child.userData.originalColor = (mat.userData.baseColor || mat.color).clone();
+    }
     const o = child.userData.originalColor;
-    child.material.color.setRGB(
+    mat.color.setRGB(
       o.r * dim,
       o.g * dim * (1 - fade * 0.18),
       o.b * dim * (1 - fade * 0.24),

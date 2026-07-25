@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { TILE_SIZE } from '../config.js';
 import { createTilingNoiseTexture } from './tiles.js';
 import { createHumanFigure, setWalkPose, resetWalkPose, setMeleeAttackPose, meleeLungeFactor, resetAttackPose, clearWoundedPose, refreshDamagedPose, setDamageFlinchPose, setDeathPose, applyDeathTint, applyWoundedTint, syncWoundedBaseY, woundedSinkOffset, setMeshFacing } from './figure.js';
-import { isPooledGeometry, isPooledMaterial } from './figure-assets.js';
+import { isPooledGeometry, isPooledMaterial, ensureOwnedMaterial } from './figure-assets.js';
 import { easeInOutQuad, linear } from '../core/tween.js';
 
 const MELEE_ATTACK_MS = 400;
@@ -235,11 +235,12 @@ export class UnitRenderer {
   _makeGrayscale(mesh) {
     const DULL = 0.55;
     mesh.traverse((child) => {
-      if (!child.isMesh || !child.material || !child.material.color) return;
-      const c = child.material.color;
+      const mat = ensureOwnedMaterial(child);
+      if (!mat?.color) return;
+      const c = mat.userData.baseColor || mat.color;
       const luminance = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
       const gray = Math.max(0, Math.min(1, luminance * DULL));
-      c.setRGB(gray, gray, gray);
+      mat.color.setRGB(gray, gray, gray);
     });
   }
 

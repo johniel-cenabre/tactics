@@ -14,8 +14,32 @@ export function sharedGeo(key, factory) {
 
 /** Pool PBR materials; bumpMap is attached once per instance when provided. */
 export function sharedMat(key, factory) {
-  if (!MAT.has(key)) MAT.set(key, factory());
+  if (!MAT.has(key)) {
+    const mat = factory();
+    // Canonical color so tint/grayscale can repair the pool after a mistaken mutate.
+    if (mat.color) mat.userData.baseColor = mat.color.clone();
+    MAT.set(key, mat);
+  }
   return MAT.get(key);
+}
+
+/**
+ * Tint/grayscale must not mutate pooled materials (shared across every unit).
+ * Clones on first edit, repairs the pool back to its base color, and marks the
+ * mesh as owning the clone so removeUnit can dispose it.
+ */
+export function ensureOwnedMaterial(child) {
+  if (!child?.isMesh || !child.material?.color) return null;
+  if (child.userData.ownsMaterial) return child.material;
+  const mat = child.material;
+  if (isPooledMaterial(mat)) {
+    const base = mat.userData.baseColor;
+    if (base) mat.color.copy(base);
+    child.material = mat.clone();
+    if (base) child.material.userData.baseColor = base.clone();
+    child.userData.ownsMaterial = true;
+  }
+  return child.material;
 }
 
 export function attachBump(mat, bumpMap, scale) {
