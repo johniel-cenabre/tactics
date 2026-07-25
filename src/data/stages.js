@@ -127,7 +127,7 @@ export const STAGES = [
     classPool: {
       ban: ['barbarian', 'necromancer', 'vampire', 'cannibal', 'ghoul'],
     },
-    maxTurns: 50,
+    maxTurns: 60,
     objectives: {
       win: [{ type: 'reach', target: 'enemyBase' }],
       lose: [],
@@ -142,7 +142,7 @@ export const STAGES = [
     classPool: {
       allow: ['knight', 'paladin', 'monk', 'lancer', 'samurai', 'werewolf', 'berserker', 'amazon'],
     },
-    maxTurns: 40,
+    maxTurns: 50,
     objectives: {
       win: [{ type: 'reach', target: 'enemyBase', unitTag: 'envoy' }],
       lose: [{ type: 'protect', tag: 'envoy' }],
@@ -153,7 +153,7 @@ export const STAGES = [
     name: "Warlord's Gate",
     description: 'Storm the fortress gate. Slay the warlord and leave none of his guard standing.',
     map: warlordsGate,
-    maxPlayerUnits: 5,
+    maxPlayerUnits: 6,
     classPool: {
       allow: ['knight', 'mage', 'monk', 'lancer', 'hunter', 'assassin', 'paladin', 'samurai', 'ranger', 'ninja'],
     },
@@ -175,7 +175,7 @@ export const STAGES = [
     classPool: {
       allow: ['mage', 'witch', 'shaman', 'oracle', 'exorcist', 'alchemist', 'ranger', 'hunter', 'assassin', 'ninja'],
     },
-    maxTurns: 40,
+    maxTurns: 60,
     objectives: {
       win: [{
         type: 'reach',
@@ -206,7 +206,7 @@ export const STAGES = [
     name: 'The Iron Throne',
     description: 'The last army guards the necromancer king. Destroy them all and end his reign.',
     map: ironThrone,
-    maxPlayerUnits: 5,
+    maxPlayerUnits: 7,
     classPool: {},
     maxTurns: 100,
     objectives: {
